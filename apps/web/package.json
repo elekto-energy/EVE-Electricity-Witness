@@ -1,0 +1,26 @@
+{
+  "name": "@elekto-eu/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 5174",
+    "build": "next build",
+    "start": "next start --port 5174",
+    "lint": "next lint",
+    "test": "jest"
+  },
+  "dependencies": {
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.0",
+    "@types/jest": "^29.5.0"
+  }
+}
