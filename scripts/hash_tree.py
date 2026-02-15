@@ -1,103 +1,67 @@
-#!/usr/bin/env python3
-"""
-hash_tree.py — Compute SHA-256 for all files in a directory tree.
-
-Produces:
-  - files.sha256   (per-file hashes, sorted alphabetically)
-  - root_hash.txt  (single hash over all file hashes)
-
-Usage:
-  python scripts/hash_tree.py data/canonical/entsoe_day_ahead/2026-02/
-  python scripts/hash_tree.py data/raw/eurostat_hdd/ --output manifests/
-
-Part of ELEKTO EU Evidence Pipeline.
-TR2: All ingests produce manifest + SHA256 + root_hash.
-"""
-
 import hashlib
-import json
-import sys
+import os
 from pathlib import Path
-from datetime import datetime, timezone
 
 
-def sha256_file(path: Path) -> str:
-    """Compute SHA-256 hash of a single file."""
+def sha256_file(p: Path) -> str:
     h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(8192), b""):
+    with p.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
             h.update(chunk)
     return h.hexdigest()
 
 
-def hash_tree(directory: Path) -> dict:
-    """
-    Hash all files in directory tree.
-    
-    Returns:
-        {
-            "files": [{"path": "relative/path", "sha256": "...", "size_bytes": N}, ...],
-            "root_hash": "sha256 of sorted concatenated hashes",
-            "computed_at": "ISO datetime"
-        }
-    """
-    directory = Path(directory).resolve()
-    if not directory.is_dir():
-        raise ValueError(f"Not a directory: {directory}")
-
-    entries = []
-    for path in sorted(directory.rglob("*")):
-        if path.is_file() and not path.name.startswith("."):
-            rel = path.relative_to(directory)
-            entries.append({
-                "path": str(rel).replace("\\", "/"),
-                "sha256": sha256_file(path),
-                "size_bytes": path.stat().st_size,
-            })
-
-    # Root hash: sort hashes alphabetically, concatenate, hash again
-    sorted_hashes = sorted(e["sha256"] for e in entries)
-    root_hash = hashlib.sha256("".join(sorted_hashes).encode()).hexdigest()
-
-    return {
-        "directory": str(directory),
-        "file_count": len(entries),
-        "files": entries,
-        "root_hash": root_hash,
-        "computed_at": datetime.now(timezone.utc).isoformat(),
-    }
+def iter_files(root: Path):
+    for p in sorted(root.rglob("*")):
+        if p.is_file():
+            yield p
 
 
-def main():
-    if len(sys.argv) < 2:
-        print("Usage: python hash_tree.py <directory> [--output <dir>]")
-        sys.exit(1)
+def write_files_sha256(input_dir: Path, out_path: Path):
+    lines = []
+    for p in iter_files(input_dir):
+        rel = p.relative_to(input_dir).as_posix()
+        digest = sha256_file(p)
+        size = p.stat().st_size
+        lines.append(f"{digest}  {size}  {rel}")
+    out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
-    target = Path(sys.argv[1])
-    output_dir = Path(sys.argv[3]) if "--output" in sys.argv else target
 
-    result = hash_tree(target)
-
-    # Write files.sha256
-    sha_path = output_dir / "files.sha256"
-    with open(sha_path, "w") as f:
-        for entry in result["files"]:
-            f.write(f"{entry['sha256']}  {entry['path']}\n")
-
-    # Write root_hash.txt
-    root_path = output_dir / "root_hash.txt"
-    with open(root_path, "w") as f:
-        f.write(f"{result['root_hash']}\n")
-
-    # Write full result as JSON
-    json_path = output_dir / "hash_tree.json"
-    with open(json_path, "w") as f:
-        json.dump(result, f, indent=2)
-
-    print(f"[hash_tree] {result['file_count']} files hashed")
-    print(f"[hash_tree] root_hash: {result['root_hash']}")
-    print(f"[hash_tree] Output: {sha_path}, {root_path}, {json_path}")
+def root_hash_of_files_sha256(files_sha256_path: Path) -> str:
+    # Root hash is sha256 over the exact bytes of files.sha256 (deterministic order)
+    data = files_sha256_path.read_bytes()
+    return hashlib.sha256(data).hexdigest()
 
 
 if __name__ == "__main__":
-    main()
+    import argparse, datetime, json
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--input_dir", required=True)
+    ap.add_argument("--out_dir", required=True)
+    ap.add_argument("--run_id", required=True)
+    args = ap.parse_args()
+
+    input_dir = Path(args.input_dir).resolve()
+    out_dir = Path(args.out_dir).resolve()
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    files_sha256 = out_dir / f"{args.run_id}.files.sha256"
+    write_files_sha256(input_dir, files_sha256)
+
+    root_hash = root_hash_of_files_sha256(files_sha256)
+    root_hash_path = out_dir / f"{args.run_id}.root_hash.txt"
+    root_hash_path.write_text(root_hash + "\n", encoding="utf-8")
+
+    manifest = {
+        "run_id": args.run_id,
+        "created_at_utc": datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+        "input_dir": str(input_dir),
+        "file_count": sum(1 for _ in iter_files(input_dir)),
+        "files_sha256_path": str(files_sha256),
+        "root_hash_path": str(root_hash_path),
+    }
+    (out_dir / f"{args.run_id}.manifest.json").write_text(
+        json.dumps(manifest, indent=2), encoding="utf-8"
+    )
+    print("OK")

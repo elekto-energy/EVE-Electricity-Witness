@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://elekto.se/schemas/WitnessDecisionEdge.schema.json",
+  "title": "WitnessDecisionEdge",
+  "description": "A directed relation between two WitnessDecisionNodes. No interpretation — structural link only.",
+  "type": "object",
+  "required": ["edge_id", "from_node_id", "to_node_id", "relation", "evidence_id"],
+  "properties": {
+    "edge_id": {
+      "type": "string",
+      "description": "Unique edge identifier"
+    },
+    "from_node_id": {
+      "type": "string",
+      "description": "Source node ID"
+    },
+    "to_node_id": {
+      "type": "string",
+      "description": "Target node ID"
+    },
+    "relation": {
+      "type": "string",
+      "enum": ["references", "amends", "responds_to", "supersedes", "implements", "committee_report_on"],
+      "description": "Structural relation type (no interpretive relations)"
+    },
+    "evidence_id": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Reference to EvidenceRecord proving this relation exists"
+    },
+    "source_field": {
+      "type": "string",
+      "description": "Which field in the source document established this relation (e.g., relaterat_id)"
+    }
+  },
+  "additionalProperties": false
+}

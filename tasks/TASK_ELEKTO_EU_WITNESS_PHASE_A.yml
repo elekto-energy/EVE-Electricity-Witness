@@ -1,0 +1,72 @@
+task_id: ELEKTO_EU_WITNESS_PHASE_A
+project_root: D:\EVE11\Projects\013_elekto_eu
+intent: >
+  Bootstrap Witness Mode for Sweden Energy Decisions using EVEverified evidence pipeline.
+  Phase A: ingest Riksdagen document metadata (no opinions), build canonical graph inputs,
+  generate manifest+sha256+root_hash, and expose minimal UI route showing evidence cards.
+
+trinity_rules:
+  - TR1: No source, no number
+  - TR2: All ingests produce manifest + SHA256 + root_hash
+  - TR3: Every chart/list item links to evidence record IDs
+  - TR4: Model changes bump methodology version
+  - TR5: Only human approves merge to main
+  - TR6: Claude generates code — NEVER data values
+  - TR7: Witness mode = NO interpretation (trace only)
+  - TR8: Every claim must be a clickable evidence link
+  - TR9: Proof Pack export must include raw+canonical+manifest+hashes
+
+data_contracts:
+  storage_layout:
+    raw: data/raw/witness/riksdagen/{run_id}/
+    canonical: data/canonical/witness/riksdagen/{run_id}/
+    derived: data/derived/witness/riksdagen/{run_id}/
+    manifests: manifests/witness/{run_id}/
+  naming:
+    run_id_format: "witness_riksdagen_energy_{YYYYMMDD_HHMMSSZ}"
+    evidence_id_format: "evr:{source}:{dataset_id}:{run_id}:{sha256_12}"
+
+sources_whitelist:
+  - name: Riksdagen Open Data
+    publisher: Riksdagen
+    uri_prefix: "https://data.riksdagen.se/"
+    dataset_id: "riksdagen_open_data"
+    allowed: true
+  - name: Svensk författningssamling
+    publisher: Regeringskansliet
+    uri_prefix: "https://svenskforfattningssamling.se/"
+    dataset_id: "sfs"
+    allowed: later_phase
+  - name: Boverket
+    publisher: Boverket
+    uri_prefix: "https://www.boverket.se/"
+    dataset_id: "boverket"
+    allowed: later_phase
+
+taxonomy_energy:
+  tags:
+    - ENERGY.NUCLEAR
+    - ENERGY.TAXES_FEES
+    - ENERGY.GRID_TRANSMISSION
+    - ENERGY.MARKET_DESIGN
+    - ENERGY.BUILDING_ENERGY_RULES
+    - ENERGY.EU_IMPLEMENTATION
+  seed_keywords:
+    ENERGY.NUCLEAR: [kärnkraft, reaktor, effektskatt, strålsäkerhet, avveckling]
+    ENERGY.TAXES_FEES: [energiskatt, skatt, moms, avgift, elcertifikat]
+    ENERGY.GRID_TRANSMISSION: [nätavgift, stamnät, överföring, kapacitet, flaskhals]
+    ENERGY.MARKET_DESIGN: [elmarknad, elområde, prisområde, kapacitetsmekanism, balansmarknad]
+    ENERGY.BUILDING_ENERGY_RULES: [boverket, BBR, energihushållning, primärenergital, isolering, U-värde]
+    ENERGY.EU_IMPLEMENTATION: [direktiv, förordning, EPBD, EU]
+
+agents:
+  routing:
+    ingest_boilerplate: QWEN_LOCAL
+    schema_validation: CODEFACTORY
+    compute_or_logic: CODEFACTORY
+    ui_components: CLAUDE_API
+    docs: CLAUDE_API
+  language_strategy:
+    witness_package: TypeScript
+    evidence_scripts: Python (hash_tree.py, make_manifest.py)
+    bridge: "TS calls Python via child_process.execSync"

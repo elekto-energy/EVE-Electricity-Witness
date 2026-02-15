@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://elekto.se/schemas/WitnessDecisionNode.schema.json",
+  "title": "WitnessDecisionNode",
+  "description": "A single document or decision point in a witness chain. No interpretation — metadata only.",
+  "type": "object",
+  "required": ["node_id", "evidence_id", "source", "doc_id", "doc_type", "title", "date", "tags"],
+  "properties": {
+    "node_id": {
+      "type": "string",
+      "description": "Unique node identifier within this chain"
+    },
+    "evidence_id": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Reference to EvidenceRecord for this node"
+    },
+    "source": {
+      "type": "object",
+      "required": ["name", "publisher", "uri"],
+      "properties": {
+        "name": { "type": "string" },
+        "publisher": { "type": "string" },
+        "uri": { "type": "string" }
+      }
+    },
+    "doc_id": {
+      "type": "string",
+      "description": "Source document ID (e.g., Riksdagen dok_id)"
+    },
+    "doc_type": {
+      "type": "string",
+      "enum": ["mot", "prop", "bet", "rskr", "sou", "ds", "skr", "other"],
+      "description": "Document type from Riksdagen taxonomy"
+    },
+    "subtype": {
+      "type": "string",
+      "description": "Document subtype (e.g., Partimotion, Enskild motion)"
+    },
+    "title": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Publication date"
+    },
+    "rm": {
+      "type": "string",
+      "description": "Riksmöte (e.g., 2025/26)"
+    },
+    "organ": {
+      "type": "string",
+      "description": "Committee (e.g., FiU, NU, MJU)"
+    },
+    "authors": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Author names from undertitel"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^ENERGY\\."
+      },
+      "description": "Deterministic energy taxonomy tags"
+    },
+    "status": {
+      "type": "string",
+      "description": "Document status from Riksdagen (e.g., Klar)"
+    }
+  },
+  "additionalProperties": false
+}

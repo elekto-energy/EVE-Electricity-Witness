@@ -2,108 +2,15 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://elekto.se/schemas/IngestManifest.schema.json",
   "title": "IngestManifest",
-  "description": "Manifest produced by every data ingest run. Links raw source data to canonical output with cryptographic verification.",
   "type": "object",
-  "required": ["manifest_id", "source", "ingest", "files", "root_hash", "created_at"],
+  "required": ["run_id", "created_at_utc", "input_dir", "file_count", "files_sha256_path", "root_hash_path"],
   "properties": {
-    "manifest_id": {
-      "type": "string",
-      "pattern": "^IM-[a-z_]+-[0-9]{8}-[a-f0-9]{8}$",
-      "description": "Unique manifest ID. Format: IM-<source_name>-YYYYMMDD-<8 hex chars>"
-    },
-    "source": {
-      "type": "object",
-      "required": ["name", "url", "license", "dataset_id"],
-      "properties": {
-        "name": {
-          "type": "string",
-          "enum": ["entsoe_day_ahead", "eurostat_hdd", "eurostat_price_components", "smhi_temperature", "copernicus_temperature", "building_profiles"],
-          "description": "Canonical source name"
-        },
-        "url": {
-          "type": "string",
-          "format": "uri",
-          "description": "Official source URL"
-        },
-        "license": {
-          "type": "string",
-          "description": "Data license (e.g., 'CC BY 4.0', 'Open Data')"
-        },
-        "dataset_id": {
-          "type": "string",
-          "description": "Source-specific dataset identifier"
-        },
-        "api_endpoint": {
-          "type": "string",
-          "format": "uri",
-          "description": "API endpoint used for fetch (if applicable)"
-        }
-      }
-    },
-    "ingest": {
-      "type": "object",
-      "required": ["fetched_at", "script", "script_version"],
-      "properties": {
-        "fetched_at": {
-          "type": "string",
-          "format": "date-time",
-          "description": "When the data was fetched"
-        },
-        "script": {
-          "type": "string",
-          "description": "Path to the ingest script used"
-        },
-        "script_version": {
-          "type": "string",
-          "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
-        },
-        "parameters": {
-          "type": "object",
-          "description": "Parameters passed to the ingest script",
-          "properties": {
-            "country": { "type": "string" },
-            "bidding_zone": { "type": "string" },
-            "period_start": { "type": "string", "format": "date" },
-            "period_end": { "type": "string", "format": "date" }
-          }
-        },
-        "duration_ms": {
-          "type": "integer",
-          "description": "How long the ingest took in milliseconds"
-        }
-      }
-    },
-    "files": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["path", "sha256", "size_bytes", "stage"],
-        "properties": {
-          "path": { "type": "string" },
-          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-          "size_bytes": { "type": "integer" },
-          "stage": {
-            "type": "string",
-            "enum": ["raw", "canonical", "derived"],
-            "description": "Pipeline stage of this file"
-          }
-        }
-      },
-      "minItems": 1
-    },
-    "root_hash": {
-      "type": "string",
-      "pattern": "^[a-f0-9]{64}$",
-      "description": "SHA-256 hash of all file hashes concatenated and sorted alphabetically"
-    },
-    "record_count": {
-      "type": "integer",
-      "description": "Number of data records in canonical output"
-    },
-    "created_at": {
-      "type": "string",
-      "format": "date-time"
-    }
-  },
-  "additionalProperties": false
+    "run_id": { "type": "string" },
+    "created_at_utc": { "type": "string" },
+    "input_dir": { "type": "string" },
+    "file_count": { "type": "integer" },
+    "files_sha256_path": { "type": "string" },
+    "root_hash_path": { "type": "string" },
+    "notes": { "type": "string" }
+  }
 }
