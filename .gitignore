@@ -30,9 +30,19 @@ __pycache__/
 .venv/
 venv/
 
-# Raw data (large files — fetch via ingest scripts)
+# Raw data (large, reproducible — fetch via ingest scripts)
 data/raw/
 
-# Keep canonical and derived (small, versioned)
-# data/canonical/
-# data/derived/
+# Canonical/derived — keep golden fixtures only
+data/canonical/
+data/derived/
+!data/canonical/_golden/
+!data/derived/_golden/
+
+# Manifests — keep golden fixtures only
+manifests/
+!manifests/_golden/
+
+# Test run artifacts
+manifests/test_run*
+manifests/recheck_*
