@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "SourceRegistry.schema.json",
+  "title": "SourceRegistry",
+  "description": "Whitelisted sources with license/ToS notes and ingest policy.",
+  "type": "object",
+  "required": ["sources"],
+  "properties": {
+    "_meta": { "type": "object" },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source_id", "publisher", "type", "ingest_allowed", "display_policy"],
+        "properties": {
+          "source_id": { "type": "string" },
+          "publisher": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["parliament", "government", "agency", "media", "social"]
+          },
+          "feed_urls": {
+            "type": "array",
+            "items": { "type": "string" },
+            "default": []
+          },
+          "license_or_terms_url": { "type": ["string", "null"] },
+          "ingest_allowed": { "type": "boolean" },
+          "display_policy": {
+            "type": "string",
+            "enum": ["quote_safe_only", "link_only", "embed_only", "full_excerpt"]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

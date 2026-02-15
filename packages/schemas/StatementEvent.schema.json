@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "StatementEvent.schema.json",
+  "title": "StatementEvent",
+  "description": "Normalised representation of a political statement with traceable source. TR7: No interpretation.",
+  "type": "object",
+  "required": [
+    "statement_id",
+    "speaker_id",
+    "speaker_name",
+    "source_type",
+    "published_at_utc",
+    "original_url",
+    "excerpt",
+    "evidence_ref",
+    "extraction"
+  ],
+  "properties": {
+    "statement_id": {
+      "type": "string",
+      "description": "Stable deterministic ID"
+    },
+    "speaker_id": {
+      "type": "string",
+      "description": "References SpeakerRegistry.speaker_id"
+    },
+    "speaker_name": {
+      "type": "string",
+      "description": "Display name at time of statement"
+    },
+    "speaker_role_at_time": {
+      "type": ["string", "null"],
+      "description": "Role/title if sourced; null if unknown"
+    },
+    "source_type": {
+      "type": "string",
+      "enum": ["primary_parliament", "primary_government", "primary_agency", "media_index", "social_x"]
+    },
+    "title": {
+      "type": ["string", "null"]
+    },
+    "published_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "original_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "excerpt": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "Quote-safe excerpt. For primary_parliament: official transcript excerpt."
+    },
+    "topic_tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "language": {
+      "type": "string",
+      "default": "sv"
+    },
+    "evidence_ref": {
+      "type": "object",
+      "required": ["manifest_id", "root_hash"],
+      "properties": {
+        "manifest_id": { "type": "string" },
+        "root_hash": { "type": "string" },
+        "files_sha256_path": { "type": "string" },
+        "record_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "compliance": {
+      "type": "object",
+      "properties": {
+        "requires_recheck": { "type": "boolean", "default": false },
+        "status": {
+          "type": "string",
+          "enum": ["active", "removed", "withheld", "unknown"],
+          "default": "active"
+        }
+      }
+    },
+    "extraction": {
+      "type": "object",
+      "required": ["method", "version", "fetched_at_utc"],
+      "properties": {
+        "method": { "type": "string" },
+        "version": { "type": "string" },
+        "fetched_at_utc": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

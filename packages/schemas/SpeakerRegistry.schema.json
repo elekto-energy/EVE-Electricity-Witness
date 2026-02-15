@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "SpeakerRegistry.schema.json",
+  "title": "SpeakerRegistry",
+  "description": "Controlled list of speakers (politicians) with aliases and external references.",
+  "type": "object",
+  "required": ["speakers"],
+  "properties": {
+    "_meta": { "type": "object" },
+    "speakers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["speaker_id", "display_name"],
+        "properties": {
+          "speaker_id": { "type": "string" },
+          "display_name": { "type": "string" },
+          "aliases": {
+            "type": "array",
+            "items": { "type": "string" },
+            "default": []
+          },
+          "external_refs": {
+            "type": "object",
+            "properties": {
+              "riksdagen_person_id": { "type": ["string", "null"] },
+              "gov_profile_url": { "type": ["string", "null"] },
+              "x_user_id": { "type": ["string", "null"] },
+              "x_handle": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}
