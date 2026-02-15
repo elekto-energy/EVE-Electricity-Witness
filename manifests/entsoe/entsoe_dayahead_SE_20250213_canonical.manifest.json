@@ -1,0 +1,8 @@
+{
+  "run_id": "entsoe_dayahead_SE_20250213_canonical",
+  "created_at_utc": "2026-02-15T11:12:16Z",
+  "input_dir": "D:\\EVE11\\Projects\\013_elekto_eu\\data\\canonical\\entsoe\\entsoe_dayahead_SE_20250213",
+  "file_count": 2,
+  "files_sha256_path": "D:\\EVE11\\Projects\\013_elekto_eu\\manifests\\entsoe\\entsoe_dayahead_SE_20250213_canonical.files.sha256",
+  "root_hash_path": "D:\\EVE11\\Projects\\013_elekto_eu\\manifests\\entsoe\\entsoe_dayahead_SE_20250213_canonical.root_hash.txt"
+}

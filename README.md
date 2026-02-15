@@ -39,6 +39,10 @@ No opinions. No personal attacks. No "policy scoring". Only data + method.
 
 4. Re-run with same input → **same root hash** (determinism proof).
 
+## Agent Routing Rules
+
+See [TRINITY_ROUTER_RULES.md](TRINITY_ROUTER_RULES.md) — normative scope enforcement for CodeFactory, Claude API, and Qwen.
+
 ## Built with EVE
 
 - **CodeFactory** — deterministic code generation

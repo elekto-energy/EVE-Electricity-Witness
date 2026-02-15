@@ -1,0 +1,22 @@
+{
+  "run_id": "entsoe_dayahead_SE_20250213",
+  "ingest_type": "entsoe_day_ahead_A44",
+  "period_start": "2025-02-13T00:00:00.000Z",
+  "period_end": "2025-02-14T00:00:00.000Z",
+  "zones_requested": [
+    "SE1",
+    "SE2",
+    "SE3",
+    "SE4"
+  ],
+  "zones_success": [
+    "SE1",
+    "SE2",
+    "SE3",
+    "SE4"
+  ],
+  "zones_failed": [],
+  "total_records": 8,
+  "total_errors": 0,
+  "completed_at_utc": "2026-02-15T11:12:15.965Z"
+}

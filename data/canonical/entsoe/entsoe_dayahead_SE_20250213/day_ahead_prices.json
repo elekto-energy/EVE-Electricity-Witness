@@ -1,0 +1,930 @@
+[
+  {
+    "zone_code": "SE1",
+    "zone_eic": "10Y1001A1001A44P",
+    "zone_name": "Luleå",
+    "country": "SE",
+    "period_start": "2025-02-12T23:00Z",
+    "period_end": "2025-02-13T23:00Z",
+    "resolution": "PT60M",
+    "currency": "EUR",
+    "unit": "MWH",
+    "prices": [
+      {
+        "position": 1,
+        "price_eur_mwh": 18.9
+      },
+      {
+        "position": 2,
+        "price_eur_mwh": 15.12
+      },
+      {
+        "position": 3,
+        "price_eur_mwh": 14.36
+      },
+      {
+        "position": 4,
+        "price_eur_mwh": 13.65
+      },
+      {
+        "position": 5,
+        "price_eur_mwh": 13.69
+      },
+      {
+        "position": 6,
+        "price_eur_mwh": 16.6
+      },
+      {
+        "position": 7,
+        "price_eur_mwh": 26.7
+      },
+      {
+        "position": 8,
+        "price_eur_mwh": 60.24
+      },
+      {
+        "position": 9,
+        "price_eur_mwh": 44.99
+      },
+      {
+        "position": 10,
+        "price_eur_mwh": 76.9
+      },
+      {
+        "position": 11,
+        "price_eur_mwh": 66.54
+      },
+      {
+        "position": 12,
+        "price_eur_mwh": 59.1
+      },
+      {
+        "position": 13,
+        "price_eur_mwh": 62.81
+      },
+      {
+        "position": 14,
+        "price_eur_mwh": 56.57
+      },
+      {
+        "position": 15,
+        "price_eur_mwh": 47.08
+      },
+      {
+        "position": 16,
+        "price_eur_mwh": 45
+      },
+      {
+        "position": 17,
+        "price_eur_mwh": 29.99
+      },
+      {
+        "position": 18,
+        "price_eur_mwh": 30.99
+      },
+      {
+        "position": 19,
+        "price_eur_mwh": 47.5
+      },
+      {
+        "position": 20,
+        "price_eur_mwh": 64.69
+      },
+      {
+        "position": 21,
+        "price_eur_mwh": 77.36
+      },
+      {
+        "position": 22,
+        "price_eur_mwh": 71.92
+      },
+      {
+        "position": 23,
+        "price_eur_mwh": 72.13
+      },
+      {
+        "position": 24,
+        "price_eur_mwh": 57.24
+      }
+    ],
+    "evidence_id": "evr:entsoe:day_ahead_a44:entsoe_dayahead_SE_20250213:4b3b9a4004e5",
+    "source": {
+      "name": "ENTSO-E Transparency Platform",
+      "publisher": "ENTSO-E",
+      "dataset_id": "day_ahead_prices_A44",
+      "uri": "https://transparency.entsoe.eu/transmission-domain/r2/dayAheadPrices/show?name=&defaultValue=false&viewType=TABLE&areaType=BZN&atch=false&dateTime.dateTime=2025-02-12T23:00Z&biddingZone.values=10Y1001A1001A44P"
+    },
+    "fetched_at_utc": "2026-02-15T11:12:14.914Z"
+  },
+  {
+    "zone_code": "SE1",
+    "zone_eic": "10Y1001A1001A44P",
+    "zone_name": "Luleå",
+    "country": "SE",
+    "period_start": "2025-02-13T23:00Z",
+    "period_end": "2025-02-14T23:00Z",
+    "resolution": "PT60M",
+    "currency": "EUR",
+    "unit": "MWH",
+    "prices": [
+      {
+        "position": 1,
+        "price_eur_mwh": 54.29
+      },
+      {
+        "position": 2,
+        "price_eur_mwh": 56.93
+      },
+      {
+        "position": 3,
+        "price_eur_mwh": 55.42
+      },
+      {
+        "position": 4,
+        "price_eur_mwh": 51.94
+      },
+      {
+        "position": 5,
+        "price_eur_mwh": 33.54
+      },
+      {
+        "position": 6,
+        "price_eur_mwh": 14.82
+      },
+      {
+        "position": 7,
+        "price_eur_mwh": 31.32
+      },
+      {
+        "position": 8,
+        "price_eur_mwh": 40.73
+      },
+      {
+        "position": 9,
+        "price_eur_mwh": 62.8
+      },
+      {
+        "position": 10,
+        "price_eur_mwh": 74.99
+      },
+      {
+        "position": 11,
+        "price_eur_mwh": 103.04
+      },
+      {
+        "position": 12,
+        "price_eur_mwh": 139.03
+      },
+      {
+        "position": 13,
+        "price_eur_mwh": 101.8
+      },
+      {
+        "position": 14,
+        "price_eur_mwh": 100
+      },
+      {
+        "position": 16,
+        "price_eur_mwh": 68.19
+      },
+      {
+        "position": 17,
+        "price_eur_mwh": 20.02
+      },
+      {
+        "position": 18,
+        "price_eur_mwh": 14.13
+      },
+      {
+        "position": 19,
+        "price_eur_mwh": 13.05
+      },
+      {
+        "position": 20,
+        "price_eur_mwh": 11.73
+      },
+      {
+        "position": 21,
+        "price_eur_mwh": 10.13
+      },
+      {
+        "position": 22,
+        "price_eur_mwh": 9.22
+      },
+      {
+        "position": 23,
+        "price_eur_mwh": 7.97
+      },
+      {
+        "position": 24,
+        "price_eur_mwh": 6.95
+      }
+    ],
+    "evidence_id": "evr:entsoe:day_ahead_a44:entsoe_dayahead_SE_20250213:2b70a5f0786b",
+    "source": {
+      "name": "ENTSO-E Transparency Platform",
+      "publisher": "ENTSO-E",
+      "dataset_id": "day_ahead_prices_A44",
+      "uri": "https://transparency.entsoe.eu/transmission-domain/r2/dayAheadPrices/show?name=&defaultValue=false&viewType=TABLE&areaType=BZN&atch=false&dateTime.dateTime=2025-02-13T23:00Z&biddingZone.values=10Y1001A1001A44P"
+    },
+    "fetched_at_utc": "2026-02-15T11:12:14.914Z"
+  },
+  {
+    "zone_code": "SE2",
+    "zone_eic": "10Y1001A1001A45N",
+    "zone_name": "Sundsvall",
+    "country": "SE",
+    "period_start": "2025-02-12T23:00Z",
+    "period_end": "2025-02-13T23:00Z",
+    "resolution": "PT60M",
+    "currency": "EUR",
+    "unit": "MWH",
+    "prices": [
+      {
+        "position": 1,
+        "price_eur_mwh": 20.21
+      },
+      {
+        "position": 2,
+        "price_eur_mwh": 18.29
+      },
+      {
+        "position": 3,
+        "price_eur_mwh": 17.31
+      },
+      {
+        "position": 4,
+        "price_eur_mwh": 16.28
+      },
+      {
+        "position": 5,
+        "price_eur_mwh": 16.4
+      },
+      {
+        "position": 6,
+        "price_eur_mwh": 20.18
+      },
+      {
+        "position": 7,
+        "price_eur_mwh": 32.97
+      },
+      {
+        "position": 8,
+        "price_eur_mwh": 74.76
+      },
+      {
+        "position": 9,
+        "price_eur_mwh": 60.37
+      },
+      {
+        "position": 10,
+        "price_eur_mwh": 96.83
+      },
+      {
+        "position": 11,
+        "price_eur_mwh": 84.11
+      },
+      {
+        "position": 12,
+        "price_eur_mwh": 75.66
+      },
+      {
+        "position": 13,
+        "price_eur_mwh": 80.02
+      },
+      {
+        "position": 14,
+        "price_eur_mwh": 64.44
+      },
+      {
+        "position": 15,
+        "price_eur_mwh": 53.88
+      },
+      {
+        "position": 16,
+        "price_eur_mwh": 54.06
+      },
+      {
+        "position": 17,
+        "price_eur_mwh": 43.99
+      },
+      {
+        "position": 18,
+        "price_eur_mwh": 46.55
+      },
+      {
+        "position": 19,
+        "price_eur_mwh": 59.76
+      },
+      {
+        "position": 20,
+        "price_eur_mwh": 79.54
+      },
+      {
+        "position": 21,
+        "price_eur_mwh": 94.99
+      },
+      {
+        "position": 22,
+        "price_eur_mwh": 89.37
+      },
+      {
+        "position": 23,
+        "price_eur_mwh": 89.56
+      },
+      {
+        "position": 24,
+        "price_eur_mwh": 69.89
+      }
+    ],
+    "evidence_id": "evr:entsoe:day_ahead_a44:entsoe_dayahead_SE_20250213:3acadad3fab3",
+    "source": {
+      "name": "ENTSO-E Transparency Platform",
+      "publisher": "ENTSO-E",
+      "dataset_id": "day_ahead_prices_A44",
+      "uri": "https://transparency.entsoe.eu/transmission-domain/r2/dayAheadPrices/show?name=&defaultValue=false&viewType=TABLE&areaType=BZN&atch=false&dateTime.dateTime=2025-02-12T23:00Z&biddingZone.values=10Y1001A1001A45N"
+    },
+    "fetched_at_utc": "2026-02-15T11:12:15.263Z"
+  },
+  {
+    "zone_code": "SE2",
+    "zone_eic": "10Y1001A1001A45N",
+    "zone_name": "Sundsvall",
+    "country": "SE",
+    "period_start": "2025-02-13T23:00Z",
+    "period_end": "2025-02-14T23:00Z",
+    "resolution": "PT60M",
+    "currency": "EUR",
+    "unit": "MWH",
+    "prices": [
+      {
+        "position": 1,
+        "price_eur_mwh": 66.28
+      },
+      {
+        "position": 2,
+        "price_eur_mwh": 69.99
+      },
+      {
+        "position": 3,
+        "price_eur_mwh": 68.2
+      },
+      {
+        "position": 4,
+        "price_eur_mwh": 64.09
+      },
+      {
+        "position": 5,
+        "price_eur_mwh": 41.03
+      },
+      {
+        "position": 6,
+        "price_eur_mwh": 23.47
+      },
+      {
+        "position": 7,
+        "price_eur_mwh": 38.27
+      },
+      {
+        "position": 8,
+        "price_eur_mwh": 49.21
+      },
+      {
+        "position": 9,
+        "price_eur_mwh": 78.11
+      },
+      {
+        "position": 10,
+        "price_eur_mwh": 92.25
+      },
+      {
+        "position": 11,
+        "price_eur_mwh": 110.71
+      },
+      {
+        "position": 12,
+        "price_eur_mwh": 138.97
+      },
+      {
+        "position": 13,
+        "price_eur_mwh": 108.82
+      },
+      {
+        "position": 14,
+        "price_eur_mwh": 118.61
+      },
+      {
+        "position": 15,
+        "price_eur_mwh": 122.81
+      },
+      {
+        "position": 16,
+        "price_eur_mwh": 83.17
+      },
+      {
+        "position": 17,
+        "price_eur_mwh": 24.02
+      },
+      {
+        "position": 18,
+        "price_eur_mwh": 13.14
+      },
+      {
+        "position": 19,
+        "price_eur_mwh": 8.95
+      },
+      {
+        "position": 20,
+        "price_eur_mwh": 8.45
+      },
+      {
+        "position": 21,
+        "price_eur_mwh": 7.42
+      },
+      {
+        "position": 22,
+        "price_eur_mwh": 6.83
+      },
+      {
+        "position": 23,
+        "price_eur_mwh": 5.83
+      },
+      {
+        "position": 24,
+        "price_eur_mwh": 5.39
+      }
+    ],
+    "evidence_id": "evr:entsoe:day_ahead_a44:entsoe_dayahead_SE_20250213:29f91ce57ded",
+    "source": {
+      "name": "ENTSO-E Transparency Platform",
+      "publisher": "ENTSO-E",
+      "dataset_id": "day_ahead_prices_A44",
+      "uri": "https://transparency.entsoe.eu/transmission-domain/r2/dayAheadPrices/show?name=&defaultValue=false&viewType=TABLE&areaType=BZN&atch=false&dateTime.dateTime=2025-02-13T23:00Z&biddingZone.values=10Y1001A1001A45N"
+    },
+    "fetched_at_utc": "2026-02-15T11:12:15.263Z"
+  },
+  {
+    "zone_code": "SE3",
+    "zone_eic": "10Y1001A1001A46L",
+    "zone_name": "Stockholm",
+    "country": "SE",
+    "period_start": "2025-02-12T23:00Z",
+    "period_end": "2025-02-13T23:00Z",
+    "resolution": "PT60M",
+    "currency": "EUR",
+    "unit": "MWH",
+    "prices": [
+      {
+        "position": 1,
+        "price_eur_mwh": 68.78
+      },
+      {
+        "position": 2,
+        "price_eur_mwh": 54.79
+      },
+      {
+        "position": 3,
+        "price_eur_mwh": 46.37
+      },
+      {
+        "position": 4,
+        "price_eur_mwh": 45.98
+      },
+      {
+        "position": 5,
+        "price_eur_mwh": 46.02
+      },
+      {
+        "position": 6,
+        "price_eur_mwh": 59.06
+      },
+      {
+        "position": 7,
+        "price_eur_mwh": 93.5
+      },
+      {
+        "position": 8,
+        "price_eur_mwh": 130.75
+      },
+      {
+        "position": 9,
+        "price_eur_mwh": 150.53
+      },
+      {
+        "position": 10,
+        "price_eur_mwh": 159.2
+      },
+      {
+        "position": 11,
+        "price_eur_mwh": 145.03
+      },
+      {
+        "position": 12,
+        "price_eur_mwh": 133.8
+      },
+      {
+        "position": 13,
+        "price_eur_mwh": 131.16
+      },
+      {
+        "position": 14,
+        "price_eur_mwh": 103.93
+      },
+      {
+        "position": 15,
+        "price_eur_mwh": 103.19
+      },
+      {
+        "position": 16,
+        "price_eur_mwh": 103.18
+      },
+      {
+        "position": 17,
+        "price_eur_mwh": 115.81
+      },
+      {
+        "position": 18,
+        "price_eur_mwh": 144.55
+      },
+      {
+        "position": 19,
+        "price_eur_mwh": 157.15
+      },
+      {
+        "position": 20,
+        "price_eur_mwh": 147.57
+      },
+      {
+        "position": 21,
+        "price_eur_mwh": 129.41
+      },
+      {
+        "position": 22,
+        "price_eur_mwh": 119.9
+      },
+      {
+        "position": 23,
+        "price_eur_mwh": 98.39
+      },
+      {
+        "position": 24,
+        "price_eur_mwh": 96.25
+      }
+    ],
+    "evidence_id": "evr:entsoe:day_ahead_a44:entsoe_dayahead_SE_20250213:b3caf34fc331",
+    "source": {
+      "name": "ENTSO-E Transparency Platform",
+      "publisher": "ENTSO-E",
+      "dataset_id": "day_ahead_prices_A44",
+      "uri": "https://transparency.entsoe.eu/transmission-domain/r2/dayAheadPrices/show?name=&defaultValue=false&viewType=TABLE&areaType=BZN&atch=false&dateTime.dateTime=2025-02-12T23:00Z&biddingZone.values=10Y1001A1001A46L"
+    },
+    "fetched_at_utc": "2026-02-15T11:12:15.624Z"
+  },
+  {
+    "zone_code": "SE3",
+    "zone_eic": "10Y1001A1001A46L",
+    "zone_name": "Stockholm",
+    "country": "SE",
+    "period_start": "2025-02-13T23:00Z",
+    "period_end": "2025-02-14T23:00Z",
+    "resolution": "PT60M",
+    "currency": "EUR",
+    "unit": "MWH",
+    "prices": [
+      {
+        "position": 1,
+        "price_eur_mwh": 115.1
+      },
+      {
+        "position": 2,
+        "price_eur_mwh": 114.4
+      },
+      {
+        "position": 3,
+        "price_eur_mwh": 109.42
+      },
+      {
+        "position": 4,
+        "price_eur_mwh": 100.12
+      },
+      {
+        "position": 5,
+        "price_eur_mwh": 106.93
+      },
+      {
+        "position": 6,
+        "price_eur_mwh": 103.22
+      },
+      {
+        "position": 7,
+        "price_eur_mwh": 163.06
+      },
+      {
+        "position": 8,
+        "price_eur_mwh": 232.43
+      },
+      {
+        "position": 9,
+        "price_eur_mwh": 268.15
+      },
+      {
+        "position": 10,
+        "price_eur_mwh": 215.66
+      },
+      {
+        "position": 11,
+        "price_eur_mwh": 181.69
+      },
+      {
+        "position": 12,
+        "price_eur_mwh": 162.67
+      },
+      {
+        "position": 13,
+        "price_eur_mwh": 146.16
+      },
+      {
+        "position": 14,
+        "price_eur_mwh": 131.53
+      },
+      {
+        "position": 15,
+        "price_eur_mwh": 126.41
+      },
+      {
+        "position": 16,
+        "price_eur_mwh": 130.53
+      },
+      {
+        "position": 17,
+        "price_eur_mwh": 198.44
+      },
+      {
+        "position": 18,
+        "price_eur_mwh": 291.93
+      },
+      {
+        "position": 19,
+        "price_eur_mwh": 274.15
+      },
+      {
+        "position": 20,
+        "price_eur_mwh": 220.37
+      },
+      {
+        "position": 21,
+        "price_eur_mwh": 149.28
+      },
+      {
+        "position": 22,
+        "price_eur_mwh": 135.84
+      },
+      {
+        "position": 23,
+        "price_eur_mwh": 111.22
+      },
+      {
+        "position": 24,
+        "price_eur_mwh": 70.29
+      }
+    ],
+    "evidence_id": "evr:entsoe:day_ahead_a44:entsoe_dayahead_SE_20250213:8db8d19b9b74",
+    "source": {
+      "name": "ENTSO-E Transparency Platform",
+      "publisher": "ENTSO-E",
+      "dataset_id": "day_ahead_prices_A44",
+      "uri": "https://transparency.entsoe.eu/transmission-domain/r2/dayAheadPrices/show?name=&defaultValue=false&viewType=TABLE&areaType=BZN&atch=false&dateTime.dateTime=2025-02-13T23:00Z&biddingZone.values=10Y1001A1001A46L"
+    },
+    "fetched_at_utc": "2026-02-15T11:12:15.624Z"
+  },
+  {
+    "zone_code": "SE4",
+    "zone_eic": "10Y1001A1001A47J",
+    "zone_name": "Malmö",
+    "country": "SE",
+    "period_start": "2025-02-12T23:00Z",
+    "period_end": "2025-02-13T23:00Z",
+    "resolution": "PT60M",
+    "currency": "EUR",
+    "unit": "MWH",
+    "prices": [
+      {
+        "position": 1,
+        "price_eur_mwh": 119.99
+      },
+      {
+        "position": 2,
+        "price_eur_mwh": 93.78
+      },
+      {
+        "position": 3,
+        "price_eur_mwh": 77.21
+      },
+      {
+        "position": 4,
+        "price_eur_mwh": 77.24
+      },
+      {
+        "position": 6,
+        "price_eur_mwh": 100
+      },
+      {
+        "position": 7,
+        "price_eur_mwh": 137.69
+      },
+      {
+        "position": 8,
+        "price_eur_mwh": 190.57
+      },
+      {
+        "position": 9,
+        "price_eur_mwh": 223.97
+      },
+      {
+        "position": 10,
+        "price_eur_mwh": 214.91
+      },
+      {
+        "position": 11,
+        "price_eur_mwh": 199.19
+      },
+      {
+        "position": 12,
+        "price_eur_mwh": 180.45
+      },
+      {
+        "position": 13,
+        "price_eur_mwh": 168.58
+      },
+      {
+        "position": 14,
+        "price_eur_mwh": 132.84
+      },
+      {
+        "position": 15,
+        "price_eur_mwh": 136.45
+      },
+      {
+        "position": 16,
+        "price_eur_mwh": 137.52
+      },
+      {
+        "position": 17,
+        "price_eur_mwh": 152.12
+      },
+      {
+        "position": 18,
+        "price_eur_mwh": 204.36
+      },
+      {
+        "position": 19,
+        "price_eur_mwh": 200.87
+      },
+      {
+        "position": 20,
+        "price_eur_mwh": 169.08
+      },
+      {
+        "position": 21,
+        "price_eur_mwh": 137.31
+      },
+      {
+        "position": 22,
+        "price_eur_mwh": 121.44
+      },
+      {
+        "position": 23,
+        "price_eur_mwh": 100.37
+      },
+      {
+        "position": 24,
+        "price_eur_mwh": 97.24
+      }
+    ],
+    "evidence_id": "evr:entsoe:day_ahead_a44:entsoe_dayahead_SE_20250213:81a37a415111",
+    "source": {
+      "name": "ENTSO-E Transparency Platform",
+      "publisher": "ENTSO-E",
+      "dataset_id": "day_ahead_prices_A44",
+      "uri": "https://transparency.entsoe.eu/transmission-domain/r2/dayAheadPrices/show?name=&defaultValue=false&viewType=TABLE&areaType=BZN&atch=false&dateTime.dateTime=2025-02-12T23:00Z&biddingZone.values=10Y1001A1001A47J"
+    },
+    "fetched_at_utc": "2026-02-15T11:12:15.962Z"
+  },
+  {
+    "zone_code": "SE4",
+    "zone_eic": "10Y1001A1001A47J",
+    "zone_name": "Malmö",
+    "country": "SE",
+    "period_start": "2025-02-13T23:00Z",
+    "period_end": "2025-02-14T23:00Z",
+    "resolution": "PT60M",
+    "currency": "EUR",
+    "unit": "MWH",
+    "prices": [
+      {
+        "position": 1,
+        "price_eur_mwh": 124.43
+      },
+      {
+        "position": 2,
+        "price_eur_mwh": 116.38
+      },
+      {
+        "position": 3,
+        "price_eur_mwh": 123.38
+      },
+      {
+        "position": 4,
+        "price_eur_mwh": 122.54
+      },
+      {
+        "position": 5,
+        "price_eur_mwh": 107.17
+      },
+      {
+        "position": 6,
+        "price_eur_mwh": 128.19
+      },
+      {
+        "position": 7,
+        "price_eur_mwh": 161.47
+      },
+      {
+        "position": 8,
+        "price_eur_mwh": 229.99
+      },
+      {
+        "position": 9,
+        "price_eur_mwh": 266.37
+      },
+      {
+        "position": 10,
+        "price_eur_mwh": 215.32
+      },
+      {
+        "position": 11,
+        "price_eur_mwh": 181.23
+      },
+      {
+        "position": 12,
+        "price_eur_mwh": 162.23
+      },
+      {
+        "position": 13,
+        "price_eur_mwh": 146.26
+      },
+      {
+        "position": 14,
+        "price_eur_mwh": 133.55
+      },
+      {
+        "position": 15,
+        "price_eur_mwh": 129.11
+      },
+      {
+        "position": 16,
+        "price_eur_mwh": 131.4
+      },
+      {
+        "position": 17,
+        "price_eur_mwh": 195.43
+      },
+      {
+        "position": 18,
+        "price_eur_mwh": 292.13
+      },
+      {
+        "position": 19,
+        "price_eur_mwh": 274.49
+      },
+      {
+        "position": 20,
+        "price_eur_mwh": 220.54
+      },
+      {
+        "position": 21,
+        "price_eur_mwh": 179.32
+      },
+      {
+        "position": 22,
+        "price_eur_mwh": 159.95
+      },
+      {
+        "position": 23,
+        "price_eur_mwh": 143.96
+      },
+      {
+        "position": 24,
+        "price_eur_mwh": 106.91
+      }
+    ],
+    "evidence_id": "evr:entsoe:day_ahead_a44:entsoe_dayahead_SE_20250213:d15f3c4c36a3",
+    "source": {
+      "name": "ENTSO-E Transparency Platform",
+      "publisher": "ENTSO-E",
+      "dataset_id": "day_ahead_prices_A44",
+      "uri": "https://transparency.entsoe.eu/transmission-domain/r2/dayAheadPrices/show?name=&defaultValue=false&viewType=TABLE&areaType=BZN&atch=false&dateTime.dateTime=2025-02-13T23:00Z&biddingZone.values=10Y1001A1001A47J"
+    },
+    "fetched_at_utc": "2026-02-15T11:12:15.962Z"
+  }
+]

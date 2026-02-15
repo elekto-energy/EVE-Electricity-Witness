@@ -1,0 +1,8 @@
+{
+  "run_id": "test_run2",
+  "created_at_utc": "2026-02-15T10:57:22Z",
+  "input_dir": "D:\\EVE11\\Projects\\013_elekto_eu\\data\\raw",
+  "file_count": 1,
+  "files_sha256_path": "D:\\EVE11\\Projects\\013_elekto_eu\\manifests\\test_run2.files.sha256",
+  "root_hash_path": "D:\\EVE11\\Projects\\013_elekto_eu\\manifests\\test_run2.root_hash.txt"
+}

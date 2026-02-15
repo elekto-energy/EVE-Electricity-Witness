@@ -34,7 +34,8 @@ def root_hash_of_files_sha256(files_sha256_path: Path) -> str:
 
 
 if __name__ == "__main__":
-    import argparse, datetime, json
+    import argparse, json
+    from datetime import datetime, timezone
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--input_dir", required=True)
@@ -55,7 +56,7 @@ if __name__ == "__main__":
 
     manifest = {
         "run_id": args.run_id,
-        "created_at_utc": datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+        "created_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
         "input_dir": str(input_dir),
         "file_count": sum(1 for _ in iter_files(input_dir)),
         "files_sha256_path": str(files_sha256),

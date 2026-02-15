@@ -61,11 +61,60 @@ taxonomy_energy:
 
 agents:
   routing:
-    ingest_boilerplate: QWEN_LOCAL
-    schema_validation: CODEFACTORY
-    compute_or_logic: CODEFACTORY
+    # Deterministic core
+    ingest_scripts: CODEFACTORY
+    canonical_mapping: CODEFACTORY
+    compute_engine: CODEFACTORY
+    schema_and_validation: CODEFACTORY
+    manifest_and_hash_integration: CODEFACTORY
+    tests_and_golden_fixtures: CODEFACTORY
+
+    # Scaffolding only
+    scaffolding_routes_and_wiring: QWEN_LOCAL
+
+    # UI/Docs only
     ui_components: CLAUDE_API
-    docs: CLAUDE_API
+    docs_and_methodology_text: CLAUDE_API
+
+  constraints:
+    CODEFACTORY:
+      - "Must not invent data. All defaults that affect outputs must be evidence-backed or explicitly flagged as assumptions in canonical store."
+      - "All compute changes require golden tests."
+      - "All ingests must produce manifest.json + files.sha256 + root_hash.txt with stable ordering."
+
+    QWEN_LOCAL:
+      - "Scaffolding only: file/folder skeletons, empty handlers, exports."
+      - "May not implement compute logic or embed domain constants."
+
+    CLAUDE_API:
+      - "Scope: apps/web/** and docs/** only."
+      - "May generate React/Next UI and text, but MUST NOT write ingestion/compute/schema/manifest code."
+      - "Must not hardcode domain values (EIC codes, tax rates, COP values, prices)."
+      - "UI must read values from canonical store/API only."
+      - "Every displayed metric must be linkable to evidence_id and/or manifest/root_hash."
+
+  gates:
+    - id: GATE_A_SCOPE_ENFORCEMENT
+      rule: "Claude changes limited to apps/web/** and docs/**. Any change outside these paths must be rejected."
+    - id: GATE_B_GOLDEN_TESTS
+      rule: "Any change under packages/compute/** or affecting derived outputs must include/refresh golden tests."
+    - id: GATE_C_NO_UI_CONSTANTS
+      rule: "UI may not contain authoritative domain constants. Must load registries/canonical data."
+    - id: GATE_D_MANIFEST_DISCIPLINE
+      rule: "Every ingest run produces manifest.json + files.sha256 + root_hash.txt; reproducible given same inputs."
+
+  files_policy:
+    claude_allowlist:
+      - "apps/web/**"
+      - "docs/**"
+    claude_denylist:
+      - "packages/evidence/**"
+      - "packages/compute/**"
+      - "packages/schemas/**"
+      - "scripts/**"
+      - "manifests/**"
+      - "data/**"
+
   language_strategy:
     witness_package: TypeScript
     evidence_scripts: Python (hash_tree.py, make_manifest.py)
