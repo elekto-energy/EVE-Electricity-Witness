@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://elekto.se/schemas/EvidenceRecord.schema.json",
+  "title": "EvidenceRecord",
+  "type": "object",
+  "required": [
+    "evidence_id",
+    "source",
+    "retrieved_at_utc",
+    "license",
+    "raw_artifacts",
+    "canonical_artifacts",
+    "transforms",
+    "hashes"
+  ],
+  "properties": {
+    "evidence_id": { "type": "string", "minLength": 10 },
+    "source": {
+      "type": "object",
+      "required": ["name", "publisher", "dataset_id", "uri"],
+      "properties": {
+        "name": { "type": "string" },
+        "publisher": { "type": "string" },
+        "dataset_id": { "type": "string" },
+        "uri": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "retrieved_at_utc": { "type": "string" },
+    "license": { "type": "string" },
+    "raw_artifacts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ArtifactRef" }
+    },
+    "canonical_artifacts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ArtifactRef" }
+    },
+    "derived_artifacts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ArtifactRef" }
+    },
+    "transforms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "version", "description"],
+        "properties": {
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "description": { "type": "string" },
+          "params": { "type": "object" }
+        }
+      }
+    },
+    "hashes": {
+      "type": "object",
+      "required": ["files_sha256", "root_hash_sha256"],
+      "properties": {
+        "files_sha256": { "type": "string" },
+        "root_hash_sha256": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "ArtifactRef": {
+      "type": "object",
+      "required": ["path", "sha256", "bytes"],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string" },
+        "bytes": { "type": "integer" }
+      }
+    }
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://elekto.se/schemas/IngestManifest.v2.schema.json",
+  "title": "IngestManifest (Phase 1+ target)",
+  "description": "Rich manifest with source registry, per-file staging, ingest metadata. Migrate from Phase 0 when pipeline is proven.",
+  "type": "object",
+  "required": ["manifest_id", "source", "ingest", "files", "root_hash", "created_at"],
+  "properties": {
+    "manifest_id": {
+      "type": "string",
+      "pattern": "^IM-[a-z_]+-[0-9]{8}-[a-f0-9]{8}$"
+    },
+    "source": {
+      "type": "object",
+      "required": ["name", "url", "license", "dataset_id"],
+      "properties": {
+        "name": { "type": "string", "enum": ["entsoe_day_ahead", "eurostat_hdd", "eurostat_price_components", "smhi_temperature", "copernicus_temperature", "building_profiles"] },
+        "url": { "type": "string", "format": "uri" },
+        "license": { "type": "string" },
+        "dataset_id": { "type": "string" },
+        "api_endpoint": { "type": "string", "format": "uri" }
+      }
+    },
+    "ingest": {
+      "type": "object",
+      "required": ["fetched_at", "script", "script_version"],
+      "properties": {
+        "fetched_at": { "type": "string", "format": "date-time" },
+        "script": { "type": "string" },
+        "script_version": { "type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "parameters": { "type": "object" },
+        "duration_ms": { "type": "integer" }
+      }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256", "size_bytes", "stage"],
+        "properties": {
+          "path": { "type": "string" },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "size_bytes": { "type": "integer" },
+          "stage": { "type": "string", "enum": ["raw", "canonical", "derived"] }
+        }
+      }
+    },
+    "root_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "record_count": { "type": "integer" },
+    "created_at": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

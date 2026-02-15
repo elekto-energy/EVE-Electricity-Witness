@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://elekto.se/schemas/EvidenceRecord.v2.schema.json",
+  "title": "EvidenceRecord (Phase 1+ target)",
+  "description": "Rich evidence record with computation trail, assumptions, period/zone. Migrate from Phase 0 schema when first real ingest is verified.",
+  "type": "object",
+  "required": ["record_id", "source_id", "dataset_version", "value", "unit", "computation", "created_at"],
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "pattern": "^ER-[0-9]{8}-[a-f0-9]{8}$",
+      "description": "Unique evidence record ID. Format: ER-YYYYMMDD-<8 hex chars>"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Reference to the IngestManifest that produced the source data"
+    },
+    "dataset_version": {
+      "type": "string",
+      "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "value": { "type": "number" },
+    "unit": {
+      "type": "string",
+      "enum": ["EUR/MWh", "EUR/kWh", "kWh", "kWh/yr", "kWh/mo", "W/K", "HDD", "degC", "percent", "EUR", "EUR/yr", "years", "dimensionless"]
+    },
+    "country": { "type": "string", "pattern": "^[A-Z]{2}$" },
+    "bidding_zone": { "type": "string" },
+    "period": {
+      "type": "object",
+      "required": ["start", "end", "granularity"],
+      "properties": {
+        "start": { "type": "string", "format": "date-time" },
+        "end": { "type": "string", "format": "date-time" },
+        "granularity": { "type": "string", "enum": ["hourly", "daily", "monthly", "annual"] }
+      }
+    },
+    "computation": {
+      "type": "object",
+      "required": ["method", "methodology_version"],
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["direct_extract", "linear_scale", "ua_calculation", "q_heat_calculation", "cost_calculation", "cop_adjustment", "payback_calculation", "tco_calculation", "aggregation"]
+        },
+        "methodology_version": { "type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "formula": { "type": "string" },
+        "inputs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "value", "unit"],
+            "properties": {
+              "name": { "type": "string" },
+              "value": { "type": "number" },
+              "unit": { "type": "string" },
+              "source_record_id": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "value", "source"],
+        "properties": {
+          "key": { "type": "string" },
+          "value": { "type": ["number", "string"] },
+          "unit": { "type": "string" },
+          "source": { "type": "string" }
+        }
+      }
+    },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "created_at": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}
