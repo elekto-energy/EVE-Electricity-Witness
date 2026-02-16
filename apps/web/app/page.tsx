@@ -40,7 +40,7 @@ const SOURCE_COLORS: Record<string, string> = {
   "Energimyndigheten": "#10b981",
   "SVK": "#f59e0b",
   "Second Opinion": "#8b5cf6",
-  "ELEKTO": "#ec4899",
+  "EVE": "#ec4899",
 };
 
 export default function HomePage() {

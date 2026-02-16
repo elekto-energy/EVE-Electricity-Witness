@@ -19,8 +19,8 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        ELEKTO
-        <span>Verified Energy Platform</span>
+        EVE
+        <span>Evidence & Verification Engine</span>
       </div>
       <nav className="sidebar-nav">
         {NAV_ITEMS.map((item) => {

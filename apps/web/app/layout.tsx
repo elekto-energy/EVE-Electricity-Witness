@@ -3,8 +3,8 @@ import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
 
 export const metadata = {
-  title: "ELEKTO — Energy Transparency Platform",
-  description: "Open, neutral, evidence-driven energy data. No opinions. Only data + method.",
+  title: "EVE Electricity Witness",
+  description: "Verified archive of enacted Swedish electricity market decisions and system events.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

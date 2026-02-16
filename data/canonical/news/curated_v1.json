@@ -12,7 +12,7 @@
     {
       "id": "news_20260216_electricity_taxes",
       "date": "2026-02-16",
-      "source": "ELEKTO",
+      "source": "EVE",
       "source_url": null,
       "category": "nätreglering",
       "title": "Svensk energipolitik — beslut för beslut, 1951–2026",
@@ -23,7 +23,7 @@
     {
       "id": "news_20260216_capacity_layers",
       "date": "2026-02-16",
-      "source": "ELEKTO",
+      "source": "EVE",
       "source_url": null,
       "category": "flaskhalsar",
       "title": "Ny analys: Flaskhalslösningar — från central till lokal nivå",
@@ -34,7 +34,7 @@
     {
       "id": "news_20260216_ringhals_timeline",
       "date": "2026-02-16",
-      "source": "ELEKTO",
+      "source": "EVE",
       "source_url": null,
       "category": "produktion",
       "title": "Ny analys: Ringhals 1 & 2 — Vad sa de? Vad hände?",
@@ -45,7 +45,7 @@
     {
       "id": "news_20260216_bottleneck_solutions",
       "date": "2026-02-16",
-      "source": "ELEKTO",
+      "source": "EVE",
       "source_url": null,
       "category": "flaskhalsar",
       "title": "Ny analys: Lösa flaskhalsproblemen med strategisk energiplacering",
