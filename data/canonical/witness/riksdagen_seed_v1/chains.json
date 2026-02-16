@@ -1,0 +1,152 @@
+{
+  "_meta": {
+    "dataset": "riksdagen_seed_v1",
+    "witness_rule": "TR7: NO interpretation. Each step is a document reference, not a conclusion."
+  },
+  "chains": [
+    {
+      "id": "nuclear_chain_01",
+      "topic_id": "nuclear_policy",
+      "title": "Kärnkraft — från avvecklingsbeslut till nybyggnation",
+      "title_en": "Nuclear — from phase-out decision to new-build legislation",
+      "steps": [
+        {
+          "position": 1,
+          "doc_type": "Proposition",
+          "doc_id": "prop-1996/97:176",
+          "title": "Prop. 1996/97:176 — Energipolitik",
+          "date": "1997-06-01",
+          "body": "Riksdagen",
+          "uri": "https://data.riksdagen.se/dokument/GK03176",
+          "description_neutral": "Government bill proposing nuclear phase-out framework with sequential reactor closures."
+        },
+        {
+          "position": 2,
+          "doc_type": "Betänkande",
+          "doc_id": "bet-1996/97:NU12",
+          "title": "Bet. 1996/97:NU12 — Energipolitik",
+          "date": "1997-06-01",
+          "body": "Näringsutskottet",
+          "uri": "https://data.riksdagen.se/dokument/GK01NU12",
+          "description_neutral": "Committee on Industry and Trade report on energy policy proposition."
+        },
+        {
+          "position": 3,
+          "doc_type": "SFS",
+          "doc_id": "SFS 1984:3",
+          "title": "Lag (1984:3) om kärnteknisk verksamhet (amended)",
+          "date": "1984-01-01",
+          "body": "Regeringen",
+          "uri": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-19843-om-karnteknisk-verksamhet_sfs-1984-3/",
+          "description_neutral": "Act on Nuclear Activities — base legislation governing nuclear operations in Sweden, amended multiple times."
+        },
+        {
+          "position": 4,
+          "doc_type": "Proposition",
+          "doc_id": "prop-2022/23:16",
+          "title": "Prop. 2022/23:16 — Fler satisfactionlösningar för nya kärnreaktorer",
+          "date": "2022-11-10",
+          "body": "Riksdagen",
+          "uri": "https://data.riksdagen.se/dokument/HA0316",
+          "description_neutral": "Government bill removing the prohibition on new nuclear reactors beyond existing sites, allowing new-build at new locations."
+        }
+      ]
+    },
+    {
+      "id": "eltax_chain_01",
+      "topic_id": "electricity_taxes_fees",
+      "title": "Energiskatt på el — lagstiftningskedja",
+      "title_en": "Electricity energy tax — legislative chain",
+      "steps": [
+        {
+          "position": 1,
+          "doc_type": "Proposition",
+          "doc_id": "prop-2016/17:1",
+          "title": "Prop. 2016/17:1 — Budgetpropositionen (energiskattedelen)",
+          "date": "2016-09-20",
+          "body": "Riksdagen",
+          "uri": "https://data.riksdagen.se/dokument/H4031",
+          "description_neutral": "Budget bill containing proposed changes to energy tax on electricity, including rate adjustments."
+        },
+        {
+          "position": 2,
+          "doc_type": "Betänkande",
+          "doc_id": "bet-2016/17:SkU1",
+          "title": "Bet. 2016/17:SkU1 — Skatter",
+          "date": "2016-12-01",
+          "body": "Skatteutskottet",
+          "uri": "https://data.riksdagen.se/dokument/H401SkU1",
+          "description_neutral": "Tax Committee report on the budget bill's tax provisions including energy tax rates."
+        },
+        {
+          "position": 3,
+          "doc_type": "Riksdagsbeslut",
+          "doc_id": "rskr-2016/17:68",
+          "title": "Riksdagsskrivelse 2016/17:68",
+          "date": "2016-12-20",
+          "body": "Riksdagen",
+          "uri": "https://data.riksdagen.se/dokument/H410068",
+          "description_neutral": "Parliamentary decision confirming adoption of the tax provisions."
+        },
+        {
+          "position": 4,
+          "doc_type": "SFS",
+          "doc_id": "SFS 1994:1776",
+          "title": "Lag (1994:1776) om skatt på energi (amended 2017)",
+          "date": "1994-12-15",
+          "body": "Regeringen",
+          "uri": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-19941776-om-skatt-pa-energi_sfs-1994-1776/",
+          "description_neutral": "Energy Tax Act — primary legislation governing taxation of electricity and fuels in Sweden."
+        }
+      ]
+    },
+    {
+      "id": "bbr_chain_01",
+      "topic_id": "building_energy_requirements",
+      "title": "Byggnaders energikrav — EU-direktiv till BBR",
+      "title_en": "Building energy requirements — EU directive to BBR",
+      "steps": [
+        {
+          "position": 1,
+          "doc_type": "EU-direktiv",
+          "doc_id": "EPBD-2010/31/EU",
+          "title": "Direktiv 2010/31/EU — Energy Performance of Buildings (EPBD)",
+          "date": "2010-05-19",
+          "body": "Europaparlamentet och Rådet",
+          "uri": "https://eur-lex.europa.eu/legal-content/SV/TXT/?uri=CELEX:32010L0031",
+          "description_neutral": "EU directive on energy performance of buildings requiring member states to set minimum energy requirements."
+        },
+        {
+          "position": 2,
+          "doc_type": "Proposition",
+          "doc_id": "prop-2005/06:145",
+          "title": "Prop. 2005/06:145 — Nationellt program för energieffektivisering",
+          "date": "2006-03-30",
+          "body": "Riksdagen",
+          "uri": "https://data.riksdagen.se/dokument/GT03145",
+          "description_neutral": "Government bill implementing building energy efficiency requirements into Swedish law."
+        },
+        {
+          "position": 3,
+          "doc_type": "Myndighetsföreskrift",
+          "doc_id": "BFS 2011:6",
+          "title": "Boverkets byggregler (BBR) — avsnitt 9 Energihushållning",
+          "date": "2011-01-01",
+          "body": "Boverket",
+          "uri": "https://www.boverket.se/sv/lag--ratt/forfattningssamling/gallande/bbr---bfs-20116/",
+          "description_neutral": "Boverket's building rules section 9 — energy conservation requirements including primary energy numbers and U-values."
+        },
+        {
+          "position": 4,
+          "doc_type": "EU-direktiv (recast)",
+          "doc_id": "EPBD-2024/1275",
+          "title": "Direktiv (EU) 2024/1275 — EPBD recast",
+          "date": "2024-04-12",
+          "body": "Europaparlamentet och Rådet",
+          "uri": "https://eur-lex.europa.eu/legal-content/SV/TXT/?uri=CELEX:32024L1275",
+          "description_neutral": "Recast EPBD directive with zero-emission building requirements and renovation targets."
+        }
+      ]
+    }
+  ]
+}

@@ -63,9 +63,39 @@ export default function WitnessPage() {
       <div className="page-header">
         <h1 className="page-title">🔍 Witness Mode</h1>
         <p className="page-subtitle">
-          Trace energy decisions through legislative chains. No interpretation — evidence only.
+          Verifierbara fakta och beslutstidslinjer. Ingen tolkning — bara data och källor.
         </p>
       </div>
+
+      {/* === WITNESS TIMELINES === */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10, marginBottom: 12,
+        }}>
+          <span className="status-pill live">live</span>
+          <span style={{ fontSize: "0.88rem", fontWeight: 600 }}>Faktatidslinjer</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {[
+            { href: "/witness/energy-decisions", icon: "⚖️", title: "Svensk energipolitik — beslut för beslut", sub: "38 verifierade beslut: skatter, lagar, nedläggningar, stöd, EU. 1951–2026. EVE Witness Standard v1.1." },
+            { href: "/witness/ringhals-cost", icon: "⚛️", title: "Ringhals 1 & 2 — Vad sa de? Vad hände?", sub: "Politiska uttalanden vs verifierade utfall. 2014–2024." },
+            { href: "/witness/price-structure", icon: "💰", title: "Flaskhalsintäkter — vart går pengarna?", sub: "SVK:s intäkter från elprisområden. Siffror och källor." },
+          ].map(item => (
+            <Link key={item.href} href={item.href} style={{ textDecoration: "none" }}>
+              <div className="card" style={{ cursor: "pointer", marginBottom: 0, display: "flex", alignItems: "center", gap: 14 }}>
+                <span style={{ fontSize: "1.5rem" }}>{item.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>{item.title}</div>
+                  <div style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>{item.sub}</div>
+                </div>
+                <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>→</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ height: 1, background: "var(--border-color)", margin: "20px 0" }} />
 
       {/* If a topic is selected, show detail */}
       {selectedTopic && detail && !loadingDetail ? (

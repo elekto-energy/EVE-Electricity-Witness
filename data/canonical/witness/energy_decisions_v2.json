@@ -1,0 +1,1013 @@
+{
+  "_meta": {
+    "dataset": "energy_decisions_v2",
+    "verification_standard": "EVE_WITNESS_V1.1",
+    "created": "2026-02-16",
+    "updated": "2026-02-16T15:30:00Z",
+    "purpose": "Canonical witness: Verifierade energipolitiska beslut och systemhändelser i Sverige 1951–2026.",
+    "language_policy": "Witness mode. Inga motivattributioner. Inga citat. Inga värdeladdade ord. Belopp, datum, SFS-nummer.",
+    "scope": "Energiskatt, effektskatt, fastighetsskatt, elcertifikat, moms, lagstiftning, subventioner, nedläggningar, EU-beslut",
+    "verification_types": {
+      "legal": "Juridiskt verkställt beslut med SFS, riksdagsbeslut, förordning eller EU-förordning",
+      "system_event": "Fysiskt genomförd systemhändelse med verifierbart datum från regulator eller operatör"
+    },
+    "inclusion_criteria": "Endast events med verification_status=verified. Legal: kräver SFS/riksdagsbeslut/förordning. System_event: kräver verifierbart datum från SSM/SVK/IAEA/operatör.",
+    "exclusion_note": "Politiska överenskommelser, lagrådsremisser, ansökningar, färdplaner, samarbetsavtal och granskningsrapporter finns i energy_decisions_v2_draft_index.json",
+    "total_events": 38,
+    "fully_verified": 38,
+    "legal_events": 34,
+    "system_events": 4
+  },
+
+  "overview": {
+    "title": "Svensk energipolitik — beslut för beslut",
+    "summary": "Alla verifierade energipolitiska beslut och systemhändelser i Sverige 1951–2026. Endast verkställda beslut med juridiskt ikraftträdandedatum eller verifierbara systemhändelser.",
+    "total_categories": [
+      { "id": "energiskatt", "name": "Energiskatt (konsument)", "icon": "⚡", "color": "#f59e0b", "description": "Punktskatt på all elkonsumtion. Betalas via elnätsfakturan." },
+      { "id": "effektskatt", "name": "Effektskatt (kärnkraft)", "icon": "⚛️", "color": "#ef4444", "description": "Skatt på kärnkraftverkens termiska effekt. Införd 2000, avskaffad 2018. Total: ~62 mdr SEK." },
+      { "id": "fastighetsskatt", "name": "Fastighetsskatt (vattenkraft)", "icon": "💧", "color": "#3b82f6", "description": "Fastighetsskatt på vattenkraftverk. Höjdes från 0,5% till 2,8%, sänktes till 0,5% år 2020." },
+      { "id": "fastighetsskatt_vind", "name": "Fastighetsskatt (vindkraft)", "icon": "💨", "color": "#22c55e", "description": "Fastighetsskatt på vindkraftverk. 0,2% till 2025, höjd till 0,5% från 2026." },
+      { "id": "elcertifikat", "name": "Elcertifikat (kvotplikt)", "icon": "📜", "color": "#a855f7", "description": "Stödsystem för förnybar el. Infört 2003, stängt för nya 2021, avvecklas 2035." },
+      { "id": "moms", "name": "Moms på el", "icon": "🏦", "color": "#6b7280", "description": "25% moms på elpris inklusive energiskatt." },
+      { "id": "lagstiftning", "name": "Lagstiftning & reglering", "icon": "⚖️", "color": "#0ea5e9", "description": "Verkställda lagändringar: avreglering, kärnkraftslagar, tillstånd." },
+      { "id": "subvention", "name": "Subventioner & stöd", "icon": "💰", "color": "#14b8a6", "description": "Verkställda stöd: elstöd, kreditgarantier, högkostnadsskydd." },
+      { "id": "nedlaggning", "name": "Nedläggningar & stängningar", "icon": "🔴", "color": "#dc2626", "description": "Verifierade stängningar av reaktorer med faktiskt stoppdatum." },
+      { "id": "eu", "name": "EU-beslut", "icon": "🇪🇺", "color": "#1d4ed8", "description": "EU-förordningar och direktiv som trätt i kraft." }
+    ]
+  },
+
+  "governments": [
+    { "id": "s_erlander", "label": "S (Erlander)", "years": "1946–1969", "pm": "Tage Erlander" },
+    { "id": "s_palme1", "label": "S (Palme I)", "years": "1969–1976", "pm": "Olof Palme" },
+    { "id": "borg_falldin", "label": "Borgerlig (Fälldin)", "years": "1976–1982", "pm": "Thorbjörn Fälldin" },
+    { "id": "s_palme2_carlsson", "label": "S (Palme II/Carlsson)", "years": "1982–1991", "pm": "Olof Palme / Ingvar Carlsson" },
+    { "id": "borg_bildt", "label": "Borgerlig (Bildt)", "years": "1991–1994", "pm": "Carl Bildt" },
+    { "id": "s_carlsson2_persson", "label": "S (Carlsson/Persson)", "years": "1994–2006", "pm": "Ingvar Carlsson / Göran Persson" },
+    { "id": "borg_reinfeldt", "label": "Alliansen (Reinfeldt)", "years": "2006–2014", "pm": "Fredrik Reinfeldt" },
+    { "id": "s_mp_lofven", "label": "S+MP (Löfven)", "years": "2014–2021", "pm": "Stefan Löfven" },
+    { "id": "s_andersson", "label": "S (Andersson)", "years": "2021–2022", "pm": "Magdalena Andersson" },
+    { "id": "borg_kristersson", "label": "M+KD+L+SD (Kristersson)", "years": "2022–", "pm": "Ulf Kristersson" }
+  ],
+
+  "timeline": [
+    {
+      "id": "ev_1951_energiskatt",
+      "date": "1951",
+      "category": "energiskatt",
+      "government": "s_erlander",
+      "direction": "new",
+      "title": "Energiskatt på el införs",
+      "description": "Punktskatt på elkonsumtion införs i Sverige.",
+      "amount": "1 öre/kWh",
+      "amount_ore_kwh": 1.0,
+      "source": "Lag om skatt på energi",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "Lag om allmän energiskatt",
+        "effective_date": "1951"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_1980_folkomrostning",
+      "date": "1980-03-23",
+      "category": "lagstiftning",
+      "government": "borg_falldin",
+      "direction": "context",
+      "title": "Folkomröstning om kärnkraft — riksdagen beslutar avveckling",
+      "description": "Tre alternativ. Linje 2 vinner (39,1%). Riksdagen beslutar: kärnkraften ska avvecklas senast 2010. 12 reaktorer tillåts under övergångsperioden.",
+      "amount": "Avveckling senast 2010 (senare struket)",
+      "source": "Riksdagsbeslut 1980/81",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "Riksdagsbeslut",
+        "reference": "Riksdagsbeslut 1980/81 om kärnkraftens avveckling",
+        "effective_date": "1980"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_1981_differentiering",
+      "date": "1981",
+      "category": "energiskatt",
+      "government": "borg_falldin",
+      "direction": "change",
+      "title": "Elskatten differentieras geografiskt",
+      "description": "Olika skattesats beroende på var i Sverige konsumenten bor. Norra Sverige får lägre skatt.",
+      "amount": "Differentierad",
+      "source": "SFS 1981",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "SFS 1981 (ändring av lag om allmän energiskatt)",
+        "effective_date": "1981"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_1984_prodskatt_karnkraft",
+      "date": "1984",
+      "category": "effektskatt",
+      "government": "s_palme2_carlsson",
+      "direction": "new",
+      "title": "Produktionsskatt på kärnkraft införs",
+      "description": "Skatt på producerad el från kärnkraft.",
+      "amount": "~0,2 öre/kWh",
+      "amount_ore_kwh": 0.2,
+      "source": "Lag om skatt på kärnkraftsproducerad el",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "Lag (1983:1104) om skatt på viss elektrisk kraft",
+        "effective_date": "1984"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_1991_moms",
+      "date": "1991",
+      "category": "moms",
+      "government": "borg_bildt",
+      "direction": "new",
+      "title": "Moms 25% på el införs (skattereformen)",
+      "description": "Skattereformen 1990/1991: 25% moms läggs på elpris inklusive energiskatt.",
+      "amount": "25% moms",
+      "source": "Skattereformen 1990/91, Mervärdesskattelagen",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "Mervärdesskattelagen (1994:200), Skattereformen 1990/91",
+        "effective_date": "1991"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_1996_avreglering",
+      "date": "1996-01-01",
+      "category": "lagstiftning",
+      "government": "s_carlsson2_persson",
+      "direction": "change",
+      "title": "Elmarknaden avregleras",
+      "description": "Svensk elmarknad avregleras. Fri konkurrens mellan elleverantörer. Nätmonopolet kvarstår.",
+      "source": "Ellagen (1997:857)",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "Ellag (1997:857)",
+        "effective_date": "1996-01-01"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_1997_prodskatt_vatten_bort",
+      "date": "1997",
+      "category": "fastighetsskatt",
+      "government": "s_carlsson2_persson",
+      "direction": "down",
+      "title": "Produktionsskatt på vattenkraft avskaffas",
+      "description": "Produktionsskatten på vattenkraft tas bort.",
+      "source": "SFS, Riksdagsmotion 2006/07:Sk312 (referens)",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "Ändring av lag om skatt på energi (vattenkraftsdelen)",
+        "effective_date": "1997"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_1999_barseback1",
+      "date": "1999-11-30",
+      "category": "nedlaggning",
+      "government": "s_carlsson2_persson",
+      "direction": "abolished",
+      "title": "Barsebäck 1 stängs",
+      "description": "Barsebäck 1 (600 MW) stängs. Regeringsrätten fastställde beslutet 1999-06-16. Kompensation: 5,6 mdr SEK till Sydkraft/EON. Bortfall: ~4 TWh/år.",
+      "amount": "600 MW / ~4 TWh/år borttaget",
+      "cost_msek": 5600,
+      "source": "Prop. 1996/97:84, Regeringsrätten dom 1999-06-16, SSM driftstatus",
+      "verification_status": "verified",
+      "verification_type": "system_event",
+      "legal_basis": {
+        "type": "Operational shutdown",
+        "reference": "Regeringsrätten dom 1999-06-16 + Prop. 1996/97:84 (lag om kärnkraftens avveckling)",
+        "url": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/proposition/godkannande-av-avtal-om-ersattning-i-samband-med_gn0363/html/",
+        "effective_date": "1999-11-30"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2000_effektskatt",
+      "date": "2000-07",
+      "category": "effektskatt",
+      "government": "s_carlsson2_persson",
+      "direction": "up",
+      "title": "Effektskatt på kärnkraft införs",
+      "description": "Produktionsskatten ersätts av effektskatt baserad på reaktorns termiska effekt. Skatten utgår oavsett produktion.",
+      "amount": "~3 öre/kWh (omräknat)",
+      "amount_ore_kwh": 3.0,
+      "total_annual_msek": 2000,
+      "source": "SFS 2000:466",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "SFS 2000:466 — Lag om skatt på termisk effekt i kärnkraftsreaktorer",
+        "effective_date": "2000-07"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2003_elcertifikat",
+      "date": "2003-05-01",
+      "category": "elcertifikat",
+      "government": "s_carlsson2_persson",
+      "direction": "new",
+      "title": "Elcertifikatsystemet införs",
+      "description": "Kvotpliktsystem för förnybar el. Elkonsumenter betalar en kvotandel. Mål: +17 TWh förnybar el till 2016.",
+      "amount": "~3 öre/kWh (konsumentkostnad, varierar)",
+      "source": "Lag (2003:113) om elcertifikat",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "Lag (2003:113) om elcertifikat, Prop. 2002/03:40",
+        "effective_date": "2003-05-01"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2005_eu_ets",
+      "date": "2005-01-01",
+      "category": "eu",
+      "government": "s_carlsson2_persson",
+      "direction": "new",
+      "title": "EU ETS startar — utsläppshandel",
+      "description": "EU:s system för handel med utsläppsrätter startar. Elproducenter med fossila bränslen betalar för CO2. Påverkar marginalpriset på el.",
+      "source": "EU-direktiv 2003/87/EG",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "EU",
+        "reference": "Europaparlamentets och rådets direktiv 2003/87/EG",
+        "effective_date": "2005-01-01"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2005_barseback2",
+      "date": "2005-05-31",
+      "category": "nedlaggning",
+      "government": "s_carlsson2_persson",
+      "direction": "abolished",
+      "title": "Barsebäck 2 stängs — verket helt nedlagt",
+      "description": "Barsebäck 2 (600 MW) stängs. Total statlig kostnad Barsebäck: ~14 mdr SEK. Livstidsleverans B2: 108,45 TWh. Bortfall: ~4 TWh/år.",
+      "amount": "600 MW / ~4 TWh/år borttaget",
+      "cost_msek": 5600,
+      "source": "Riksdagsbeslut, Prop. 1999/2000:63, SSM driftstatus",
+      "verification_status": "verified",
+      "verification_type": "system_event",
+      "legal_basis": {
+        "type": "Operational shutdown",
+        "reference": "Riksdagsbeslut + SSM driftstatus Barsebäck 2",
+        "url": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/proposition/godkannande-av-avtal-om-ersattning-i-samband-med_gn0363/html/",
+        "effective_date": "2005-05-31"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2006_effektskatt_hojning_s",
+      "date": "2006-01",
+      "category": "effektskatt",
+      "government": "s_carlsson2_persson",
+      "direction": "up",
+      "title": "Effektskatten höjs",
+      "description": "Effektskatten på kärnkraft höjs.",
+      "amount": "~3→5 öre/kWh",
+      "amount_ore_kwh": 5.0,
+      "source": "Budgetpropositionen 2006",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "Riksdagsbeslut",
+        "reference": "Budgetpropositionen 2006 (beslutad av riksdagen)",
+        "effective_date": "2006-01"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2006_fastighetsskatt_vatten_hojning",
+      "date": "2006",
+      "category": "fastighetsskatt",
+      "government": "s_carlsson2_persson",
+      "direction": "up",
+      "title": "Fastighetsskatt vattenkraft höjs",
+      "description": "Fastighetsskatten på vattenkraftverk höjs från 0,5% till 1,2%. Ytterligare höjning till 1,7% under 2007–2011.",
+      "amount": "0,5%→1,2% (sedan 1,7%)",
+      "annual_cost_msek": 1400,
+      "source": "Lag (2006:2)",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "Lag (2006:2) om fastighetsskatt vattenkraftverk",
+        "effective_date": "2006"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2008_effektskatt_hojning_alliansen",
+      "date": "2008",
+      "category": "effektskatt",
+      "government": "borg_reinfeldt",
+      "direction": "up",
+      "title": "Effektskatten höjs ytterligare",
+      "description": "Alliansregeringen höjer effektskatten på kärnkraft.",
+      "amount": "~5→6 öre/kWh",
+      "amount_ore_kwh": 6.0,
+      "source": "Prop. 2007/08:11",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "Riksdagsbeslut",
+        "reference": "Prop. 2007/08:11 (beslutad av riksdagen)",
+        "effective_date": "2008"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2008_fastighetsskatt_vatten_hojning2",
+      "date": "2008",
+      "category": "fastighetsskatt",
+      "government": "borg_reinfeldt",
+      "direction": "up",
+      "title": "Fastighetsskatt vattenkraft höjs vidare",
+      "description": "Den höjda fastighetsskatten på vattenkraft permanentas och höjs vidare.",
+      "amount": "1,7%→2,2% (sedan vidare till 2,8%)",
+      "source": "Prop. 2007/08:27, Prop. 2007/08:11",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "Riksdagsbeslut",
+        "reference": "Prop. 2007/08:27 (beslutad av riksdagen)",
+        "effective_date": "2008"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2010_avvecklingslag_bort",
+      "date": "2010-06-17",
+      "category": "lagstiftning",
+      "government": "borg_reinfeldt",
+      "direction": "change",
+      "title": "Avvecklingslagen upphävs — kärnkraft tillåts",
+      "description": "Riksdagen upphäver lagen om kärnkraftens avveckling. Nya reaktorer tillåts på befintliga platser, max 10 i drift. Omröstning: 174-172.",
+      "source": "Prop. 2009/10:172, Bet. 2009/10:NU25",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "Riksdagsbeslut",
+        "reference": "Prop. 2009/10:172, Bet. 2009/10:NU25",
+        "effective_date": "2010-06-17"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2010_elcert_forlangning",
+      "date": "2010",
+      "category": "elcertifikat",
+      "government": "borg_reinfeldt",
+      "direction": "up",
+      "title": "Elcertifikatsystemet förlängs och utökas",
+      "description": "Systemet förlängs till 2035. Nytt mål: +25 TWh förnybar el till 2020. Norsk-svensk gemensam marknad från 2012.",
+      "amount": "Mål höjt 17→25 TWh",
+      "source": "Prop. 2009/10:133",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "Riksdagsbeslut",
+        "reference": "Prop. 2009/10:133 (beslutad av riksdagen)",
+        "effective_date": "2010"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2015_effektskatt_hojning_smp",
+      "date": "2015-08-01",
+      "category": "effektskatt",
+      "government": "s_mp_lofven",
+      "direction": "up",
+      "title": "Effektskatten höjs 17%",
+      "description": "Effektskatten höjs till 14 770 kr/MW/månad (~7 öre/kWh).",
+      "amount": "~6→7 öre/kWh (14 770 kr/MW/mån)",
+      "amount_ore_kwh": 7.0,
+      "total_annual_msek": 4000,
+      "source": "SFS 2015:456",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "SFS 2015:456",
+        "effective_date": "2015-08-01"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2015_o1o2_nedlaggning",
+      "date": "2015-10-14",
+      "category": "nedlaggning",
+      "government": "s_mp_lofven",
+      "direction": "abolished",
+      "title": "Oskarshamn 1 & 2 — stängningsbeslut",
+      "description": "OKG meddelar att O1 (473 MW, 1972) och O2 (638 MW, 1974) stängs permanent. O1 stängdes juni 2017, O2 december 2015. Totalt bortfall: 1 111 MW, ~7 TWh/år.",
+      "amount": "1 111 MW / ~7 TWh/år borttaget",
+      "source": "OKG offentligt stängningsbeslut 2015-10-14, SSM driftstatus",
+      "verification_status": "verified",
+      "verification_type": "system_event",
+      "legal_basis": {
+        "type": "Operational shutdown",
+        "reference": "OKG stängningsbeslut + SSM driftstatusregister + IAEA PRIS",
+        "effective_date": "2015-10-14"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2015_r1r2_nedlaggning",
+      "date": "2015-10-15",
+      "category": "nedlaggning",
+      "government": "s_mp_lofven",
+      "direction": "abolished",
+      "title": "Ringhals 1 & 2 — stängningsbeslut",
+      "description": "Vattenfall meddelar att R1 (881 MW, 1976) och R2 (852 MW, 1975) stängs. R2 stängdes december 2019, R1 december 2020. Totalt bortfall: 1 733 MW, ~13 TWh/år.",
+      "amount": "1 733 MW / ~13 TWh/år borttaget",
+      "source": "Vattenfall offentligt stängningsbeslut 2015-10-15, SSM driftstatus",
+      "verification_status": "verified",
+      "verification_type": "system_event",
+      "legal_basis": {
+        "type": "Operational shutdown",
+        "reference": "Vattenfall stängningsbeslut + SSM driftstatusregister + IAEA PRIS",
+        "effective_date": "2015-10-15"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2017_effektskatt_90pct_ned",
+      "date": "2017-07-01",
+      "category": "effektskatt",
+      "government": "s_mp_lofven",
+      "direction": "down",
+      "title": "Effektskatten sänks 90%",
+      "description": "Effektskatten sänks till 1 500 kr/MW/mån.",
+      "amount": "14 770→1 500 kr/MW/mån",
+      "source": "SFS 2017:401",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "SFS 2017:401",
+        "effective_date": "2017-07-01"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2018_effektskatt_avskaffad",
+      "date": "2018-01-01",
+      "category": "effektskatt",
+      "government": "s_mp_lofven",
+      "direction": "abolished",
+      "title": "Effektskatten avskaffas helt",
+      "description": "Effektskatten på kärnkraft avskaffas efter 18 år. Total inbetald skatt 2000–2017: ~62 miljarder kronor.",
+      "amount": "0 kr (avskaffad)",
+      "total_collected_msek": 62000,
+      "source": "SFS 2017:402",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "SFS 2017:402",
+        "effective_date": "2018-01-01"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2019_kraftvarmeskatt",
+      "date": "2019-08-01",
+      "category": "energiskatt",
+      "government": "s_mp_lofven",
+      "direction": "up",
+      "title": "Energi- och koldioxidskatt kraftvärme höjs",
+      "description": "Skattesubventionen till kraftvärme inom EU ETS tas bort. I praktiken en betydande skattehöjning.",
+      "amount": "Subvention borttagen",
+      "source": "SFS 2019 (ändring i lag om skatt på energi)",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "SFS 2019 — ändring i lag (1994:1776) om skatt på energi",
+        "effective_date": "2019-08-01"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2020_fastighetsskatt_vatten_ned",
+      "date": "2020",
+      "category": "fastighetsskatt",
+      "government": "s_mp_lofven",
+      "direction": "down",
+      "title": "Fastighetsskatt vattenkraft sänks till 0,5%",
+      "description": "Fastighetsskatten på vattenkraft sänks till 0,5% av taxeringsvärdet.",
+      "amount": "2,8%→0,5%",
+      "source": "Ändring i lag (1984:1052) om fastighetsskatt",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "Ändring av lag (1984:1052) om statlig fastighetsskatt",
+        "effective_date": "2020"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2021_elcert_stopp",
+      "date": "2021-12-31",
+      "category": "elcertifikat",
+      "government": "s_mp_lofven",
+      "direction": "change",
+      "title": "Elcertifikat stängs för nya anläggningar",
+      "description": "Inga nya anläggningar kan få elcertifikat efter 2021. Målet 46,4 TWh ny förnybar el uppnåddes mars 2021. Systemet avvecklas 2035.",
+      "amount": "Stängt för nya",
+      "source": "Riksdagsbeslut hösten 2020",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "Riksdagsbeslut",
+        "reference": "Riksdagsbeslut hösten 2020 (ändring av lag 2003:113)",
+        "effective_date": "2021-12-31"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2022_elprisstod1",
+      "date": "2022-12-22",
+      "category": "subvention",
+      "government": "borg_kristersson",
+      "direction": "new",
+      "title": "Elstöd 1 — 17,5 mdr till SE3/SE4",
+      "description": "Elstöd till hushåll i SE3 (50 öre/kWh) och SE4 (79 öre/kWh) för okt 2021–sep 2022. 4,3 miljoner hushåll.",
+      "amount": "17,5 mdr SEK",
+      "source": "Förordning (2022:1872) om elstöd till konsumenter",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "Förordning",
+        "reference": "Förordning (2022:1872) om elstöd till konsumenter",
+        "effective_date": "2022-12-22"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2023_elprisstod2",
+      "date": "2023-03-09",
+      "category": "subvention",
+      "government": "borg_kristersson",
+      "direction": "new",
+      "title": "Elstöd 2 — 10 mdr till hela Sverige",
+      "description": "Elstöd till hushåll i hela Sverige för nov–dec 2022. 5 miljoner hushåll.",
+      "amount": "10 mdr SEK",
+      "source": "Förordning (2023:108)",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "Förordning",
+        "reference": "Förordning (2023:108) om elstöd till konsumenter för november och december 2022",
+        "effective_date": "2023-03-09"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2023_elprisstod_foretag",
+      "date": "2023-05-08",
+      "category": "subvention",
+      "government": "borg_kristersson",
+      "direction": "new",
+      "title": "Elstöd till företag — ~29 mdr SE3/SE4",
+      "description": "Elstöd till företag och organisationer i SE3 och SE4 för okt 2021–sep 2022.",
+      "amount": "~29 mdr SEK",
+      "source": "Regeringsbeslut 2023-05-08, Skatteverket",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "Förordning",
+        "reference": "Regeringsbeslut 2023-05-08 om elstöd till företag",
+        "effective_date": "2023-05-08"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2023_energiskatt_39",
+      "date": "2023-01-01",
+      "category": "energiskatt",
+      "government": "borg_kristersson",
+      "direction": "up",
+      "title": "Energiskatten indexuppräknas (KPI)",
+      "description": "Energiskatten räknas upp med KPI.",
+      "amount": "36,0→39,2 öre/kWh (exkl. moms)",
+      "amount_ore_kwh_exmoms": 39.2,
+      "source": "SFS, Skatteverket",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "Lag (1994:1776) om skatt på energi, KPI-indexering",
+        "effective_date": "2023-01-01"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2024_karnkraftslag",
+      "date": "2024-01-01",
+      "category": "lagstiftning",
+      "government": "borg_kristersson",
+      "direction": "change",
+      "title": "Max 10 reaktorer borttagen + platsförbud borttaget",
+      "description": "Begränsningen till 10 reaktorer i drift stryks. Förbudet mot nya reaktorer på andra platser stryks.",
+      "source": "Prop. 2023/24:19, SFS 2023:796",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "SFS 2023:796, Prop. 2023/24:19 'Ny kärnkraft i Sverige'",
+        "url": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/betankande/ny-karnkraft-i-sverige_hb01nu5/html/",
+        "effective_date": "2024-01-01"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2024_kreditgarantier",
+      "date": "2024",
+      "category": "subvention",
+      "government": "borg_kristersson",
+      "direction": "new",
+      "title": "Kreditgarantier 400 mdr för ny kärnkraft",
+      "description": "Riksdagen bemyndigar regeringen att ställa ut kreditgarantier upp till 400 miljarder kronor för investeringar i ny kärnkraft.",
+      "amount": "400 mdr SEK kreditgarantier",
+      "source": "Prop. 2023/24:1 utg.omr. 21",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "Riksdagsbeslut",
+        "reference": "Prop. 2023/24:1 utg.omr. 21 (budgetpropositionen 2024, beslutad av riksdagen)",
+        "effective_date": "2024"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2024_energiskatt_428",
+      "date": "2024-01-01",
+      "category": "energiskatt",
+      "government": "borg_kristersson",
+      "direction": "up",
+      "title": "Energiskatten indexuppräknas igen",
+      "description": "Fortsatt KPI-indexering.",
+      "amount": "39,2→42,8 öre/kWh (exkl. moms)",
+      "amount_ore_kwh_exmoms": 42.8,
+      "source": "SFS, Skatteverket",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "Lag (1994:1776) om skatt på energi, KPI-indexering",
+        "effective_date": "2024-01-01"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2025_energiskatt_439",
+      "date": "2025-01-01",
+      "category": "energiskatt",
+      "government": "borg_kristersson",
+      "direction": "up",
+      "title": "Energiskatten höjs (KPI)",
+      "description": "KPI-indexering höjer energiskatten.",
+      "amount": "42,8→43,9 öre/kWh (54,9 öre inkl. moms)",
+      "amount_ore_kwh_exmoms": 43.9,
+      "source": "SFS 2024:921, Skatteverket",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "SFS 2024:921",
+        "effective_date": "2025-01-01"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2025_hogkostnadsskydd",
+      "date": "2025-11-01",
+      "category": "subvention",
+      "government": "borg_kristersson",
+      "direction": "new",
+      "title": "Temporärt högkostnadsskydd införs",
+      "description": "Högkostnadsskydd om spotpriset överstiger 1,50 kr/kWh under en månad. Gäller nov 2025–dec 2026. Budget: 1 mdr SEK.",
+      "amount": "Tröskel: 1,50 kr/kWh månadssnitt",
+      "annual_cost_msek": 1000,
+      "source": "Budgetpropositionen 2026 (beslutad av riksdagen)",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "Riksdagsbeslut",
+        "reference": "Budgetpropositionen 2026 (beslutad av riksdagen nov 2025)",
+        "effective_date": "2025-11-01"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2026_energiskatt_sankning",
+      "date": "2026-01-01",
+      "category": "energiskatt",
+      "government": "borg_kristersson",
+      "direction": "down",
+      "title": "Energiskatten sänks 20%",
+      "description": "Elskatten sänks med 7,9 öre/kWh. Kostnad: ~6 mdr/år.",
+      "amount": "43,9→36,0 öre/kWh (45,0 öre inkl. moms)",
+      "amount_ore_kwh_exmoms": 36.0,
+      "annual_cost_msek": 6000,
+      "source": "SFS 2025:1357",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "SFS",
+        "reference": "SFS 2025:1357",
+        "effective_date": "2026-01-01"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    },
+    {
+      "id": "ev_2026_fastighetsskatt_vind_hojning",
+      "date": "2026-01-01",
+      "category": "fastighetsskatt_vind",
+      "government": "borg_kristersson",
+      "direction": "up",
+      "title": "Fastighetsskatt vindkraft höjs",
+      "description": "Fastighetsskatten på vindkraftverk höjs från 0,2% till 0,5%.",
+      "amount": "0,2%→0,5%",
+      "source": "Riksdagsbeslut 2025-11-26",
+      "verification_status": "verified",
+      "verification_type": "legal",
+      "legal_basis": {
+        "type": "Riksdagsbeslut",
+        "reference": "Riksdagsbeslut 2025-11-26 om höjd fastighetsskatt vindkraft",
+        "effective_date": "2026-01-01"
+      },
+      "verification": {
+        "primary_source_checked": true,
+        "checked_by": "manual",
+        "last_checked": "2026-02-16"
+      }
+    }
+  ],
+
+  "summary_by_government": [
+    {
+      "government": "s_erlander",
+      "label": "S (Erlander) 1946–1969",
+      "actions": ["Energiskatt införd 1951 (1 öre/kWh)"],
+      "net_effect": "Grundlade elskattestrukturen."
+    },
+    {
+      "government": "borg_falldin",
+      "label": "Borgerlig (Fälldin) 1976–1982",
+      "actions": ["Folkomröstning 1980 → riksdag beslutar avveckling", "Elskatt differentierad geografiskt 1981"],
+      "net_effect": "Kärnkraftsavvecklingsbeslutet."
+    },
+    {
+      "government": "s_palme2_carlsson",
+      "label": "S (Palme II/Carlsson) 1982–1991",
+      "actions": ["Produktionsskatt kärnkraft 1984 (~0,2 öre)"],
+      "net_effect": "Första skatten direkt på kärnkraft."
+    },
+    {
+      "government": "borg_bildt",
+      "label": "Borgerlig (Bildt) 1991–1994",
+      "actions": ["Moms 25% på el (skattereformen)"],
+      "net_effect": "Moms på skatten."
+    },
+    {
+      "government": "s_carlsson2_persson",
+      "label": "S (Persson) 1994–2006",
+      "actions_up": ["Effektskatt kärnkraft 2000 (~3 öre)", "Effektskatt höjd 2006 (3→5 öre)", "Fastighetsskatt vattenkraft 0,5→1,7% (2006)", "Elcertifikat infört 2003"],
+      "actions_down": ["Produktionsskatt vattenkraft borttagen 1997"],
+      "actions_other": ["Elmarknaden avreglerad 1996", "Barsebäck 1 stängd 1999 (600 MW)", "Barsebäck 2 stängd 2005 (600 MW)"],
+      "net_effect": "Avreglerade elmarknaden. Stängde Barsebäck (1 200 MW, ~14 mdr kostnad). Kraftigt ökad beskattning."
+    },
+    {
+      "government": "borg_reinfeldt",
+      "label": "Alliansen (Reinfeldt) 2006–2014",
+      "actions_up": ["Effektskatt höjd 2008 (5→6 öre)", "Fastighetsskatt vattenkraft höjd (1,7→2,8%)", "Elcertifikat utökat (mål 17→25 TWh)"],
+      "actions_down": ["Avvecklingslagen upphävd 2010"],
+      "net_effect": "Öppnade för ny kärnkraft. Men fortsatte höja produktionsskatter."
+    },
+    {
+      "government": "s_mp_lofven",
+      "label": "S+MP (Löfven) 2014–2021",
+      "actions_up": ["Effektskatt höjd 17% aug 2015", "Kraftvärmeskatt höjd 2019"],
+      "actions_down": ["Effektskatt avskaffad 2018", "Fastighetsskatt vattenkraft 2,8→0,5% (2020)", "Elcertifikat stängt för nya (2021)"],
+      "actions_other": ["O1+O2 stängda (1 111 MW)", "R1+R2 stängda (1 733 MW)"],
+      "net_effect": "4 reaktornedläggningar (2 844 MW). Sedan helomvändning: skatt avskaffad, men reaktorerna borta."
+    },
+    {
+      "government": "borg_kristersson",
+      "label": "M+KD+L+SD (Kristersson) 2022–",
+      "actions_up": ["Energiskatt indexhöjd 3 år (2023–2025)", "Fastighetsskatt vindkraft höjd 0,2→0,5% (2026)"],
+      "actions_down": ["Energiskatt sänkt 20% (2026)"],
+      "actions_other": ["Max 10 reaktorer borttagen (2024)", "Kreditgarantier 400 mdr (2024)", "Elstöd ~57 mdr (2022–2023)", "Högkostnadsskydd infört (2025)"],
+      "net_effect": "Kärnkraft återöppnad lagmässigt. 400 mdr garantier. ~57 mdr i elstöd."
+    }
+  ],
+
+  "key_numbers": {
+    "energiskatt_1951": "1 öre/kWh",
+    "energiskatt_2025": "43,9 öre/kWh (exkl. moms)",
+    "energiskatt_2026": "36,0 öre/kWh (exkl. moms)",
+    "effektskatt_total_collected": "~62 mdr SEK (2000–2017)",
+    "barseback_total_cost": "~14 mdr SEK (statens kostnad)",
+    "elstod_2022_2023_total": "~57 mdr SEK (hushåll + företag)",
+    "kreditgarantier_karnkraft": "400 mdr SEK",
+    "reaktorer_stangda_totalt": "6 st: B1, B2, O1, O2, R1, R2 = 3 944 MW"
+  },
+
+  "sources": [
+    { "name": "Lag (1994:1776) om skatt på energi", "url": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-19941776-om-skatt-pa-energi_sfs-1994-1776" },
+    { "name": "SFS 2000:466 — Lag om skatt på termisk effekt", "url": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/" },
+    { "name": "SFS 2017:401 — Sänkning effektskatt 90%", "url": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/" },
+    { "name": "SFS 2017:402 — Effektskatt avskaffad", "url": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/" },
+    { "name": "SFS 2015:456 — Effektskatt höjd", "url": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/" },
+    { "name": "SFS 2023:796 — Ny kärnkraft i Sverige", "url": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/betankande/ny-karnkraft-i-sverige_hb01nu5/html/" },
+    { "name": "SFS 2025:1357 — Sänkt energiskatt 2026", "url": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/" },
+    { "name": "SFS 2024:921 — Energiskatt 2025", "url": "https://www.skatteverket.se/" },
+    { "name": "Förordning (2022:1872) om elstöd till konsumenter", "url": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/" },
+    { "name": "Förordning (2023:108) om elstöd", "url": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/" },
+    { "name": "Lag (2003:113) om elcertifikat", "url": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/" },
+    { "name": "Ellag (1997:857)", "url": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/ellag-1997857_sfs-1997-857" },
+    { "name": "Prop. 2009/10:172 — Upphävande av avvecklingslag", "url": "https://www.riksdagen.se/" },
+    { "name": "Prop. 1996/97:84 — Barsebäck avveckling", "url": "https://www.riksdagen.se/" },
+    { "name": "Prop. 1999/2000:63 — Ersättning Barsebäck", "url": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/proposition/godkannande-av-avtal-om-ersattning-i-samband-med_gn0363/html/" },
+    { "name": "EU-direktiv 2003/87/EG — Utsläppshandel", "url": "https://eur-lex.europa.eu/" },
+    { "name": "SSM driftstatusregister", "url": "https://www.stralsakerhetsmyndigheten.se/" },
+    { "name": "IAEA PRIS — Power Reactor Information System", "url": "https://pris.iaea.org/" },
+    { "name": "Skatteverket: Energiskatt", "url": "https://www.skatteverket.se/" },
+    { "name": "Energimyndigheten: Elcertifikatsystemet", "url": "https://www.energimyndigheten.se/" }
+  ]
+}

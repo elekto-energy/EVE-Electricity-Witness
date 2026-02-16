@@ -4,10 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
-  { href: "/spot",        label: "Spot Prices",  icon: "⚡", status: "live" },
+  { href: "/witness/price-structure", label: "Energidata", icon: "⚡", status: "live" },
   { href: "/witness",     label: "Witness",       icon: "🔍", status: "seed" },
   { href: "/witness/statements", label: "Statements", icon: "📜", status: "live" },
-  { href: "/opinion",     label: "Opinion",       icon: "🗳", status: "scaffold" },
+  { href: "/witness/decisions",  label: "Decisions",   icon: "⚖️", status: "live" },
+  { href: "/nyheter",     label: "Nyheter",       icon: "📰", status: "live" },
+  { href: "/opinion",     label: "Opinion",       icon: "🗳", status: "live" },
   { href: "/methodology", label: "Methodology",   icon: "📐", status: "live" },
 ] as const;
 
@@ -17,8 +19,8 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        ELEKTO EU
-        <span>EVEverified Energy Platform</span>
+        ELEKTO
+        <span>Verified Energy Platform</span>
       </div>
       <nav className="sidebar-nav">
         {NAV_ITEMS.map((item) => {

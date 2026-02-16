@@ -1,0 +1,37 @@
+{
+  "_meta": {
+    "dataset": "riksdagen_seed_v1",
+    "created": "2026-02-15",
+    "purpose": "Deterministic seed for Phase B Witness Mode UI. Real document references.",
+    "witness_rule": "TR7: NO interpretation. Structural trace only."
+  },
+  "topics": [
+    {
+      "id": "nuclear_policy",
+      "title": "Kärnkraftspolitik",
+      "title_en": "Nuclear Energy Policy",
+      "tag": "ENERGY.NUCLEAR",
+      "summary_neutral": "Legislative chain tracing Sweden's nuclear energy framework from parliamentary motions through committee review to enacted law.",
+      "chain_ids": ["nuclear_chain_01"],
+      "source_count": 4
+    },
+    {
+      "id": "electricity_taxes_fees",
+      "title": "Elskatter och avgifter",
+      "title_en": "Electricity Taxes and Fees",
+      "tag": "ENERGY.TAXES_FEES",
+      "summary_neutral": "Legislative chain tracing changes to electricity tax rates from government proposal through committee to enacted SFS.",
+      "chain_ids": ["eltax_chain_01"],
+      "source_count": 4
+    },
+    {
+      "id": "building_energy_requirements",
+      "title": "Byggnaders energikrav",
+      "title_en": "Building Energy Requirements",
+      "tag": "ENERGY.BUILDING_ENERGY_RULES",
+      "summary_neutral": "Regulatory chain tracing building energy performance requirements from EU directive implementation through Boverket rules.",
+      "chain_ids": ["bbr_chain_01"],
+      "source_count": 4
+    }
+  ]
+}

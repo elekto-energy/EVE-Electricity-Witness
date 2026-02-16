@@ -1,0 +1,104 @@
+{
+  "_meta": {
+    "dataset": "riksdagen_seed_v1",
+    "purpose": "Source registry for all documents referenced in witness chains."
+  },
+  "sources": [
+    {
+      "doc_id": "prop-1996/97:176",
+      "publisher": "Riksdagen",
+      "type": "proposition",
+      "uri": "https://data.riksdagen.se/dokument/GK03176",
+      "uri_stable": true,
+      "language": "sv"
+    },
+    {
+      "doc_id": "bet-1996/97:NU12",
+      "publisher": "Riksdagen",
+      "type": "betänkande",
+      "uri": "https://data.riksdagen.se/dokument/GK01NU12",
+      "uri_stable": true,
+      "language": "sv"
+    },
+    {
+      "doc_id": "SFS 1984:3",
+      "publisher": "Regeringskansliet",
+      "type": "SFS",
+      "uri": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-19843-om-karnteknisk-verksamhet_sfs-1984-3/",
+      "uri_stable": true,
+      "language": "sv"
+    },
+    {
+      "doc_id": "prop-2022/23:16",
+      "publisher": "Riksdagen",
+      "type": "proposition",
+      "uri": "https://data.riksdagen.se/dokument/HA0316",
+      "uri_stable": true,
+      "language": "sv"
+    },
+    {
+      "doc_id": "prop-2016/17:1",
+      "publisher": "Riksdagen",
+      "type": "proposition",
+      "uri": "https://data.riksdagen.se/dokument/H4031",
+      "uri_stable": true,
+      "language": "sv"
+    },
+    {
+      "doc_id": "bet-2016/17:SkU1",
+      "publisher": "Riksdagen",
+      "type": "betänkande",
+      "uri": "https://data.riksdagen.se/dokument/H401SkU1",
+      "uri_stable": true,
+      "language": "sv"
+    },
+    {
+      "doc_id": "rskr-2016/17:68",
+      "publisher": "Riksdagen",
+      "type": "riksdagsskrivelse",
+      "uri": "https://data.riksdagen.se/dokument/H410068",
+      "uri_stable": true,
+      "language": "sv"
+    },
+    {
+      "doc_id": "SFS 1994:1776",
+      "publisher": "Regeringskansliet",
+      "type": "SFS",
+      "uri": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-19941776-om-skatt-pa-energi_sfs-1994-1776/",
+      "uri_stable": true,
+      "language": "sv"
+    },
+    {
+      "doc_id": "EPBD-2010/31/EU",
+      "publisher": "EUR-Lex",
+      "type": "EU-direktiv",
+      "uri": "https://eur-lex.europa.eu/legal-content/SV/TXT/?uri=CELEX:32010L0031",
+      "uri_stable": true,
+      "language": "sv"
+    },
+    {
+      "doc_id": "prop-2005/06:145",
+      "publisher": "Riksdagen",
+      "type": "proposition",
+      "uri": "https://data.riksdagen.se/dokument/GT03145",
+      "uri_stable": true,
+      "language": "sv"
+    },
+    {
+      "doc_id": "BFS 2011:6",
+      "publisher": "Boverket",
+      "type": "myndighetsföreskrift",
+      "uri": "https://www.boverket.se/sv/lag--ratt/forfattningssamling/gallande/bbr---bfs-20116/",
+      "uri_stable": true,
+      "language": "sv"
+    },
+    {
+      "doc_id": "EPBD-2024/1275",
+      "publisher": "EUR-Lex",
+      "type": "EU-direktiv",
+      "uri": "https://eur-lex.europa.eu/legal-content/SV/TXT/?uri=CELEX:32024L1275",
+      "uri_stable": true,
+      "language": "sv"
+    }
+  ]
+}

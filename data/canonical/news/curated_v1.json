@@ -1,0 +1,244 @@
+{
+  "_meta": {
+    "dataset": "curated_news_v1",
+    "created": "2026-02-16",
+    "updated": "2026-02-16",
+    "purpose": "Kuraterat nyhetsflöde: myndighetsnyheter kopplade till plattformens data",
+    "curation_policy": "Varje post kurateras manuellt eller via scraper. Sammanfattning i egna ord (witness mode). Ingen opinionsbildning. Alltid källänk.",
+    "categories": ["flaskhalsar", "elpris", "nätreglering", "produktion", "klimat", "systemtjänster", "effektavgifter", "smarta_elnät", "beredskap"],
+    "sources": ["ei.se", "energimyndigheten.se", "svk.se", "second-opinion.se"]
+  },
+  "items": [
+    {
+      "id": "news_20260216_electricity_taxes",
+      "date": "2026-02-16",
+      "source": "ELEKTO",
+      "source_url": null,
+      "category": "nätreglering",
+      "title": "Svensk energipolitik — beslut för beslut, 1951–2026",
+      "summary": "38 verifierade energipolitiska beslut (EVE Witness Standard v1.1). Skatter, lagar, nedläggningar, stöd, EU. Från 1 öre/kWh (1951) till kreditgarantier 400 mdr. Varje beslut med juridisk grund.",
+      "platform_link": "/witness/energy-decisions",
+      "platform_context": "Deterministisk data: varje beslut med ikraftträdandedatum, SFS-nummer och källa. 10 regeringar, 10 kategorier."
+    },
+    {
+      "id": "news_20260216_capacity_layers",
+      "date": "2026-02-16",
+      "source": "ELEKTO",
+      "source_url": null,
+      "category": "flaskhalsar",
+      "title": "Ny analys: Flaskhalslösningar — från central till lokal nivå",
+      "summary": "Tre nivåer av kapacitetsavlastning med realistiska beräkningar. Vad ger 1000 hushåll med V2H? 7,5 MW — 0,1% av Snitt 2. Lokal flex löser lokala problem, inte systembrister.",
+      "platform_link": "/opinion/capacity-layers",
+      "platform_context": "Beräkningsexempel: V2H, hembatterier, mikronät, smart laststyrning. Data, inte önsketänkande."
+    },
+    {
+      "id": "news_20260216_ringhals_timeline",
+      "date": "2026-02-16",
+      "source": "ELEKTO",
+      "source_url": null,
+      "category": "produktion",
+      "title": "Ny analys: Ringhals 1 & 2 — Vad sa de? Vad hände?",
+      "summary": "Witness-tidslinje som ställer politiska uttalanden mot verifierbara utfall. Från effektskattehöjningen 2014 till 65 miljarder i flaskhalskassa 2024. 17 dokumenterade händelser med källänkar.",
+      "platform_link": "/witness/ringhals-cost",
+      "platform_context": "Vår egen analys baserad på riksdagsdokument, Ei-rapporter och SVK-data."
+    },
+    {
+      "id": "news_20260216_bottleneck_solutions",
+      "date": "2026-02-16",
+      "source": "ELEKTO",
+      "source_url": null,
+      "category": "flaskhalsar",
+      "title": "Ny analys: Lösa flaskhalsproblemen med strategisk energiplacering",
+      "summary": "Evidensbaserad genomgång av hur strategisk vindkraft, solkraft och mikrovattenkraft i SE3/SE4 kan minska systemstressen. Inkluderar mixscenario och investeringsuppskattning.",
+      "platform_link": "/opinion/bottleneck-solutions",
+      "platform_context": "Visar för- och nackdelar utan att rekommendera — witness mode."
+    },
+    {
+      "id": "news_20260212_smarta_elnat",
+      "date": "2026-02-12",
+      "source": "Ei",
+      "source_url": "https://ei.se/om-oss/nyheter/2026/2026-02-10-ei-publicerar-forsta-nationella-rapporten-om-smarta-elnat",
+      "category": "smarta_elnät",
+      "title": "Ei publicerar första nationella rapporten om smarta elnät",
+      "summary": "Ei:s rapport visar att antalet elproduktionsanläggningar i lokalnäten ökar kraftigt och att kapaciteten i energilager har vuxit. Myndigheten bedömer att elnätsföretagen behöver använda mer flexibilitet och dynamisk belastningsbarhet.",
+      "platform_link": "/opinion/bottleneck-solutions",
+      "platform_context": "Relevant för hur distribuerad sol- och vindkraft i SE3/SE4 kan avlasta flaskhalsarna."
+    },
+    {
+      "id": "news_20260212_effektavgift_goteborg",
+      "date": "2026-02-12",
+      "source": "Ei",
+      "source_url": "https://ei.se/om-oss/nyheter/2026/2026-02-09-ei-beviljar-goteborg-energis-ansokan-om-dispens-fran-kravet-pa-effektavgift-for-lagenhetskunder",
+      "category": "effektavgifter",
+      "title": "Göteborg Energi får dispens från effektavgift för lägenhetskunder",
+      "summary": "Ei beviljar Göteborg Energi dispens till 2028 från kravet att ha effektavgift för lägenhetskunder. Bedömningen är att dessa kunders möjligheter att vara flexibla i sin elanvändning är begränsade i nuläget.",
+      "platform_link": "/witness/price-structure",
+      "platform_context": "Effektavgifter omfördelar kostnader baserat på toppbelastning — direkt kopplat till nätkapacitetsproblemet i södra Sverige."
+    },
+    {
+      "id": "news_20260205_effektavgifter_2026",
+      "date": "2026-02-05",
+      "source": "Ei",
+      "source_url": "https://ei.se/om-oss/nyheter/2026/2026-02-03-eis-arbete-2026-inom-omradet-effektavgifter",
+      "category": "effektavgifter",
+      "title": "Ei:s arbete 2026: Effektavgifter ska bli mer träffsäkra",
+      "summary": "Alla elnätsföretag ska ha infört effektavgifter senast 2027. Ei arbetar med att utveckla lokaliseringssignaler i nätavgifterna. Effektavgifter omfördelar kostnader — de som belastar nätet under topptimmar betalar mer.",
+      "platform_link": "/witness/price-structure",
+      "platform_context": "Se vår prisstrukturpanel för att förstå hur nätavgiften påverkar din totala elkostnad."
+    },
+    {
+      "id": "news_20260202_natavgifter_utredning",
+      "date": "2026-02-02",
+      "source": "Ei",
+      "source_url": "https://ei.se/om-oss/nyheter/2026/2026-02-02-nytt-regeringsuppdrag-ei-ska-analysera-elnatsforetagens-avgifter-investeringar-och-lonsamhet",
+      "category": "nätreglering",
+      "title": "Regeringsuppdrag: Ei ska analysera elnätsföretagens avgifter och lönsamhet",
+      "summary": "Ei ska utreda hur elnätsföretagen finansierar investeringar, hur kostnaderna utvecklats sedan 2005, och vilka företag som har anmärkningsvärt höga vinster eller utdelningar. Redovisas senast 16 juni 2026.",
+      "platform_link": "/witness/price-structure",
+      "platform_context": "Nätavgiften utgör en stor del av din elkostnad. Se vår prisstrukturanalys."
+    },
+    {
+      "id": "news_20260115_cybersäkerhet",
+      "date": "2026-01-15",
+      "source": "Energimyndigheten",
+      "source_url": "https://www.energimyndigheten.se/nyhetsarkiv/2025/energimyndigheten-blir-tillsynsmyndighet/",
+      "category": "beredskap",
+      "title": "Energimyndigheten blir tillsynsmyndighet för cybersäkerhet i energisektorn",
+      "summary": "Den nya cybersäkerhetslagen trädde i kraft 15 januari 2026. Energimyndigheten ansvarar för tillsyn av energisektorn. Alla NIS-anmälda leverantörer avanmäldes automatiskt — ny anmälan krävs.",
+      "platform_link": null,
+      "platform_context": "Cybersäkerhet för energiinfrastruktur — relevant för ELEKTO:s eget arbete med kryptografisk verifiering."
+    },
+    {
+      "id": "news_20251217_kraftlyftet",
+      "date": "2025-12-17",
+      "source": "Energimyndigheten",
+      "source_url": "https://www.energimyndigheten.se/nyhetsarkiv/2025/kraftlyftet-stod-for-okad-leveranssakerhet-i-elsystemet-planeras-oppna-i-februari/",
+      "category": "produktion",
+      "title": "Kraftlyftet: Statligt stöd för ökad leveranssäkerhet — utlysning feb 2026",
+      "summary": "Ny förordning om statligt stöd för att förbättra leveranssäkerheten i elsystemet. Energimyndigheten planerar att öppna utlysningen i februari 2026.",
+      "platform_link": "/opinion/bottleneck-solutions",
+      "platform_context": "Direkt relevant — statligt stöd för den typ av lösningar vi analyserar i vår flaskhalsanalys."
+    },
+    {
+      "id": "news_20251216_svk_180mdr",
+      "date": "2025-12-16",
+      "source": "SVK",
+      "source_url": "https://www.svk.se/om-oss/rapporter-och-remissvar/natutvecklingsplan/",
+      "category": "flaskhalsar",
+      "title": "SVK:s Nätutvecklingsplan 2026–2035: 180 miljarder i stamnätet",
+      "summary": "Svenska kraftnät satsar 180 miljarder på 10 år. 2900 km nya ledningar och ~40 nya stationer. Seriekompenseringsanläggningar höjer Snitt 2 med 800 MW. Årliga investeringar ökar från 9 till 20 miljarder 2026–2027.",
+      "platform_link": "/opinion/bottleneck-solutions",
+      "platform_context": "NordSyd-programmet och Snitt 2-förstärkning — direkt kopplat till vår flaskhalsanalys."
+    },
+    {
+      "id": "news_20251212_ursprungsmarkning",
+      "date": "2025-12-12",
+      "source": "Ei",
+      "source_url": "https://ei.se/om-oss/nyheter/2025/2025-12-12-nya-foreskrifter-om-ursprungsmarkning-av-el---galler-fran-1-februari-2026",
+      "category": "nätreglering",
+      "title": "Nya föreskrifter om ursprungsmärkning av el — gäller från 1 feb 2026",
+      "summary": "Elhandlare ska nu använda svensk residualmix istället för nordisk vid beräkning av energimixen. Alla elanvändare har rätt att veta elens ursprung och miljöpåverkan.",
+      "platform_link": "/witness/price-structure",
+      "platform_context": "Kopplat till vår CO₂-data per elområde. Transparens om elens ursprung."
+    },
+    {
+      "id": "news_20251128_riksdag_natreglering",
+      "date": "2025-11-28",
+      "source": "Ei",
+      "source_url": "https://ei.se/om-oss/nyheter/2025/2025-11-28-riksdagen-ger-ei-mandat-att-forandra-regleringen",
+      "category": "nätreglering",
+      "title": "Riksdagen ger Ei mandat att förändra elnätsregleringen",
+      "summary": "Ny lagstiftning ger Ei större mandat att bestämma villkoren för elnätsföretagens intäktsramar. Ei har länge pekat på att nuvarande reglering innebär att företagen kan höja avgifterna mer än vad som är rimligt.",
+      "platform_link": "/witness/price-structure",
+      "platform_context": "Nätavgiften är den mest reglerade delen av din elräkning. Se prisstruktur."
+    },
+    {
+      "id": "news_20251001_svk_flaskhals_2mdr",
+      "date": "2025-10-01",
+      "source": "SVK",
+      "source_url": "https://www.svk.se/press-och-nyheter/nyheter/allmanna-nyheter/2025/svenska-kraftnat-aterfor-ytterligare-2-miljarder-kronor-av-flaskhalsinkomsterna-till-natkunderna-2026/",
+      "category": "flaskhalsar",
+      "title": "SVK återför 2 miljarder av flaskhalsintäkterna till nätkunder 2026",
+      "summary": "SVK reducerar energiavgiften 2026 med 80% av debiterad avgift 2024. Reduceringen finansieras av flaskhalsintäkter. Gynnar förbrukare i södra Sverige och producenter i norr.",
+      "platform_link": "/witness/price-structure",
+      "platform_context": "En liten del av de 65 miljarder som SVK har ackumulerat. Se hela flaskhalsbilden."
+    },
+    {
+      "id": "news_20250606_svk_hojer_prognos",
+      "date": "2025-06-06",
+      "source": "Second Opinion",
+      "source_url": "https://second-opinion.se/svenska-kraftnat-hojer-prognosen-for-flaskhalsavgifterna/",
+      "category": "flaskhalsar",
+      "title": "SVK höjer prognos för flaskhalsintäkter 2025: från 20 till 27 miljarder",
+      "summary": "Flaskhalsintäkterna ökar snabbare än väntat. SE4-priser 40 gånger högre än SE1 under samma vecka. SVK:s konto fylls med över en halv miljard per vecka. Totalt 209 miljarder förväntas till 2035.",
+      "platform_link": "/witness/price-structure",
+      "platform_context": "Dramatisk prisskillnad norr/söder. Se vår data per elområde."
+    },
+    {
+      "id": "news_20250523_balansmarknad",
+      "date": "2025-05-23",
+      "source": "Ei",
+      "source_url": "https://ei.se/om-oss/nyheter/2025/2025-05-23-ei-granskar-de-hoga-priserna-pa-balansmarknaden",
+      "category": "systemtjänster",
+      "title": "Ei granskar höga priser på balansmarknaden (mFRR EAM)",
+      "summary": "Efter införandet av den automatiserade balansmarknaden mFRR EAM har ovanligt höga och låga priser förekommit. Ei granskar om aktörerna ändrat sin prissättning och kräver redovisning från SVK.",
+      "platform_link": null,
+      "platform_context": "Balansmarknaden hanterar systemstabilitet — den funktion kärnkraften tidigare bidrog med."
+    },
+    {
+      "id": "news_20250318_svk_debatt_obalans",
+      "date": "2025-03-18",
+      "source": "SVK",
+      "source_url": "https://www.svk.se/press-och-nyheter/nyheter/allmanna-nyheter/2025/okad-overforing-loser-inte-obalansen-i-elsystemet/",
+      "category": "flaskhalsar",
+      "title": "SVK-debatt: Ökad överföring löser inte obalansen i elsystemet",
+      "summary": "SVK:s GD och finansdirektör: mer nät räcker inte. Ny elproduktion måste placeras i söder. 37% av flaskhalsintäkterna 2024 kom från SE2→SE3. SVK kartlägger var ny produktion bör placeras.",
+      "platform_link": "/opinion/bottleneck-solutions",
+      "platform_context": "Exakt det problem vår analys adresserar — strategisk placering av produktion i SE3/SE4."
+    },
+    {
+      "id": "news_20250310_svk_57mdr",
+      "date": "2025-03-10",
+      "source": "SVK",
+      "source_url": "https://www.svk.se/press-och-nyheter/press/okade-investeringar-i-stamnatet-och-en-plan-for-flaskhalsinkomsterna---3805725/",
+      "category": "flaskhalsar",
+      "title": "SVK: 57 miljarder i stamnätet 2026–2028 — plan för 65 mdr flaskhalskassa",
+      "summary": "SVK investerar 57 miljarder 2026–2028. Seriekompensering höjer Snitt 2 med 800 MW. Flaskhalskassan: 65 mdr idag + 144 mdr förväntat inflöde = 209 mdr till 2035. NordSyd-programmet bygger om åtta 50-milsledningar.",
+      "platform_link": "/witness/price-structure",
+      "platform_context": "65 miljarder oanvända — se vår fullständiga flaskhalspanel."
+    },
+    {
+      "id": "news_20250304_flaskhalsar_2024",
+      "date": "2025-03-04",
+      "source": "Ei",
+      "source_url": "https://ei.se/om-oss/nyheter/2025/2025-03-04-hoga-flaskhalsintakter-under-2024---sa-har-har-de-anvants",
+      "category": "flaskhalsar",
+      "title": "Höga flaskhalsintäkter 2024: 21,4 mdr — bara 3,3 mdr användes",
+      "summary": "SVK:s flaskhalsintäkter uppgick till 21,4 miljarder 2024. Bara 3,3 miljarder användes. Ackumulerat saldo: 65,1 miljarder kronor. Pengarna ska enligt EU-regler användas för nätkapacitet.",
+      "platform_link": "/witness/price-structure",
+      "platform_context": "Se vår fullständiga flaskhalspanel med alla år och användning."
+    },
+    {
+      "id": "news_20250301_elanvandning_prognos",
+      "date": "2025-03-01",
+      "source": "Energimyndigheten",
+      "source_url": "https://www.energimyndigheten.se/nyhetsarkiv/2025/energimyndighetens-nya-prognos-visar--industrins-omstallning-tar-fart-2026/",
+      "category": "produktion",
+      "title": "Energimyndighetens prognos: Elanvändning +12% till 2028, tar fart 2026",
+      "summary": "Elanvändningen väntas öka från 132 TWh (2023) till 148 TWh (2028). Industriomställning och vätgasproduktion driver ökningen. Solel tredubblas till 9 TWh. Nettoexporten ökar till 39 TWh.",
+      "platform_link": "/opinion/bottleneck-solutions",
+      "platform_context": "Ökad elanvändning i söder + mer vindkraft i norr = ännu större flaskhalsproblem utan åtgärder."
+    },
+    {
+      "id": "news_20251001_riksintressen",
+      "date": "2025-10-01",
+      "source": "Energimyndigheten",
+      "source_url": "https://www.energimyndigheten.se/nyhetsarkiv/2025/sa-jobbar-energimyndigheten-med-riksintressen/",
+      "category": "produktion",
+      "title": "Energimyndigheten beslutar nya riksintressen för energiproduktion 2026",
+      "summary": "Nya riksintresseanspråk för energiproduktion och -distribution beslutas under 2026. Riksintressen pekar ut geografiska områden med nationell betydelse för energiförsörjningen.",
+      "platform_link": "/opinion/bottleneck-solutions",
+      "platform_context": "Avgörande för var ny vindkraft och solkraft kan placeras i SE3/SE4."
+    }
+  ]
+}

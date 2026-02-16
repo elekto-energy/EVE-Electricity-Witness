@@ -1,7 +1,7 @@
 export function Topbar() {
   return (
     <header className="topbar">
-      <div className="topbar-title">EU Energy Transparency</div>
+      <div className="topbar-title">ELEKTO — Energy Transparency</div>
       <div className="topbar-status">
         <span>ENTSO-E: awaiting first fetch</span>
         <span>|</span>

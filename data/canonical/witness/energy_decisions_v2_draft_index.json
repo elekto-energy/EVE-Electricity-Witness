@@ -1,0 +1,11 @@
+{
+  "_meta": {
+    "dataset": "energy_decisions_v2_draft",
+    "created": "2026-02-16",
+    "updated": "2026-02-16T15:00:00Z",
+    "purpose": "DRAFT — 49 events, ej verifierad enligt EVE Witness Standard v1.1. Innehåller process, secondary och unverified events. Använd energy_decisions_v2.json för canonical witness.",
+    "status": "draft",
+    "total_events": 49,
+    "note": "Sparad för referens. Verified events flyttade till energy_decisions_v2.json"
+  }
+}
