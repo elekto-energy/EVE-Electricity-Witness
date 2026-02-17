@@ -13,7 +13,7 @@ export default function AskEvePage() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [queryParams, setQueryParams] = useState<any>(null);
-  const lang = queryParams?.lang ?? "en";
+  const [lang, setLang] = useState("en");
 
   async function handleQuery(params: { zone: string; start: string; end: string; lang: string }) {
     setLoading(true); setError(null); setPdfResult(null); setQueryParams(params);
@@ -87,7 +87,7 @@ export default function AskEvePage() {
       </div>
 
       {/* Query */}
-      <QueryPanel onSubmit={handleQuery} loading={loading} />
+      <QueryPanel onSubmit={handleQuery} loading={loading} onLangChange={setLang} />
 
       {/* ═══ POSITIONING — always visible ═══ */}
       <div className="card" style={{ marginTop: 16, padding: 20 }}>

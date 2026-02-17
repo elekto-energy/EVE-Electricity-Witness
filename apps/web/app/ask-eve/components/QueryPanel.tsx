@@ -18,6 +18,7 @@ const ZONE_NAMES: Record<string, string> = {
 interface QueryPanelProps {
   onSubmit: (params: { zone: string; start: string; end: string; lang: string }) => void;
   loading: boolean;
+  onLangChange?: (lang: string) => void;
 }
 
 // ─── Period helpers ──────────────────────────────────────────────────────────
@@ -47,7 +48,7 @@ const YEARS = [2020, 2021, 2022, 2023, 2024, 2025, 2026];
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function QueryPanel({ onSubmit, loading }: QueryPanelProps) {
+export default function QueryPanel({ onSubmit, loading, onLangChange }: QueryPanelProps) {
   const [zone, setZone] = useState("SE3");
   const [lang, setLang] = useState("en");
   const [periodMode, setPeriodMode] = useState<"month" | "quarter" | "year" | "custom">("month");
@@ -127,7 +128,7 @@ export default function QueryPanel({ onSubmit, loading }: QueryPanelProps) {
           <label style={labelStyle}>Language</label>
           <div style={{ display: "flex", gap: 4 }}>
             {(["en", "sv"] as const).map((l) => (
-              <button key={l} type="button" onClick={() => setLang(l)} style={{
+              <button key={l} type="button" onClick={() => { setLang(l); onLangChange?.(l); }} style={{
                 ...pillStyle(lang === l), padding: "6px 14px", fontSize: 12,
               }}>
                 {l.toUpperCase()}
