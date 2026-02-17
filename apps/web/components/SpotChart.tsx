@@ -22,18 +22,8 @@ interface SpotChartProps {
   currency?: string;
 }
 
-const ZONE_COLORS: Record<string, string> = {
-  SE1: "#10b981",
-  SE2: "#3b82f6",
-  SE3: "#f59e0b",
-  SE4: "#ef4444",
-};
-
-const FALLBACK_COLORS = ["#8b5cf6", "#ec4899", "#06b6d4", "#84cc16", "#f97316"];
-
-export function getZoneColor(zone: string, index: number): string {
-  return ZONE_COLORS[zone] ?? FALLBACK_COLORS[index % FALLBACK_COLORS.length];
-}
+import { ZONE_COLORS, getZoneColor } from "@/lib/zone-colors";
+export { getZoneColor };
 
 export function SpotChart({ data, currency = "EUR/MWh" }: SpotChartProps) {
   if (data.length === 0 || data.every(d => d.series.length === 0)) {
@@ -46,7 +36,7 @@ export function SpotChart({ data, currency = "EUR/MWh" }: SpotChartProps) {
 
   const W = 760;
   const H = 300;
-  const PAD = { top: 20, right: 20, bottom: 40, left: 60 };
+  const PAD = { top: 20, right: 60, bottom: 40, left: 60 };
   const plotW = W - PAD.left - PAD.right;
   const plotH = H - PAD.top - PAD.bottom;
 
@@ -67,9 +57,10 @@ export function SpotChart({ data, currency = "EUR/MWh" }: SpotChartProps) {
   const yStep = priceRange <= 50 ? 10 : priceRange <= 200 ? 25 : 50;
   for (let v = minP; v <= maxP; v += yStep) yTicks.push(v);
 
-  // X-axis ticks (every 4 hours)
+  // X-axis ticks (adapt to resolution)
   const xTicks: number[] = [];
-  for (let i = 0; i < maxHours; i += 4) xTicks.push(i);
+  const xStep = maxHours > 48 ? Math.floor(maxHours / 6) : maxHours > 24 ? Math.floor(maxHours / 8) : 4;
+  for (let i = 0; i < maxHours; i += xStep) xTicks.push(i);
 
   return (
     <div style={{ width: "100%", overflowX: "auto" }}>
@@ -139,8 +130,8 @@ export function SpotChart({ data, currency = "EUR/MWh" }: SpotChartProps) {
             <g key={zone}>
               <path d={areaD} fill={color} fillOpacity={0.08} />
               <path d={pathD} fill="none" stroke={color} strokeWidth={2} />
-              {/* Price dots */}
-              {series.map((p, i) => (
+              {/* Price dots — only for hourly or fewer points */}
+              {series.length <= 24 && series.map((p, i) => (
                 <circle
                   key={i}
                   cx={scaleX(i)} cy={scaleY(p.price)}
@@ -154,6 +145,61 @@ export function SpotChart({ data, currency = "EUR/MWh" }: SpotChartProps) {
             </g>
           );
         })}
+
+        {/* Average line per series */}
+        {data.map(({ zone, series, color }) => {
+          if (series.length === 0) return null;
+          const avg = series.reduce((s, p) => s + p.price, 0) / series.length;
+          const y = scaleY(avg);
+          return (
+            <g key={`avg-${zone}`}>
+              <line
+                x1={PAD.left} y1={y} x2={W - PAD.right} y2={y}
+                stroke={color} strokeWidth={1} strokeDasharray="6 3" opacity={0.6}
+              />
+              <text
+                x={W - PAD.right + 4} y={y + 3}
+                fontSize={9} fill={color} fontFamily="var(--font-mono)" opacity={0.8}
+              >
+                avg {avg.toFixed(1)}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Current time indicator (vertical line) */}
+        {(() => {
+          const now = new Date();
+          const todayStr = now.toISOString().slice(0, 10);
+          // Only show if chart date is today and we have series data
+          const firstPoint = data[0]?.series[0];
+          if (!firstPoint) return null;
+          const chartDate = firstPoint.hourISO.slice(0, 10);
+          if (chartDate !== todayStr) return null;
+
+          const currentHour = now.getHours() + now.getMinutes() / 60;
+          // Map currentHour to series index
+          const step = 24 / maxHours; // hours per data point
+          const idx = currentHour / step;
+          if (idx < 0 || idx >= maxHours) return null;
+          const x = scaleX(idx);
+
+          return (
+            <g>
+              <line
+                x1={x} y1={PAD.top} x2={x} y2={PAD.top + plotH}
+                stroke="var(--accent-amber)" strokeWidth={1.5} strokeDasharray="4 2" opacity={0.8}
+              />
+              <text
+                x={x} y={PAD.top - 4}
+                textAnchor="middle" fontSize={9} fill="var(--accent-amber)"
+                fontFamily="var(--font-mono)"
+              >
+                {now.getHours().toString().padStart(2, "0")}:{now.getMinutes().toString().padStart(2, "0")}
+              </text>
+            </g>
+          );
+        })()}
 
         {/* Legend */}
         {data.length > 1 && data.map(({ zone, color }, i) => (

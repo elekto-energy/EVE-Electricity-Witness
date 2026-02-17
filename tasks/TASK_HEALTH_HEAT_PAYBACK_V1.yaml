@@ -1,0 +1,43 @@
+id: TASK_HEALTH_HEAT_PAYBACK_V1
+name: "Health Heat (18/19/20°C) + Building Rules + Payback (EU Compare) — EVEverified"
+project: "D:\\EVE11\\Projects\\013_elekto_eu"
+status: ready
+owner: "Human"
+priority: P0
+version: "1.0"
+date: "2026-02-15"
+
+objective:
+  - "Bygg ett jämförbart EU-verktyg som räknar nödvändig uppvärmning för 18/19/20°C per land."
+  - "Integrera byggkrav/isoleringsnivåer per land (evidence-backed) och räkna marginal-investering + payback."
+  - "Allt måste vara EVEverified: varje siffra i UI klickbar till källa + root_hash."
+
+principles:
+  - "No source, no number."
+  - "Witness: regler visas utan tolkning."
+  - "Model vs Observed: två separata vyer för att undvika narrativ bias."
+  - "V1: enkel, transparent fysik (UA + HDD). Ingen ML/LLM för siffror."
+
+scope_in:
+  - "Datasets: building rules, typology/U-values, climate HDD, observed space heating per m², prices"
+  - "Derived: heat_need_kwh for 18/19/20, delta_kwh from stricter envelope, payback years"
+  - "UI: EU heatmap + country detail + payback panel + evidence drawers"
+  - "APIs: read-only canonical + derived endpoints"
+
+scope_out_v1:
+  - "Full SFS fulltext ingest"
+  - "Room-by-room simulation, dynamic thermal mass, infiltration modeling"
+  - "Per-household income/distribution analysis"
+  - "BankID/opinion (separate Phase D)"
+
+execution_plan:
+  step_0: "Lock source contracts (HDD source, typology source, CAPEX basis)"
+  step_1: "Ingest minimal datasets for 5 pilot countries (SE, DE, FR, ES, PL)"
+  step_2: "Build derived heat_need + heat_cost for pilot"
+  step_3: "Add payback with ranges + sensitivity"
+  step_4: "Scale to all EU countries where datasets exist"
+
+blocked_decisions:
+  - "PRIMARY_HDD_SOURCE: Must be locked before any ingest. Options: ERA5-derived or EEA HDD indicator."
+  - "TYPOLOGY_SOURCE: TABULA/EPISCOPE or equivalent. Fallback = EU_BASELINE with 'Unknown' flag."
+  - "CAPEX_BASIS: Evidence-backed cost index or explicit 'assumption range' until hard data."

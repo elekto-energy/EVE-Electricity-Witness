@@ -2,14 +2,11 @@
 const path = require("path");
 
 const nextConfig = {
-  // Always standalone — EVE is infrastructure, not frontend-first.
-  // Deterministic build: Docker, local, CI all produce same artifact.
   output: "standalone",
 
   // Monorepo tracing: ensures standalone includes packages/ dependencies
-  experimental: {
-    outputFileTracingRoot: path.join(__dirname, "../../"),
-  },
+  // Moved from experimental to top-level per Next.js 15.5
+  outputFileTracingRoot: path.join(__dirname, "../../"),
 };
 
 module.exports = nextConfig;

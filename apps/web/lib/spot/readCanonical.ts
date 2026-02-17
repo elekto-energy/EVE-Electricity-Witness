@@ -60,19 +60,35 @@ export function findLatestRun(): string | null {
   return runs[0] ?? null;
 }
 
-/** Find a run that matches a specific date (YYYY-MM-DD in run_id) */
+/** Find a run that matches a specific date (YYYY-MM-DD in run_id) 
+ *  Checks:
+ *  1. Exact date match: run_id contains YYYYMMDD (daily runs)
+ *  2. Month match: run_id contains YYYYMM (monthly bulk runs)
+ */
 export function findRunByDate(date: string): string | null {
   const base = resolve(PROJECT_ROOT, "data", "canonical", "entsoe");
   if (!existsSync(base)) return null;
 
-  const dateCompact = date.replace(/-/g, "");
-  const runs = readdirSync(base, { withFileTypes: true })
-    .filter(d => d.isDirectory() && d.name.includes(dateCompact))
-    .map(d => d.name)
-    .sort()
-    .reverse();
+  const dateCompact = date.replace(/-/g, ""); // 20220214
+  const monthCompact = dateCompact.slice(0, 6);  // 202202
 
-  return runs[0] ?? null;
+  const allRuns = readdirSync(base, { withFileTypes: true })
+    .filter(d => d.isDirectory())
+    .map(d => d.name);
+
+  // Priority 1: exact date match (daily run)
+  const exactMatch = allRuns
+    .filter(n => n.includes(dateCompact))
+    .sort().reverse();
+  if (exactMatch.length > 0) return exactMatch[0];
+
+  // Priority 2: month match (bulk monthly run)
+  const monthMatch = allRuns
+    .filter(n => n.includes(monthCompact) && !n.includes(dateCompact))
+    .sort().reverse();
+  if (monthMatch.length > 0) return monthMatch[0];
+
+  return null;
 }
 
 /** Load all canonical records for a run */

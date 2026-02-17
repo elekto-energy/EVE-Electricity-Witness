@@ -14,6 +14,7 @@ export default function AskEvePage() {
   const [error, setError] = useState<string | null>(null);
   const [queryParams, setQueryParams] = useState<any>(null);
   const [lang, setLang] = useState("en");
+  const [fx, setFx] = useState<{ fx_rate: number; fx_period: string; fx_source: string; fx_file_hash: string } | null>(null);
 
   async function handleQuery(params: { zone: string; start: string; end: string; lang: string }) {
     setLoading(true); setError(null); setPdfResult(null); setQueryParams(params);
@@ -25,6 +26,7 @@ export default function AskEvePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Query failed");
       setResult(data.result);
+      setFx(data.fx ?? null);
     } catch (e: any) { setError(e.message); setResult(null); }
     finally { setLoading(false); }
   }
@@ -158,7 +160,7 @@ export default function AskEvePage() {
       {/* ═══ RESULTS (conditional) ═══ */}
       {result && (
         <>
-          <ResultPanel result={result} />
+          <ResultPanel result={result} lang={lang} fx={fx} />
           <EvidencePanel result={result} pdfResult={pdfResult} />
 
           {/* PDF Action */}

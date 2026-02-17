@@ -36,6 +36,7 @@ interface ApiResponse {
 
 export default function StatementsPage() {
   const [speaker, setSpeaker] = useState("");
+  const [source, setSource] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [search, setSearch] = useState("");
@@ -56,6 +57,7 @@ export default function StatementsPage() {
 
     const params = new URLSearchParams();
     if (speaker) params.set("speaker", speaker);
+    if (source) params.set("source", source);
     if (from) params.set("from", from);
     if (to) params.set("to", to);
     if (search) params.set("q", search);
@@ -82,7 +84,7 @@ export default function StatementsPage() {
     } finally {
       setLoading(false);
     }
-  }, [speaker, from, to, search]);
+  }, [speaker, source, from, to, search]);
 
   // Fetch on filter change (debounced for search)
   useEffect(() => {
@@ -112,6 +114,7 @@ export default function StatementsPage() {
         <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
           <StatementsFilters
             speaker={speaker} onSpeakerChange={setSpeaker}
+            source={source} onSourceChange={setSource}
             from={from} onFromChange={setFrom}
             to={to} onToChange={setTo}
             search={search} onSearchChange={setSearch}

@@ -1,0 +1,27 @@
+{
+  "name": "013_elekto_eu",
+  "version": "1.0.0",
+  "description": "Open, neutral, evidence-driven tool that models **necessary heating only** (18/19/20°C) across EU countries. No opinions. No personal attacks. No \"policy scoring\". Only data + method.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elekto-energy/EVE-Electricity-Witness.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/elekto-energy/EVE-Electricity-Witness/issues"
+  },
+  "homepage": "https://github.com/elekto-energy/EVE-Electricity-Witness#readme",
+  "dependencies": {
+    "pdfkit": "^0.17.2"
+  }
+}

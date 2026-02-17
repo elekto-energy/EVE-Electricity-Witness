@@ -1,0 +1,125 @@
+id: TASK_LINK_STATEMENTS_TO_DECISIONS
+name: "Derived Linking v1 — connect Statements ↔ Decisions (evidence-backed, deterministic)"
+project: "D:\\EVE11\\Projects\\013_elekto_eu"
+status: ready
+owner: "Human"
+priority: P0
+version: "1.0"
+date: "2026-02-15"
+
+objective:
+  - "Knyt ihop 'tjafs' (statements) med de få faktiska besluten (decision graph)."
+  - "Bygg deterministiska länkar mellan StatementEvents och DecisionNodes."
+  - "Visa per beslut: vilka som pratar om det, när, och från vilken primärkälla."
+  - "Ingen sentiment/stance. Bara länkar + evidens + transparens om match-regler."
+
+dependencies:
+  - "TASK_SLICE_1_RIKSDAGEN_STATEMENTS (statements canonical exists)"
+  - "TASK_DECISION_GRAPH_V1 (decision graph canonical exists)"
+
+scope_in:
+  - "Derived linker: statements_to_decisions_v1"
+  - "Rule config + docs: LINK_RULES_V1"
+  - "Canonical output: links.json + per-decision index"
+  - "API: /api/witness/decisions/:id/statements and /api/witness/statements/:id/decisions"
+  - "UI: decision detail page shows linked statements panel"
+
+scope_out:
+  - "No stance scoring, no blame scoring (later opinion layer)"
+  - "No fuzzy matching beyond deterministic rules (v1 exact/regex only)"
+  - "No media sources required (works with Riksdagen-only statements)"
+
+trinity:
+  rules_doc: "TRINITY_ROUTER_RULES.md"
+  routing:
+    CODEFACTORY:
+      - "packages/evidence/** (linker build + rules engine)"
+      - "packages/schemas/** (Link schema)"
+      - "apps/web/app/api/** (API)"
+      - "apps/web/lib/** (readers + indexes + tests)"
+    CLAUDE_API:
+      - "apps/web/components/** (LinkedStatementsPanel)"
+      - "apps/web/app/witness/decisions/[id] (UI wiring only)"
+  gates:
+    - id: GATE_TRANSPARENT_MATCH
+      rule: "Every link must include matched_by + rule_id + confidence_mode=deterministic."
+    - id: GATE_NO_FUZZY
+      rule: "No embeddings/LLM matching in v1; only exact/regex/ID-reference."
+    - id: GATE_EVIDENCE_REQUIRED
+      rule: "Links output must have evidence_ref tied to both input manifests."
+
+link_rules_v1:
+  deliverables:
+    - "docs/LINK_RULES_V1.md"
+    - "data/canonical/linking/link_rules_v1.json"
+  rule_types:
+    - "explicit_id_reference"
+    - "dok_id_match"
+    - "sfs_number_match"
+    - "keyword_regex_strict"
+  precedence:
+    - "explicit_id_reference > dok_id_match > sfs_number_match > keyword_regex_strict"
+  examples:
+    - "If statement text or metadata contains dok_id (e.g. '2024/25:123') → link to that node"
+    - "If statement contains SFS-nummer pattern 'SFS 201x:xxx' → link to sfs_ref node"
+    - "Strict regex keywords (e.g. 'kärnkraft', 'effektskatt', 'stamnät', 'flaskhalsintäkt') only if no ID match"
+
+canonical_outputs:
+  paths:
+    - "data/canonical/linking/statements_to_decisions_v1/links.json"
+    - "data/canonical/linking/statements_to_decisions_v1/index_by_decision.json"
+    - "data/canonical/linking/statements_to_decisions_v1/index_by_statement.json"
+  manifests:
+    - "manifests/linking/statements_to_decisions_v1_raw.*"
+    - "manifests/linking/statements_to_decisions_v1_canonical.*"
+
+link_schema:
+  link_min_fields:
+    - "link_id (stable hash of statement_id|decision_id|rule_id)"
+    - "statement_id"
+    - "decision_node_id"
+    - "matched_by { rule_id, rule_type, matched_text?, matched_span? }"
+    - "confidence_mode = deterministic"
+    - "evidence_ref { manifest_id, root_hash, files_sha256_path }"
+  note:
+    - "matched_text is quote-safe excerpt of the matching token (e.g. dok_id string), max 80 chars"
+
+build:
+  command:
+    - "npx tsx packages/evidence/src/build_links_statements_decisions.ts --run_id link_v1 --statements_run <RUN_ID> --decision_graph decision_graph_v1 --rules link_rules_v1"
+  acceptance:
+    - "Same inputs + same rules → identical links root_hash"
+    - "Links count stable; rule precedence stable"
+
+api:
+  endpoints:
+    - method: GET
+      path: "/api/witness/decisions/:id/statements"
+      returns: ["items[] (statement cards)", "evidence"]
+    - method: GET
+      path: "/api/witness/statements/:id/decisions"
+      returns: ["items[] (decision nodes)", "evidence"]
+  requirements:
+    - "Return matched_by + rule_id + evidence"
+    - "Allow filter: rule_type"
+
+ui:
+  requirements:
+    - "Decision detail shows 'Linked statements' panel"
+    - "Each statement card shows source badge + speaker + date + matched_by"
+    - "Click opens statement detail or jumps to /witness/statements with filter"
+    - "No opinion language"
+
+tests:
+  required:
+    - "golden fixture with 3 decisions + 10 statements where some include dok_id/sfs tokens"
+    - "golden linking output stable"
+    - "API golden tests for both endpoints"
+  acceptance:
+    - "No fuzzy/LLM behavior"
+    - "Matched_by explains every link"
+
+definition_of_done:
+  - "Per decision page can show statements that reference it, with traceable rules"
+  - "All links are deterministic and evidence-backed"
+  - "No regressions in existing witness/statements tests"

@@ -1,0 +1,150 @@
+id: TASK_DECISION_GRAPH_V1
+name: "Decision Graph v1 (SE Energy) — Riksdagen docs + votering → canonical graph"
+project: "D:\\EVE11\\Projects\\013_elekto_eu"
+status: ready
+owner: "Human"
+priority: P0
+version: "1.0"
+date: "2026-02-15"
+
+objective:
+  - "Bygg ett litet, exakt Decision Graph för energirelaterade beslut (få noder, hög signal)."
+  - "Källor: Riksdagen Open Data (dokumentlista: prop/bet + voteringlista + personlista)."
+  - "Output: canonical graph med noder/kanter + evidence_ref för varje nod och för hela build."
+  - "Ingen tolkning. Inga 'ansvars'-omdömen. Bara kedjor."
+
+scope_in:
+  - "Source contract lock (endpoints, params, fields) i docs/"
+  - "Ingest: dokumentlista (prop, bet) + voteringlista + personlista"
+  - "Topic filter: energi (v1) genom deterministiska regler/whitelist"
+  - "Canonical: decision_graph.json (nodes/edges) + registries + manifests"
+  - "API: /api/witness/decisions + /api/witness/decisions/:id + /api/registry/decisions/topics"
+  - "UI seed page (minimal): /witness/decisions (lista) + /witness/decisions/[id] (detalj)"
+
+scope_out:
+  - "Full SFS fulltext ingest (v1 länkar endast)"
+  - "Media/X statements (det kommer via statements pipeline senare)"
+  - "Score/stance/impact eller 'skyldighet' (opinion-lagret senare)"
+  - "Perfekt ämnesklassificering (energi v1 är strict + transparent)"
+
+trinity:
+  rules_doc: "TRINITY_ROUTER_RULES.md"
+  routing:
+    CODEFACTORY:
+      - "packages/evidence/** (riksdagen clients + ingests)"
+      - "packages/schemas/** (DecisionNode/Edge schemas)"
+      - "apps/web/app/api/** (API routes)"
+      - "apps/web/lib/** (canonical readers + graph utils + tests)"
+      - "data/** + manifests/** + scripts/**"
+      - "golden tests"
+    CLAUDE_API:
+      - "apps/web/app/witness/decisions/** (pages)"
+      - "apps/web/components/** (graph/table UI components)"
+  gates:
+    - id: GATE_NO_GUESSING
+      rule: "All decision nodes must be sourced from Riksdagen datasets; no hand-created decisions."
+    - id: GATE_EVIDENCE_EVERY_NODE
+      rule: "Every node must include source_url(s) + dok_id/votering_id and an evidence_ref."
+    - id: GATE_TOPIC_RULES_TRANSPARENT
+      rule: "Energy topic rules must live in docs + canonical config and be versioned."
+    - id: GATE_DETERMINISM
+      rule: "Same raw snapshot → identical canonical graph root_hash."
+
+data_sources:
+  riksdagen:
+    docs_api_base: "https://data.riksdagen.se/dokumentlista/"
+    voting_api_base: "https://data.riksdagen.se/voteringlista/"
+    people_api_base: "https://data.riksdagen.se/personlista/"
+    formats: ["json"]
+  sfs:
+    mode_v1: "link_only"
+    notes: "SFS is represented as linked reference nodes when present (SFS number + URL)."
+
+source_contract:
+  deliverable: "docs/SOURCE_CONTRACTS_DECISION_GRAPH.md"
+  must_include:
+    - "exact endpoints + required params (doktyp=prop|bet, rm/from/to, utformat=json, paging)"
+    - "field mapping list (dok_id, titel, datum, rm, rel_dok_id, doktyp, utskott, etc)"
+    - "votering mapping (votering_id, dok_id/rel, punkt, result)"
+    - "retry/backoff policy + timeouts"
+    - "known limitations + null-handling rules"
+
+canonical_outputs:
+  paths:
+    - "data/canonical/decisions/decision_graph_v1/decision_graph.json"
+    - "data/canonical/decisions/decision_graph_v1/topics_energy_v1.json"
+    - "data/canonical/registries/decisions_topics_v1.json"
+  manifests:
+    - "manifests/decisions/decision_graph_v1_raw.*"
+    - "manifests/decisions/decision_graph_v1_canonical.*"
+
+schema:
+  node_types:
+    - "prop"
+    - "bet"
+    - "vote"
+    - "sfs_ref"
+  edge_types:
+    - "references"
+    - "leads_to"
+    - "implements"
+  node_min_fields:
+    - "node_id (stable, deterministic)"
+    - "node_type"
+    - "title"
+    - "published_at_utc"
+    - "source { source_id, original_url, dok_id?, votering_id? }"
+    - "evidence_ref { manifest_id, root_hash, files_sha256_path }"
+    - "topic_tags[] (energy tag only if rule matches)"
+  edge_min_fields:
+    - "edge_id (stable hash of from|type|to)"
+    - "from_node_id"
+    - "to_node_id"
+    - "edge_type"
+    - "evidence_ref"
+
+topic_rules_energy_v1:
+  deliverable: "docs/TOPIC_RULES_ENERGY_V1.md"
+  approach:
+    - "strict whitelist keywords + committee filters (transparent)"
+    - "optional: curated list of dok_id seeds (human-curated but must be evidence-backed with URLs)"
+  output:
+    - "topics_energy_v1.json includes rule_version + matched_by per node"
+
+ingest:
+  commands:
+    - "npx tsx packages/evidence/src/ingest_riksdagen_docs.ts --run_id decisions_docs_v1 --doktyp prop,bet --from 2016-01-01 --to 2026-02-15"
+    - "npx tsx packages/evidence/src/ingest_riksdagen_votes.ts --run_id decisions_votes_v1 --from 2016-01-01 --to 2026-02-15"
+    - "npx tsx packages/evidence/src/build_decision_graph.ts --run_id decision_graph_v1 --inputs decisions_docs_v1,decisions_votes_v1 --topic energy_v1"
+  notes:
+    - "Use stepwise runs if volume is large (year slices) but final canonical graph is deterministic merge."
+
+api:
+  endpoints:
+    - method: GET
+      path: "/api/witness/decisions"
+      returns: ["items[] (DecisionNode summaries)", "evidence"]
+    - method: GET
+      path: "/api/witness/decisions/:id"
+      returns: ["node", "edges_out[]", "edges_in[]", "evidence"]
+    - method: GET
+      path: "/api/registry/decisions/topics"
+      returns: ["topics[]", "evidence"]
+
+ui:
+  pages:
+    - "/witness/decisions"
+    - "/witness/decisions/[id]"
+  requirements:
+    - "List view: filter by topic=energy, type=prop|bet|vote, date range"
+    - "Detail view: show chain (neighbors) + source links + EvidenceDrawer"
+    - "No opinion language in UI copy"
+
+tests:
+  required:
+    - "golden fixtures for small docs+votes sample"
+    - "graph build golden test: nodes/edges stable"
+    - "api golden test: decisions list + detail"
+  acceptance:
+    - "Small fixture produces stable root_hash and stable node_ids/edge_ids"
+    - "UI shows decision chain with evidence links"

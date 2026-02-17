@@ -1,0 +1,38 @@
+﻿{
+    "voteringlista":  {
+                          "@grupp8":  "",
+                          "@grupp7":  "",
+                          "@grupp6":  "",
+                          "@grupp5":  "",
+                          "@grupp4":  "",
+                          "@grupp3":  "",
+                          "@grupp1":  "",
+                          "@grupp2":  "",
+                          "@gruppering":  "",
+                          "@villkor":  ": rm=2024/25 ",
+                          "@antal":  "1",
+                          "votering":  {
+                                           "hangar_id":  "5223895",
+                                           "rm":  "2024/25",
+                                           "beteckning":  "AU10",
+                                           "punkt":  "1",
+                                           "votering_id":  "EDADC2B5-0C70-477E-B72E-F28BD5735975",
+                                           "intressent_id":  "0257612529618",
+                                           "namn":  "Kenneth G Forslund",
+                                           "fornamn":  "Kenneth G",
+                                           "efternamn":  "Forslund",
+                                           "valkrets":  "Västra Götalands läns västra",
+                                           "iort":  "",
+                                           "parti":  "S",
+                                           "banknummer":  "1",
+                                           "kon":  "man",
+                                           "fodd":  "1967",
+                                           "rost":  "Avstår",
+                                           "avser":  "sakfrågan",
+                                           "votering":  "huvud",
+                                           "votering_url_xml":  "http://data.riksdagen.se/votering/EDADC2B5-0C70-477E-B72E-F28BD5735975",
+                                           "dok_id":  "HC01AU10",
+                                           "systemdatum":  "2025-05-14 16:33:21"
+                                       }
+                      }
+}

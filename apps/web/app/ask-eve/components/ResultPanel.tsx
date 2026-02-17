@@ -1,7 +1,16 @@
 "use client";
 
+interface FxInfo {
+  fx_rate: number;
+  fx_period: string;
+  fx_source: string;
+  fx_file_hash: string;
+}
+
 interface ResultPanelProps {
   result: any;
+  lang: string;
+  fx: FxInfo | null;
 }
 
 function fmt(v: number | null, d = 2): string {
@@ -11,7 +20,13 @@ function fmt(v: number | null, d = 2): string {
 
 function fmtInt(v: number | null): string {
   if (v === null || v === undefined) return "–";
-  return Math.round(v).toLocaleString("en-US");
+  return Math.round(v).toLocaleString("sv-SE");
+}
+
+/** Convert €/MWh → kr/kWh using ECB rate */
+function eurMwhToSekKwh(v: number | null, fxRate: number): number | null {
+  if (v === null || v === undefined) return null;
+  return (v * fxRate) / 1000;
 }
 
 function Stat({ label, value, unit, color }: { label: string; value: string; unit?: string; color?: string }) {
@@ -34,13 +49,30 @@ const GEN_COLORS: Record<string, string> = {
   solar: "#facc15", gas: "#f97316", coal: "#78716c", lignite: "#57534e", oil: "#44403c", other: "#a8a29e",
 };
 
-const GEN_LABELS: Record<string, string> = {
+const GEN_LABELS_SV: Record<string, string> = {
   nuclear: "Kärnkraft", hydro: "Vatten", wind_onshore: "Vind", wind_offshore: "Vind hav",
   solar: "Sol", gas: "Gas", coal: "Kol", lignite: "Brunkol", oil: "Olja", other: "Övrigt",
 };
 
-export default function ResultPanel({ result }: ResultPanelProps) {
+const GEN_LABELS_EN: Record<string, string> = {
+  nuclear: "Nuclear", hydro: "Hydro", wind_onshore: "Wind", wind_offshore: "Wind offshore",
+  solar: "Solar", gas: "Gas", coal: "Coal", lignite: "Lignite", oil: "Oil", other: "Other",
+};
+
+export default function ResultPanel({ result, lang, fx }: ResultPanelProps) {
+  const isSv = lang === "sv";
   const gm = result.generation_mix_avg_mw;
+  const GL = isSv ? GEN_LABELS_SV : GEN_LABELS_EN;
+
+  // FX conversion — only SV + available ECB rate
+  const useSek = isSv && fx !== null;
+  const fxRate = fx?.fx_rate ?? 0;
+
+  const spotMean = useSek ? eurMwhToSekKwh(result.spot.mean, fxRate) : result.spot.mean;
+  const spotMin = useSek ? eurMwhToSekKwh(result.spot.min, fxRate) : result.spot.min;
+  const spotMax = useSek ? eurMwhToSekKwh(result.spot.max, fxRate) : result.spot.max;
+  const spotUnit = useSek ? "kr/kWh" : "€/MWh";
+  const spotDecimals = useSek ? 3 : 2;
 
   // Generation mix bar
   const genEntries = Object.entries(gm as Record<string, number | null>)
@@ -55,29 +87,36 @@ export default function ResultPanel({ result }: ResultPanelProps) {
           {result.zone} — {result.period.from} → {result.period.to}
         </span>
         <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-          {result.rows_count} rows · {result.hours_total}h
+          {result.rows_count} {isSv ? "rader" : "rows"} · {result.hours_total}h
         </span>
       </div>
 
       {/* Key metrics */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-        <Stat label="Spot Mean" value={fmt(result.spot.mean)} unit="€/MWh" color="#f59e0b" />
-        <Stat label="CO₂ Produktion" value={fmt(result.production_co2.mean)} unit="g/kWh" color="#22c55e" />
-        <Stat label="CO₂ Konsumtion" value={fmt(result.consumption_co2.mean)} unit="g/kWh" color="#ef4444" />
-        <Stat label="Nettoimport" value={fmtInt(result.net_import.mean)} unit="MW" color="#3b82f6" />
+        <Stat label={isSv ? "Spotpris medel" : "Spot Mean"} value={fmt(spotMean, spotDecimals)} unit={spotUnit} color="#f59e0b" />
+        <Stat label={isSv ? "CO₂ produktion" : "CO₂ Production"} value={fmt(result.production_co2.mean)} unit="g/kWh" color="#22c55e" />
+        <Stat label={isSv ? "CO₂ konsumtion" : "CO₂ Consumption"} value={fmt(result.consumption_co2.mean)} unit="g/kWh" color="#ef4444" />
+        <Stat label={isSv ? "Nettoimport" : "Net Import"} value={fmtInt(result.net_import.mean)} unit="MW" color="#3b82f6" />
       </div>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-        <Stat label="Spot Min" value={fmt(result.spot.min)} unit="€" />
-        <Stat label="Spot Max" value={fmt(result.spot.max)} unit="€" />
-        <Stat label="Temp" value={fmt(result.temperature.mean, 1)} unit="°C" color="#22d3ee" />
+        <Stat label={isSv ? "Spot min" : "Spot Min"} value={fmt(spotMin, spotDecimals)} unit={spotUnit} />
+        <Stat label={isSv ? "Spot max" : "Spot Max"} value={fmt(spotMax, spotDecimals)} unit={spotUnit} />
+        <Stat label={isSv ? "Temp" : "Temp"} value={fmt(result.temperature.mean, 1)} unit="°C" color="#22d3ee" />
         <Stat label="HDD" value={fmtInt(result.hdd.sum)} />
       </div>
+
+      {/* FX conversion note */}
+      {useSek && (
+        <div style={{ fontSize: 9, color: "var(--text-muted)", marginBottom: 12, fontFamily: "var(--font-mono)" }}>
+          Konverterat från €/MWh med ECB månadsgenomsnitt ({fx.fx_period}: {fx.fx_rate.toFixed(4)} SEK/EUR) · Exkl. nätavgift, skatt, påslag
+        </div>
+      )}
 
       {/* Generation mix stacked bar */}
       <div style={{ marginBottom: 8 }}>
         <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-          Produktionsmix (medel MW)
+          {isSv ? "Produktionsmix (medel MW)" : "Generation Mix (avg MW)"}
         </div>
         {genTotal > 0 && (
           <>
@@ -90,8 +129,8 @@ export default function ResultPanel({ result }: ResultPanelProps) {
                     width: `${pct}%`, background: GEN_COLORS[e.key] ?? "#666",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: pct > 8 ? 8 : 0, color: "#fff", fontWeight: 600, fontFamily: "var(--font-mono)",
-                  }} title={`${GEN_LABELS[e.key] ?? e.key}: ${Math.round(e.value)} MW (${pct.toFixed(1)}%)`}>
-                    {pct > 12 ? `${GEN_LABELS[e.key] ?? e.key} ${pct.toFixed(0)}%` : pct > 5 ? `${pct.toFixed(0)}%` : ""}
+                  }} title={`${GL[e.key] ?? e.key}: ${Math.round(e.value)} MW (${pct.toFixed(1)}%)`}>
+                    {pct > 12 ? `${GL[e.key] ?? e.key} ${pct.toFixed(0)}%` : pct > 5 ? `${pct.toFixed(0)}%` : ""}
                   </div>
                 );
               })}
@@ -100,7 +139,7 @@ export default function ResultPanel({ result }: ResultPanelProps) {
               {genEntries.filter(e => (e.value / genTotal) * 100 >= 1).map(e => (
                 <span key={e.key} style={{ fontSize: 9, color: "var(--text-muted)" }}>
                   <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: GEN_COLORS[e.key] ?? "#666", marginRight: 3, verticalAlign: "middle" }} />
-                  {GEN_LABELS[e.key] ?? e.key} {fmtInt(e.value)} MW
+                  {GL[e.key] ?? e.key} {fmtInt(e.value)} MW
                 </span>
               ))}
             </div>

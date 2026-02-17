@@ -1,0 +1,106 @@
+id: TASK_PRICE_STRUCTURE_PROFIT_BAROMETER_V1
+name: "Price Structure + Congestion Revenue + Producer Financials — EVEverified"
+project: "D:\\EVE11\\Projects\\013_elekto_eu"
+status: ready
+owner: "Human"
+priority: P0
+version: "1.0"
+date: "2026-02-15"
+
+objective:
+  - "Tre separata, tydligt åtskilda lager: Price Structure, Congestion Revenue, Producer Financials"
+  - "Allt EVEverified: canonical → manifest → root_hash"
+  - "Inga värdeord, ingen tolkning i witness-lagret"
+
+principles:
+  - "No source, no number."
+  - "Taxonomin får aldrig blandas: Retail ≠ Generation ≠ Systemoperatör"
+  - "Correlation ≠ intention. Inga påståenden om motiv."
+  - "Inga formuleringar som 'staten tjänar på…' — bara 'statliga intäkter som korrelerar med prisnivå'"
+
+taxonomy:
+  A_retail:
+    description: "Elhandelsbolag (påslag, fast avgift, avtalsform)"
+    source: "Ei / Elpriskollen"
+  B_generation:
+    description: "Producenter (koncernresultat, segmentresultat Generation)"
+    source: "Årsredovisningar (Vattenfall, Fortum)"
+  C_system_operator:
+    description: "Flaskhalsintäkter, återförda medel, ackumulerat saldo"
+    source: "Ei + Svenska kraftnät rapporter"
+
+scope:
+  page: "/witness/price-structure"
+  sections:
+    - "Price Composition (elräkningens uppdelning)"
+    - "Congestion Revenues (flaskhalsintäkter)"
+    - "Producer Financials (årsresultat, ej propaganda)"
+    - "Methodology"
+
+execution_phases:
+  A_price_breakdown:
+    name: "Elräkningens struktur"
+    ingest:
+      - "Spotpris (ENTSO-E) — redan gjort"
+      - "Energiskatt (lagrum, Skatteverket)"
+      - "Momsregler (Skatteverket)"
+      - "Nätavgiftsstruktur (Ei)"
+    canonical: "data/canonical/prices/price_breakdown_v1/{zone_or_country}.json"
+    schema: |
+      { zone, year, components: { spot_avg_eur_mwh, network_ore_kwh, energy_tax_ore_kwh, vat_pct, elcert_ore_kwh },
+        source_refs[], evidence_ref: { manifest_id, root_hash } }
+    ui: "'Av 100 öre/kWh: Spot X%, Nät Y%, Skatt Z%, Moms W%' — inga slutsatser"
+
+  B_congestion_revenue:
+    name: "Flaskhalsintäkter"
+    ingest:
+      - "Ei-rapporter (årsvis congestion revenue)"
+      - "Svenska kraftnät rapporter (ackumulerat saldo)"
+    canonical: "data/canonical/congestion/congestion_revenue_v1.json"
+    schema: |
+      [{ year, congestion_revenue_msek, cumulative_balance_msek, returned_to_customers_msek,
+         source_url, evidence_ref }]
+    ui: "Barometer + SE1-SE4 spread vs intäkter. Inga spekulationer om motiv."
+
+  C_producer_financials:
+    name: "Producentvinster"
+    ingest:
+      - "Vattenfall årsredovisning (PDF ingest)"
+      - "Fortum årsredovisning (PDF ingest)"
+    canonical: "data/canonical/financials/producer_financials_v1.json"
+    schema: |
+      [{ company, year, operating_profit_msek, net_profit_msek, segment_generation_profit_msek?,
+         source_url, evidence_ref }]
+    ui: "'Generation companies — annual profit (group level)'. Aldrig 'elbolag roffar'."
+
+time_resolution:
+  financial: "Årsvis"
+  congestion: "Årsvis + ackumulerat"
+  spot: "Timvis (redan)"
+  spread: "Senaste 12 månader rullande"
+
+legal_safety:
+  forbidden:
+    - "Påståenden om motiv"
+    - "'Staten tjänar på…'"
+    - "Värdeladdade formuleringar"
+    - "Blandning av taxonomier i samma vy"
+  allowed:
+    - "'Statliga intäkter som korrelerar med prisnivå'"
+    - "Correlation disclaimers"
+    - "Bara data + källa"
+
+dev_order:
+  1: "Ingest Ei congestion rapport (Fas B)"
+  2: "Bygg canonical + manifest"
+  3: "Bygg congestion barometer widget"
+  4: "Ingest price breakdown components (Fas A)"
+  5: "Bygg price composition widget"
+  6: "Ingest producenters årsdata (Fas C)"
+  7: "Bygg financial overview widget"
+  8: "Integrera /witness/price-structure page"
+
+blocked_decisions:
+  - "Ei rapport URL/format för congestion data (behöver research)"
+  - "Nätavgiftsstruktur: Ei publicerar typkund-data — behöver exakt endpoint"
+  - "Energiskatt: aktuellt belopp + lagrum (Skatteverket)"

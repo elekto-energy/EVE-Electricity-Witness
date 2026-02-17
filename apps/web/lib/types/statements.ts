@@ -32,6 +32,28 @@ export interface StatementsResponse {
   evidence: EvidenceMetadata;
 }
 
+/** Observed speaker (aggregated from statements) */
+export interface ObservedSpeakerDTO {
+  speaker_id: string;
+  display_name: string;
+  party: string | null;
+  count: number;
+  verified: boolean;
+  registry_match: {
+    speaker_registry_version: string;
+    matched_on: "speaker_id" | "alias" | "none";
+  };
+}
+
+/** Response: /api/witness/statements/speakers */
+export interface ObservedSpeakersResponse {
+  observed: ObservedSpeakerDTO[];
+  evidence: {
+    statements: EvidenceMetadata;
+    registry: EvidenceMetadata;
+  };
+}
+
 /** Speaker for registry */
 export interface SpeakerDTO {
   speaker_id: string;

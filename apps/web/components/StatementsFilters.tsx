@@ -1,20 +1,33 @@
 "use client";
 
 /**
- * StatementsFilters — speaker dropdown + date range + search.
- * Gate C: speaker list loaded from /api/registry/speakers.
+ * StatementsFilters — speaker dropdown + source dropdown + date range + search.
+ *
+ * Slice 1B: Speaker dropdown fetches from /api/witness/statements/speakers
+ * GATE_NO_PAGING_DERIVATION: never derive from paginated statements.
  */
 
 import { useState, useEffect } from "react";
 
-interface Speaker {
+interface ObservedSpeaker {
   speaker_id: string;
   display_name: string;
+  party: string | null;
+  count: number;
+  verified: boolean;
+}
+
+interface Source {
+  source_id: string;
+  publisher: string;
+  source_type_canonical?: string;
 }
 
 interface StatementsFiltersProps {
   speaker: string;
   onSpeakerChange: (id: string) => void;
+  source: string;
+  onSourceChange: (s: string) => void;
   from: string;
   onFromChange: (d: string) => void;
   to: string;
@@ -25,16 +38,23 @@ interface StatementsFiltersProps {
 
 export function StatementsFilters({
   speaker, onSpeakerChange,
+  source, onSourceChange,
   from, onFromChange,
   to, onToChange,
   search, onSearchChange,
 }: StatementsFiltersProps) {
-  const [speakers, setSpeakers] = useState<Speaker[]>([]);
+  const [speakers, setSpeakers] = useState<ObservedSpeaker[]>([]);
+  const [sources, setSources] = useState<Source[]>([]);
 
   useEffect(() => {
-    fetch("/api/registry/speakers")
+    // Slice 1B: observed speakers from dedicated endpoint
+    fetch("/api/witness/statements/speakers")
       .then(r => r.json())
-      .then(data => setSpeakers(data.speakers ?? []))
+      .then(data => setSpeakers(data.observed ?? []))
+      .catch(() => {});
+    fetch("/api/registry/sources")
+      .then(r => r.json())
+      .then(data => setSources(data.sources ?? []))
       .catch(() => {});
   }, []);
 
@@ -52,9 +72,19 @@ export function StatementsFilters({
     <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
       {/* Speaker */}
       <select value={speaker} onChange={e => onSpeakerChange(e.target.value)} style={inputStyle}>
-        <option value="">All speakers</option>
+        <option value="">All speakers ({speakers.length})</option>
         {speakers.map(s => (
-          <option key={s.speaker_id} value={s.speaker_id}>{s.display_name}</option>
+          <option key={s.speaker_id} value={s.speaker_id}>
+            {s.verified ? "✅ " : "⚠️ "}{s.display_name}{s.party ? ` (${s.party})` : ""} ({s.count})
+          </option>
+        ))}
+      </select>
+
+      {/* Source */}
+      <select value={source} onChange={e => onSourceChange(e.target.value)} style={inputStyle}>
+        <option value="">All sources</option>
+        {sources.map(s => (
+          <option key={s.source_id} value={s.source_type_canonical ?? s.source_id}>{s.publisher}</option>
         ))}
       </select>
 

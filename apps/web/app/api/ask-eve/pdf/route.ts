@@ -7,9 +7,10 @@
 
 import { NextResponse } from "next/server";
 import { resolve } from "path";
-import { readFileSync, unlinkSync } from "fs";
+import { readFileSync, unlinkSync, existsSync } from "fs";
 import { tmpdir } from "os";
 import { randomBytes } from "crypto";
+import { execSync } from "child_process";
 
 function getProjectRoot(): string {
   const cwd = process.cwd();
@@ -33,36 +34,69 @@ export async function POST(request: Request) {
 
     const language = lang ?? "en";
     const root = getProjectRoot();
-
-    // Import query + PDF engine
-    const { query } = await import(`${root}/packages/evidence/src/ask-eve/query_v2`);
-    const { generatePdf } = await import(`${root}/packages/evidence/src/ask-eve/generate_pdf`);
-
-    // Run deterministic query
-    const result = query({ zone, from: start, to: end });
-
-    // Generate PDF to temp file
     const tmpFile = resolve(tmpdir(), `eve_${randomBytes(8).toString("hex")}.pdf`);
-    const pdfResult = await generatePdf(result, tmpFile, language);
 
-    // Read PDF and clean up
-    const pdfBuffer = readFileSync(tmpFile);
-    try { unlinkSync(tmpFile); } catch {}
+    // Shell out to the CLI — guaranteed to work, same as manual CLI usage
+    const script = resolve(root, "packages/evidence/src/ask-eve/generate_pdf.ts");
+    if (!existsSync(script)) {
+      return NextResponse.json(
+        { error: `PDF generator not found: ${script}` },
+        { status: 500 },
+      );
+    }
 
-    // Return PDF with metadata in headers
-    return new NextResponse(pdfBuffer, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="evidence_${zone}_${start}_${end}_${language}.pdf"`,
-        "X-EVE-PDF-Hash": pdfResult.pdf_hash,
-        "X-EVE-Query-Hash": pdfResult.query_hash,
-        "X-EVE-Language": pdfResult.language,
-        "X-EVE-Template-Version": pdfResult.template_version,
-        "X-EVE-Report-Index": String(pdfResult.report_index),
-        "X-EVE-Chain-Hash": pdfResult.chain_hash,
-      },
-    });
+    const cmd = `npx tsx "${script}" --zone ${zone} --from ${start} --to ${end} --lang ${language} --output "${tmpFile}"`;
+
+    try {
+      const output = execSync(cmd, {
+        cwd: root,
+        timeout: 30_000,
+        encoding: "utf-8",
+        env: { ...process.env, NODE_ENV: "production" },
+      });
+
+      // Parse output for metadata
+      const parseField = (prefix: string): string => {
+        const line = output.split("\n").find(l => l.includes(prefix));
+        return line?.split(prefix)[1]?.trim() ?? "";
+      };
+
+      const pdfHash = parseField("pdf_hash:");
+      const queryHash = parseField("query_hash:");
+      const templateVersion = parseField("template:");
+      const reportIndex = parseField("report_index:");
+      const chainHash = parseField("chain_hash:");
+
+      if (!existsSync(tmpFile)) {
+        return NextResponse.json(
+          { error: "PDF generation completed but file not found" },
+          { status: 500 },
+        );
+      }
+
+      const pdfBuffer = readFileSync(tmpFile);
+      try { unlinkSync(tmpFile); } catch {}
+
+      return new NextResponse(pdfBuffer, {
+        status: 200,
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `attachment; filename="evidence_${zone}_${start}_${end}_${language}.pdf"`,
+          "X-EVE-PDF-Hash": pdfHash,
+          "X-EVE-Query-Hash": queryHash,
+          "X-EVE-Language": language,
+          "X-EVE-Template-Version": templateVersion,
+          "X-EVE-Report-Index": reportIndex,
+          "X-EVE-Chain-Hash": chainHash,
+        },
+      });
+
+    } catch (execErr: any) {
+      return NextResponse.json(
+        { error: `PDF generation failed: ${execErr.stderr || execErr.message}` },
+        { status: 500 },
+      );
+    }
 
   } catch (err: any) {
     return NextResponse.json(

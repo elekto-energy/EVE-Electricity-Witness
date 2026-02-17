@@ -22,6 +22,7 @@ import { query, type QueryResult } from "./query_v2";
 import { appendReportToVault } from "./report_vault";
 import { loadLocale, isValidLocale, type SupportedLocale, type Locale } from "./i18n_loader";
 import { computeQueryHash } from "./query_hash";
+import { resolveFxRate, eurMwhToSekKwh, type FxResult } from "../fx/resolve_fx";
 
 // ─── Layout Constants ────────────────────────────────────────────────────────
 
@@ -59,6 +60,11 @@ export async function generatePdf(
 ): Promise<PdfResult> {
   const L = loadLocale(lang);
   const qHash = computeQueryHash(result.zone, result.period.from, result.period.to, result.methodology_version);
+
+  // FX resolution — locked to period start month
+  let fx: FxResult | null = null;
+  try { fx = resolveFxRate(result.period.from); } catch { /* EN doesn't need FX */ }
+  const isSv = lang === "sv";
 
   return new Promise((res, rej) => {
     const doc = new PDFDocument({
@@ -98,9 +104,17 @@ export async function generatePdf(
        .text(L.sections.summary, MARGIN, y);
     y += 20;
 
+    // Spot price: SV shows kr/kWh (ECB FX), EN shows EUR/MWh
+    const spotLabel = isSv && fx ? "Spotpris (kr/kWh)" : L.labels.spot_price;
+    const fmtSpot = (v: number | null): string => {
+      if (v === null) return "—";
+      if (isSv && fx) return eurMwhToSekKwh(v, fx.fx_rate).toFixed(3);
+      return v.toFixed(2);
+    };
+
     const summaryRows = [
       [L.labels.metric, L.labels.mean, L.labels.min, L.labels.max],
-      [L.labels.spot_price, fmt(result.spot.mean), fmt(result.spot.min), fmt(result.spot.max)],
+      [spotLabel, fmtSpot(result.spot.mean), fmtSpot(result.spot.min), fmtSpot(result.spot.max)],
       [L.labels.production_co2, fmt(result.production_co2.mean), fmt(result.production_co2.min), fmt(result.production_co2.max)],
       [L.labels.consumption_co2, fmt(result.consumption_co2.mean), fmt(result.consumption_co2.min), fmt(result.consumption_co2.max)],
       [L.labels.temperature, fmt(result.temperature.mean, 1), fmt(result.temperature.min, 1), fmt(result.temperature.max, 1)],
@@ -108,6 +122,14 @@ export async function generatePdf(
       [L.labels.hdd_sum, fmt(result.hdd.sum, 0), "—", "—"],
     ];
     y = drawTable(doc, summaryRows, MARGIN, y, [200, 100, 100, 100]);
+
+    // FX note for SV
+    if (isSv && fx) {
+      y += 4;
+      doc.fontSize(FONT_SIZES.small).font("Helvetica").fillColor("#888888")
+         .text(`Konverterat fr\u00e5n EUR/MWh med ECB m\u00e5nadsgenomsnitt (${fx.fx_period}: ${fx.fx_rate} SEK/EUR)`, MARGIN, y);
+      y += 12;
+    }
     y += 15;
 
     // ─── Generation Mix ──────────────────────────────────────────────
@@ -157,7 +179,7 @@ export async function generatePdf(
        .text(L.sections.verification, MARGIN, y);
     y += 18;
 
-    const boxHeight = 135;
+    const boxHeight = fx ? 160 : 135;
     doc.rect(MARGIN, y, CONTENT_WIDTH, boxHeight).fillColor("#f8fafc").fill();
     const bx = MARGIN + 10;
     let by = y + 10;
@@ -172,6 +194,10 @@ export async function generatePdf(
       `${L.verification_fields.query_hash}:          ${qHash.slice(0, 32)}...`,
       `${L.verification_fields.language}:             ${L.meta.language_name} (${lang})`,
       `${L.verification_fields.template_version}:    ${L.meta.template_version}`,
+      ...(fx ? [
+        `fx_rate:                 ${fx.fx_rate} SEK/EUR (ECB ${fx.fx_period})`,
+        `fx_file_hash:            ${fx.fx_file_hash.slice(0, 32)}...`,
+      ] : []),
       ``,
       `${L.verification_fields.rebuild}: ${result.query_command}`,
     ];
@@ -206,6 +232,10 @@ export async function generatePdf(
           language: lang,
           template_version: L.meta.template_version,
           query_command: result.query_command,
+          fx_rate: fx?.fx_rate ?? null,
+          fx_period: fx?.fx_period ?? null,
+          fx_source: fx?.fx_source ?? null,
+          fx_file_hash: fx?.fx_file_hash ?? null,
         });
         res({
           file_path: outputPath,

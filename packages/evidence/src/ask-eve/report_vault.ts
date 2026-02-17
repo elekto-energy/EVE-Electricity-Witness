@@ -31,6 +31,10 @@ export interface ReportVaultEntry {
   language: string;            // en, sv — affects document hash, not dataset
   template_version: string;    // layout version
   query_command: string;
+  fx_rate: number | null;      // ECB EUR/SEK rate used (null if EN/no conversion)
+  fx_period: string | null;    // YYYY-MM of FX rate
+  fx_source: string | null;    // "ECB Monthly Average"
+  fx_file_hash: string | null; // SHA256 of ecb_eur_sek_monthly.json
   created_at_utc: string;
   prev_hash: string | null;
   event_hash: string;
@@ -55,6 +59,10 @@ export function appendReportToVault(entry: {
   language: string;
   template_version: string;
   query_command: string;
+  fx_rate?: number | null;
+  fx_period?: string | null;
+  fx_source?: string | null;
+  fx_file_hash?: string | null;
 }): ReportVaultEntry {
   // Ensure directory exists
   const dir = dirname(VAULT_PATH);
@@ -91,6 +99,10 @@ export function appendReportToVault(entry: {
     language: entry.language,
     template_version: entry.template_version,
     query_command: entry.query_command,
+    fx_rate: entry.fx_rate ?? null,
+    fx_period: entry.fx_period ?? null,
+    fx_source: entry.fx_source ?? null,
+    fx_file_hash: entry.fx_file_hash ?? null,
     created_at_utc: createdAt,
     prev_hash: prevHash,
   };
@@ -115,6 +127,10 @@ export function appendReportToVault(entry: {
     language: entry.language,
     template_version: entry.template_version,
     query_command: entry.query_command,
+    fx_rate: entry.fx_rate ?? null,
+    fx_period: entry.fx_period ?? null,
+    fx_source: entry.fx_source ?? null,
+    fx_file_hash: entry.fx_file_hash ?? null,
     created_at_utc: createdAt,
     prev_hash: prevHash,
     event_hash: eventHash,

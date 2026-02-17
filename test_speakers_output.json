@@ -1,0 +1,280 @@
+﻿{
+    "observed":  [
+                     {
+                         "speaker_id":  "se-riksdagen:0710595759638",
+                         "display_name":  "Aida Birinxhiku (S)",
+                         "party":  null,
+                         "count":  3,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:07012286624",
+                         "display_name":  "Daniel Riazat (-)",
+                         "party":  null,
+                         "count":  1,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0512510717328",
+                         "display_name":  "Ebba Busch",
+                         "party":  "KD",
+                         "count":  5,
+                         "verified":  true,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "speaker_id"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0161972600410",
+                         "display_name":  "Elsa Widding (-)",
+                         "party":  null,
+                         "count":  3,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0493288854424",
+                         "display_name":  "Finansmarknadsministern Niklas Wykman (M)",
+                         "party":  null,
+                         "count":  1,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0642224351118",
+                         "display_name":  "FÃ¶rsvarsministern PÃ¥l Jonson (M)",
+                         "party":  null,
+                         "count":  4,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0412148992926",
+                         "display_name":  "Hanna WesterÃ©n (S)",
+                         "party":  null,
+                         "count":  3,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0542160909628",
+                         "display_name":  "Infrastruktur- och bostadsministern Andreas Carlson (KD)",
+                         "party":  null,
+                         "count":  9,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0250583732424",
+                         "display_name":  "Jesper Skalberg Karlsson (M)",
+                         "party":  null,
+                         "count":  1,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0897334717419",
+                         "display_name":  "Justitieministern Gunnar StrÃ¶mmer (M)",
+                         "party":  null,
+                         "count":  7,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0627450126815",
+                         "display_name":  "Kajsa Fredholm (V)",
+                         "party":  null,
+                         "count":  3,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0875693083423",
+                         "display_name":  "Klimat- och miljÃ¶ministern Romina Pourmokhtari (L)",
+                         "party":  null,
+                         "count":  4,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0647668663722",
+                         "display_name":  "Kulturministern Parisa Liljestrand (M)",
+                         "party":  null,
+                         "count":  4,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0619928872229",
+                         "display_name":  "Laila Naraghi (S)",
+                         "party":  null,
+                         "count":  4,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0168348837024",
+                         "display_name":  "Landsbygdsministern Peter Kullgren (KD)",
+                         "party":  null,
+                         "count":  15,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0515213566019",
+                         "display_name":  "Lars Isacsson (S)",
+                         "party":  null,
+                         "count":  3,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0706528359123",
+                         "display_name":  "Linus SkÃ¶ld (S)",
+                         "party":  null,
+                         "count":  3,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0204240926023",
+                         "display_name":  "Markus Wiechel (SD)",
+                         "party":  null,
+                         "count":  3,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0783069490115",
+                         "display_name":  "Mirja RÃ¤ihÃ¤ (S)",
+                         "party":  null,
+                         "count":  3,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0610162335824",
+                         "display_name":  "Niklas Sigvardsson (S)",
+                         "party":  null,
+                         "count":  3,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0926002991620",
+                         "display_name":  "Pontus Andersson Garpvall (SD)",
+                         "party":  null,
+                         "count":  1,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0546731406922",
+                         "display_name":  "Rebecka Le Moine (MP)",
+                         "party":  null,
+                         "count":  8,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0369212790927",
+                         "display_name":  "Sofia SkÃ¶nnbrink (S)",
+                         "party":  null,
+                         "count":  2,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     },
+                     {
+                         "speaker_id":  "se-riksdagen:0277853016020",
+                         "display_name":  "Utbildnings- och integrationsministern Simona Mohamsson (L)",
+                         "party":  null,
+                         "count":  12,
+                         "verified":  false,
+                         "registry_match":  {
+                                                "speaker_registry_version":  "speakers_v1",
+                                                "matched_on":  "none"
+                                            }
+                     }
+                 ],
+    "evidence":  {
+                     "statements":  {
+                                        "manifest_id":  "2 manifests",
+                                        "root_hash":  "5fc01d40bc4bc84943ed4eac3b1d1508d48e725515d2ae5ab5aaf1198100597e",
+                                        "files_sha256_path":  "multi-source"
+                                    },
+                     "registry":  {
+                                      "manifest_id":  "registries_v1_canonical",
+                                      "root_hash":  "0c22cc7036914b007efceaaf6c50f76c59f24bd4c8f0daded25e9d8684ef6269",
+                                      "files_sha256_path":  "D:\\EVE11\\Projects\\013_elekto_eu\\manifests\\registries\\registries_v1_canonical.files.sha256"
+                                  }
+                 }
+}
