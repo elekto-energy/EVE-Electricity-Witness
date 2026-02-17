@@ -1,27 +1,17 @@
 /**
- * Ask-EVE PDF Evidence Report Generator
+ * Ask-EVE PDF Evidence Report Generator (i18n)
  *
- * Generates a cryptographically verifiable PDF from V2 query results.
- * 100% TypeScript. No Python. No external dependencies beyond pdfkit.
- *
- * The PDF is not opinion. It is a rendered snapshot of locked dataset.
- *
- * Every PDF includes:
- *   - dataset_eve_id
- *   - root_hash
- *   - registry_hash
- *   - vault chain_hash
- *   - reproducible query command
+ * Three-layer cryptographic identity:
+ *   1. Dataset identity: dataset_eve_id + root_hash (data truth)
+ *   2. Query identity:   query_hash = SHA256(zone|from|to|methodology) (computation)
+ *   3. Document identity: pdf_hash (presentation, affected by language)
  *
  * Usage:
  *   npx tsx packages/evidence/src/ask-eve/generate_pdf.ts \
  *     --zone SE3 --from 2024-01-01 --to 2024-01-31 \
- *     --output evidence_SE3_202401.pdf
+ *     --lang sv --output report.pdf
  *
  * Prerequisites: npm install pdfkit @types/pdfkit
- *
- * TR1: No source, no number.
- * TR6: Code renders — never invents.
  */
 
 import { createWriteStream, readFileSync } from "fs";
@@ -30,218 +20,177 @@ import { createHash } from "crypto";
 import PDFDocument from "pdfkit";
 import { query, type QueryResult } from "./query_v2";
 import { appendReportToVault } from "./report_vault";
+import { loadLocale, isValidLocale, type SupportedLocale, type Locale } from "./i18n_loader";
+import { computeQueryHash } from "./query_hash";
 
 // ─── Layout Constants ────────────────────────────────────────────────────────
 
 const MARGIN = 50;
-const PAGE_WIDTH = 595.28;   // A4
+const PAGE_WIDTH = 595.28;
 const PAGE_HEIGHT = 841.89;
 const CONTENT_WIDTH = PAGE_WIDTH - 2 * MARGIN;
 
-const FONT_SIZES = {
-  title: 18,
-  h2: 13,
-  h3: 11,
-  body: 9.5,
-  small: 8,
-  mono: 8,
-};
+const FONT_SIZES = { title: 18, h2: 13, body: 9.5, small: 8, mono: 8 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function fmt(v: number | null, decimals = 2): string {
-  if (v === null) return "—";
-  return v.toFixed(decimals);
-}
+function fmt(v: number | null, d = 2): string { return v === null ? "—" : v.toFixed(d); }
+function fmtInt(v: number | null): string { return v === null ? "—" : Math.round(v).toLocaleString("en-US"); }
 
-function fmtInt(v: number | null): string {
-  if (v === null) return "—";
-  return Math.round(v).toLocaleString("en-US");
-}
-
-// ─── PDF Generator ───────────────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface PdfResult {
   file_path: string;
   pdf_hash: string;
+  query_hash: string;
+  language: string;
+  template_version: string;
   report_index: number;
   chain_hash: string;
 }
 
+// ─── PDF Generator ───────────────────────────────────────────────────────────
+
 export async function generatePdf(
   result: QueryResult,
   outputPath: string,
+  lang: SupportedLocale = "en",
   sealInVault: boolean = true,
 ): Promise<PdfResult> {
+  const L = loadLocale(lang);
+  const qHash = computeQueryHash(result.zone, result.period.from, result.period.to, result.methodology_version);
+
   return new Promise((res, rej) => {
     const doc = new PDFDocument({
       size: "A4",
       margins: { top: MARGIN, bottom: MARGIN, left: MARGIN, right: MARGIN },
       info: {
-        Title: `EVE Evidence Report — ${result.zone} ${result.period.from} to ${result.period.to}`,
+        Title: `${L.header.title} — ${result.zone} ${result.period.from} to ${result.period.to}`,
         Author: "EVE Electricity Witness",
         Subject: `Deterministic evidence report for ${result.zone}`,
-        Creator: "Ask-EVE PDF Engine (pdfkit)",
+        Creator: `Ask-EVE PDF Engine (pdfkit) [${lang}]`,
         Producer: "Organiq Sweden AB",
       },
     });
 
     const stream = createWriteStream(outputPath);
     doc.pipe(stream);
-
     let y = MARGIN;
 
-    // ─── Header ────────────────────────────────────────────────────────
-    doc.fontSize(FONT_SIZES.title)
-       .font("Helvetica-Bold")
-       .text("EVE Evidence Report", MARGIN, y);
+    // ─── Header ──────────────────────────────────────────────────────
+    doc.fontSize(FONT_SIZES.title).font("Helvetica-Bold").fillColor("#1a1a1a")
+       .text(L.header.title, MARGIN, y);
     y += 26;
 
-    doc.fontSize(FONT_SIZES.body)
-       .font("Helvetica")
-       .fillColor("#666666")
-       .text(`Zone: ${result.zone}  |  Period: ${result.period.from} to ${result.period.to}  |  ${result.hours_total} hours`, MARGIN, y);
+    doc.fontSize(FONT_SIZES.body).font("Helvetica").fillColor("#666666")
+       .text(`${L.labels.zone}: ${result.zone}  |  ${L.labels.period}: ${result.period.from} — ${result.period.to}  |  ${result.hours_total} ${L.header.hours}`, MARGIN, y);
     y += 14;
 
     doc.fontSize(FONT_SIZES.small)
-       .text(`Generated: ${result.generated_at_utc}  |  Methodology: ${result.methodology_version}`, MARGIN, y);
+       .text(`${L.header.generated}: ${result.generated_at_utc}  |  ${L.header.methodology}: ${result.methodology_version}  |  ${L.meta.language_name} (${lang})`, MARGIN, y);
     y += 20;
 
-    // Divider
-    doc.strokeColor("#e2e8f0").lineWidth(1)
-       .moveTo(MARGIN, y).lineTo(PAGE_WIDTH - MARGIN, y).stroke();
+    doc.strokeColor("#e2e8f0").lineWidth(1).moveTo(MARGIN, y).lineTo(PAGE_WIDTH - MARGIN, y).stroke();
     y += 15;
 
-    // ─── Summary Statistics ────────────────────────────────────────────
-    doc.fillColor("#1a1a1a")
-       .fontSize(FONT_SIZES.h2)
-       .font("Helvetica-Bold")
-       .text("Summary Statistics", MARGIN, y);
+    // ─── Summary Statistics ──────────────────────────────────────────
+    doc.fillColor("#1a1a1a").fontSize(FONT_SIZES.h2).font("Helvetica-Bold")
+       .text(L.sections.summary, MARGIN, y);
     y += 20;
 
     const summaryRows = [
-      ["Metric", "Mean", "Min", "Max"],
-      ["Spot Price (EUR/MWh)", fmt(result.spot.mean), fmt(result.spot.min), fmt(result.spot.max)],
-      ["Production CO2 (g/kWh)", fmt(result.production_co2.mean), fmt(result.production_co2.min), fmt(result.production_co2.max)],
-      ["Consumption CO2 (g/kWh)", fmt(result.consumption_co2.mean), fmt(result.consumption_co2.min), fmt(result.consumption_co2.max)],
-      ["Temperature (C)", fmt(result.temperature.mean, 1), fmt(result.temperature.min, 1), fmt(result.temperature.max, 1)],
-      ["Net Import (MW avg)", fmt(result.net_import.mean, 0), "—", "—"],
-      ["HDD Sum", fmt(result.hdd.sum, 0), "—", "—"],
+      [L.labels.metric, L.labels.mean, L.labels.min, L.labels.max],
+      [L.labels.spot_price, fmt(result.spot.mean), fmt(result.spot.min), fmt(result.spot.max)],
+      [L.labels.production_co2, fmt(result.production_co2.mean), fmt(result.production_co2.min), fmt(result.production_co2.max)],
+      [L.labels.consumption_co2, fmt(result.consumption_co2.mean), fmt(result.consumption_co2.min), fmt(result.consumption_co2.max)],
+      [L.labels.temperature, fmt(result.temperature.mean, 1), fmt(result.temperature.min, 1), fmt(result.temperature.max, 1)],
+      [L.labels.net_import, fmt(result.net_import.mean, 0), "—", "—"],
+      [L.labels.hdd_sum, fmt(result.hdd.sum, 0), "—", "—"],
     ];
-
     y = drawTable(doc, summaryRows, MARGIN, y, [200, 100, 100, 100]);
     y += 15;
 
-    // ─── Generation Mix ────────────────────────────────────────────────
-    doc.fillColor("#1a1a1a")
-       .fontSize(FONT_SIZES.h2)
-       .font("Helvetica-Bold")
-       .text("Generation Mix (Average MW)", MARGIN, y);
+    // ─── Generation Mix ──────────────────────────────────────────────
+    doc.fillColor("#1a1a1a").fontSize(FONT_SIZES.h2).font("Helvetica-Bold")
+       .text(L.sections.generation_mix, MARGIN, y);
     y += 20;
 
     const gm = result.generation_mix_avg_mw;
     const genRows = [
-      ["Source", "Avg MW"],
-      ["Nuclear", fmtInt(gm.nuclear)],
-      ["Hydro", fmtInt(gm.hydro)],
-      ["Wind Onshore", fmtInt(gm.wind_onshore)],
-      ["Wind Offshore", fmtInt(gm.wind_offshore)],
-      ["Solar", fmtInt(gm.solar)],
-      ["Gas", fmtInt(gm.gas)],
-      ["Coal", fmtInt(gm.coal)],
-      ["Lignite", fmtInt(gm.lignite)],
-      ["Oil", fmtInt(gm.oil)],
-      ["Other", fmtInt(gm.other)],
-      ["Total", fmtInt(gm.total)],
+      [L.labels.source, L.labels.avg_mw],
+      [L.labels.nuclear, fmtInt(gm.nuclear)],
+      [L.labels.hydro, fmtInt(gm.hydro)],
+      [L.labels.wind_onshore, fmtInt(gm.wind_onshore)],
+      [L.labels.wind_offshore, fmtInt(gm.wind_offshore)],
+      [L.labels.solar, fmtInt(gm.solar)],
+      [L.labels.gas, fmtInt(gm.gas)],
+      [L.labels.coal, fmtInt(gm.coal)],
+      [L.labels.lignite, fmtInt(gm.lignite)],
+      [L.labels.oil, fmtInt(gm.oil)],
+      [L.labels.other, fmtInt(gm.other)],
+      [L.labels.total, fmtInt(gm.total)],
     ];
-
     y = drawTable(doc, genRows, MARGIN, y, [200, 150]);
     y += 15;
 
-    // ─── Check if we need a new page for verification block ───────────
-    if (y > PAGE_HEIGHT - 280) {
-      doc.addPage();
-      y = MARGIN;
-    }
+    // ─── Page break if needed ────────────────────────────────────────
+    if (y > PAGE_HEIGHT - 300) { doc.addPage(); y = MARGIN; }
 
-    // ─── Methodology Block ─────────────────────────────────────────────
-    doc.fillColor("#1a1a1a")
-       .fontSize(FONT_SIZES.h2)
-       .font("Helvetica-Bold")
-       .text("Methodology", MARGIN, y);
+    // ─── Methodology ─────────────────────────────────────────────────
+    doc.fillColor("#1a1a1a").fontSize(FONT_SIZES.h2).font("Helvetica-Bold")
+       .text(L.sections.methodology, MARGIN, y);
     y += 18;
 
     doc.fontSize(FONT_SIZES.body).font("Helvetica").fillColor("#333333");
     const methodLines = [
-      `Version: ${result.methodology_version}`,
-      `Emission Scope: ${result.emission_scope}`,
-      `Source: EEA 2023 emission factors, direct combustion only`,
-      `Aggregation: PT15M to PT60M arithmetic mean`,
-      `Import CO2: EU average 242 gCO2/kWh (Ember 2023)`,
+      `${L.methodology_fields.version}: ${result.methodology_version}`,
+      `${L.methodology_fields.scope}: ${result.emission_scope}`,
+      L.methodology_fields.source_description,
+      L.methodology_fields.aggregation,
+      L.methodology_fields.import_co2,
     ];
-    for (const line of methodLines) {
-      doc.text(line, MARGIN, y);
-      y += 13;
-    }
+    for (const line of methodLines) { doc.text(line, MARGIN, y); y += 13; }
     y += 10;
 
-    // ─── Verification Block ────────────────────────────────────────────
-    doc.fillColor("#1a1a1a")
-       .fontSize(FONT_SIZES.h2)
-       .font("Helvetica-Bold")
-       .text("Cryptographic Verification", MARGIN, y);
+    // ─── Verification Block ──────────────────────────────────────────
+    doc.fillColor("#1a1a1a").fontSize(FONT_SIZES.h2).font("Helvetica-Bold")
+       .text(L.sections.verification, MARGIN, y);
     y += 18;
 
-    // Grey background box
-    const boxHeight = 110;
-    doc.rect(MARGIN, y, CONTENT_WIDTH, boxHeight)
-       .fillColor("#f8fafc").fill();
-
+    const boxHeight = 135;
+    doc.rect(MARGIN, y, CONTENT_WIDTH, boxHeight).fillColor("#f8fafc").fill();
     const bx = MARGIN + 10;
     let by = y + 10;
 
     doc.fontSize(FONT_SIZES.mono).font("Courier").fillColor("#1a1a1a");
-
-    const verifyLines = [
-      `dataset_eve_id:      ${result.dataset_eve_id ?? "N/A"}`,
-      `registry_hash:       ${result.registry_hash ?? "N/A"}`,
-      `vault.root_hash:     ${result.vault?.root_hash ?? "N/A"}`,
-      `vault.chain_hash:    ${result.vault?.chain_hash ?? "N/A"}`,
-      `vault.event_index:   ${result.vault?.event_index ?? "N/A"}`,
+    const vLines = [
+      `${L.verification_fields.dataset_eve_id}:      ${result.dataset_eve_id ?? "N/A"}`,
+      `${L.verification_fields.registry_hash}:       ${result.registry_hash ?? "N/A"}`,
+      `${L.verification_fields.vault_root_hash}:     ${result.vault?.root_hash ?? "N/A"}`,
+      `${L.verification_fields.vault_chain_hash}:    ${result.vault?.chain_hash ?? "N/A"}`,
+      `${L.verification_fields.vault_event_index}:   ${result.vault?.event_index ?? "N/A"}`,
+      `${L.verification_fields.query_hash}:          ${qHash.slice(0, 32)}...`,
+      `${L.verification_fields.language}:             ${L.meta.language_name} (${lang})`,
+      `${L.verification_fields.template_version}:    ${L.meta.template_version}`,
       ``,
-      `Rebuild: ${result.query_command}`,
+      `${L.verification_fields.rebuild}: ${result.query_command}`,
     ];
-
-    for (const line of verifyLines) {
-      doc.text(line, bx, by, { width: CONTENT_WIDTH - 20 });
-      by += 12;
-    }
+    for (const line of vLines) { doc.text(line, bx, by, { width: CONTENT_WIDTH - 20 }); by += 12; }
     y += boxHeight + 15;
 
-    // ─── Footer ────────────────────────────────────────────────────────
-    doc.strokeColor("#e2e8f0").lineWidth(0.5)
-       .moveTo(MARGIN, y).lineTo(PAGE_WIDTH - MARGIN, y).stroke();
+    // ─── Disclaimer ──────────────────────────────────────────────────
+    doc.strokeColor("#e2e8f0").lineWidth(0.5).moveTo(MARGIN, y).lineTo(PAGE_WIDTH - MARGIN, y).stroke();
     y += 8;
 
     doc.fontSize(FONT_SIZES.small).font("Helvetica").fillColor("#999999");
-    doc.text(
-      "This report is a deterministic snapshot of locked EVE Timeseries V2 data. " +
-      "All values can be independently reproduced using the rebuild command above. " +
-      "EVE does not claim normative truth. EVE provides a reproducible computational reference.",
-      MARGIN, y, { width: CONTENT_WIDTH }
-    );
-    y += 30;
+    doc.text(L.disclaimer, MARGIN, y, { width: CONTENT_WIDTH });
+    y += doc.heightOfString(L.disclaimer, { width: CONTENT_WIDTH }) + 10;
 
-    doc.text(
-      "EVE Electricity Witness — Organiq Sweden AB — https://github.com/elekto-energy/EVE-Electricity-Witness",
-      MARGIN, y, { width: CONTENT_WIDTH, align: "center" }
-    );
+    doc.text(L.footer, MARGIN, y, { width: CONTENT_WIDTH, align: "center" });
 
-    // ─── Finalize ──────────────────────────────────────────────────────
     doc.end();
 
     stream.on("finish", () => {
-      // SHA256 of generated PDF
       const pdfBuffer = readFileSync(outputPath);
       const pdfHash = createHash("sha256").update(pdfBuffer).digest("hex");
 
@@ -250,14 +199,20 @@ export async function generatePdf(
           report_hash: pdfHash,
           dataset_eve_id: result.dataset_eve_id ?? "UNKNOWN",
           root_hash: result.vault?.root_hash ?? "UNKNOWN",
+          query_hash: qHash,
           zone: result.zone,
           period_start: result.period.from,
           period_end: result.period.to,
+          language: lang,
+          template_version: L.meta.template_version,
           query_command: result.query_command,
         });
         res({
           file_path: outputPath,
           pdf_hash: pdfHash,
+          query_hash: qHash,
+          language: lang,
+          template_version: L.meta.template_version,
           report_index: vaultEntry.report_index,
           chain_hash: vaultEntry.chain_hash,
         });
@@ -265,6 +220,9 @@ export async function generatePdf(
         res({
           file_path: outputPath,
           pdf_hash: pdfHash,
+          query_hash: qHash,
+          language: lang,
+          template_version: L.meta.template_version,
           report_index: 0,
           chain_hash: "NOT_SEALED",
         });
@@ -274,15 +232,9 @@ export async function generatePdf(
   });
 }
 
-// ─── Table Drawing Helper ────────────────────────────────────────────────────
+// ─── Table Drawing ───────────────────────────────────────────────────────────
 
-function drawTable(
-  doc: PDFKit.PDFDocument,
-  rows: string[][],
-  x: number,
-  startY: number,
-  colWidths: number[],
-): number {
+function drawTable(doc: PDFKit.PDFDocument, rows: string[][], x: number, startY: number, colWidths: number[]): number {
   let y = startY;
   const rowHeight = 16;
 
@@ -291,8 +243,7 @@ function drawTable(
     let cx = x;
 
     if (isHeader) {
-      doc.rect(x, y, colWidths.reduce((a, b) => a + b, 0), rowHeight)
-         .fillColor("#f1f5f9").fill();
+      doc.rect(x, y, colWidths.reduce((a, b) => a + b, 0), rowHeight).fillColor("#f1f5f9").fill();
     }
 
     doc.fillColor(isHeader ? "#475569" : "#333333")
@@ -300,18 +251,12 @@ function drawTable(
        .font(isHeader ? "Helvetica-Bold" : "Helvetica");
 
     for (let j = 0; j < rows[i].length; j++) {
-      doc.text(rows[i][j], cx + 4, y + 3, {
-        width: colWidths[j] - 8,
-        align: j === 0 ? "left" : "right",
-      });
+      doc.text(rows[i][j], cx + 4, y + 3, { width: colWidths[j] - 8, align: j === 0 ? "left" : "right" });
       cx += colWidths[j];
     }
 
     y += rowHeight;
-
-    // Light border
-    doc.strokeColor("#e2e8f0").lineWidth(0.5)
-       .moveTo(x, y).lineTo(x + colWidths.reduce((a, b) => a + b, 0), y).stroke();
+    doc.strokeColor("#e2e8f0").lineWidth(0.5).moveTo(x, y).lineTo(x + colWidths.reduce((a, b) => a + b, 0), y).stroke();
   }
 
   return y;
@@ -321,38 +266,45 @@ function drawTable(
 
 if (require.main === module) {
   const args = process.argv.slice(2);
-  let zone = "", from = "", to = "", output = "";
+  let zone = "", from = "", to = "", output = "", lang = "en";
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--zone" && args[i + 1]) zone = args[++i];
     if (args[i] === "--from" && args[i + 1]) from = args[++i];
     if (args[i] === "--to" && args[i + 1]) to = args[++i];
     if (args[i] === "--output" && args[i + 1]) output = args[++i];
+    if (args[i] === "--lang" && args[i + 1]) lang = args[++i];
   }
 
   if (!zone || !from || !to) {
-    console.error("Usage: generate_pdf.ts --zone SE3 --from 2024-01-01 --to 2024-01-31 [--output report.pdf]");
+    console.error("Usage: generate_pdf.ts --zone SE3 --from 2024-01-01 --to 2024-01-31 [--lang sv] [--output report.pdf]");
+    process.exit(1);
+  }
+
+  if (!isValidLocale(lang)) {
+    console.error(`Invalid language: ${lang}. Supported: en, sv`);
     process.exit(1);
   }
 
   if (!output) {
-    output = `evidence_${zone}_${from.replace(/-/g, "")}_${to.replace(/-/g, "")}.pdf`;
+    output = `evidence_${zone}_${from.replace(/-/g, "")}_${to.replace(/-/g, "")}_${lang}.pdf`;
   }
 
-  console.log(`[ask-eve] Querying ${zone} ${from} → ${to}...`);
+  console.log(`[ask-eve] Querying ${zone} ${from} → ${to} (${lang})...`);
   const result = query({ zone, from, to });
 
   console.log(`[ask-eve] Generating PDF → ${output}`);
-  generatePdf(result, resolve(output)).then((pdfResult) => {
-    console.log(`[ask-eve] ✅ PDF generated: ${pdfResult.file_path}`);
-    console.log(`[ask-eve]    pdf_hash:       ${pdfResult.pdf_hash}`);
-    console.log(`[ask-eve]    report_index:   ${pdfResult.report_index}`);
-    console.log(`[ask-eve]    chain_hash:     ${pdfResult.chain_hash.slice(0, 16)}...`);
-    console.log(`[ask-eve]    dataset_eve_id: ${result.dataset_eve_id}`);
-    console.log(`[ask-eve]    rows:           ${result.rows_count}`);
-    console.log(`[ask-eve]    root_hash:      ${result.vault?.root_hash?.slice(0, 16) ?? "N/A"}...`);
+  generatePdf(result, resolve(output), lang as SupportedLocale).then((r) => {
+    console.log(`[ask-eve] ✅ PDF generated: ${r.file_path}`);
+    console.log(`[ask-eve]    language:        ${r.language}`);
+    console.log(`[ask-eve]    pdf_hash:        ${r.pdf_hash}`);
+    console.log(`[ask-eve]    query_hash:      ${r.query_hash.slice(0, 16)}...`);
+    console.log(`[ask-eve]    template:        ${r.template_version}`);
+    console.log(`[ask-eve]    report_index:    ${r.report_index}`);
+    console.log(`[ask-eve]    chain_hash:      ${r.chain_hash.slice(0, 16)}...`);
+    console.log(`[ask-eve]    dataset_eve_id:  ${result.dataset_eve_id}`);
   }).catch((err) => {
-    console.error(`[ask-eve] ❌ PDF generation failed: ${err.message}`);
+    console.error(`[ask-eve] ❌ Failed: ${err.message}`);
     process.exit(1);
   });
 }

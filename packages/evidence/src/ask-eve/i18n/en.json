@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "language": "en",
+    "language_name": "English",
+    "template_version": "1.0"
+  },
+  "header": {
+    "title": "EVE Evidence Report",
+    "generated": "Generated",
+    "methodology": "Methodology",
+    "hours": "hours"
+  },
+  "sections": {
+    "summary": "Summary Statistics",
+    "generation_mix": "Generation Mix (Average MW)",
+    "methodology": "Methodology",
+    "verification": "Cryptographic Verification",
+    "disclaimer_title": "Disclaimer"
+  },
+  "labels": {
+    "zone": "Zone",
+    "period": "Period",
+    "metric": "Metric",
+    "mean": "Mean",
+    "min": "Min",
+    "max": "Max",
+    "median": "Median",
+    "source": "Source",
+    "avg_mw": "Avg MW",
+    "spot_price": "Spot Price (EUR/MWh)",
+    "production_co2": "Production CO₂ (g/kWh)",
+    "consumption_co2": "Consumption CO₂ (g/kWh)",
+    "temperature": "Temperature (°C)",
+    "net_import": "Net Import (MW avg)",
+    "hdd_sum": "HDD Sum",
+    "nuclear": "Nuclear",
+    "hydro": "Hydro",
+    "wind_onshore": "Wind Onshore",
+    "wind_offshore": "Wind Offshore",
+    "solar": "Solar",
+    "gas": "Gas",
+    "coal": "Coal",
+    "lignite": "Lignite",
+    "oil": "Oil",
+    "other": "Other",
+    "total": "Total"
+  },
+  "methodology_fields": {
+    "version": "Version",
+    "scope": "Scope",
+    "source_description": "EEA 2023 emission factors, direct combustion only",
+    "aggregation": "PT15M to PT60M arithmetic mean",
+    "import_co2": "Import CO₂: EU average 242 gCO₂/kWh (Ember 2023)"
+  },
+  "verification_fields": {
+    "dataset_eve_id": "dataset_eve_id",
+    "registry_hash": "registry_hash",
+    "vault_root_hash": "vault.root_hash",
+    "vault_chain_hash": "vault.chain_hash",
+    "vault_event_index": "vault.event_index",
+    "query_hash": "query_hash",
+    "language": "language",
+    "template_version": "template_version",
+    "rebuild": "Rebuild"
+  },
+  "disclaimer": "This report is a deterministic snapshot of locked EVE Timeseries V2 data. All values can be independently reproduced using the rebuild command above. EVE does not claim normative truth. EVE provides a reproducible computational reference. Document language affects PDF hash but not dataset identity or computational results.",
+  "footer": "EVE Electricity Witness — Organiq Sweden AB — github.com/elekto-energy/EVE-Electricity-Witness"
+}

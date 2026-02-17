@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "language": "sv",
+    "language_name": "Svenska",
+    "template_version": "1.0"
+  },
+  "header": {
+    "title": "EVE Evidensrapport",
+    "generated": "Genererad",
+    "methodology": "Metodik",
+    "hours": "timmar"
+  },
+  "sections": {
+    "summary": "Sammanfattande statistik",
+    "generation_mix": "Produktionsmix (Medel MW)",
+    "methodology": "Metodik",
+    "verification": "Kryptografisk verifiering",
+    "disclaimer_title": "Ansvarsfriskrivning"
+  },
+  "labels": {
+    "zone": "Zon",
+    "period": "Period",
+    "metric": "Mätvärde",
+    "mean": "Medel",
+    "min": "Min",
+    "max": "Max",
+    "median": "Median",
+    "source": "Källa",
+    "avg_mw": "Medel MW",
+    "spot_price": "Spotpris (EUR/MWh)",
+    "production_co2": "Produktions-CO₂ (g/kWh)",
+    "consumption_co2": "Konsumtions-CO₂ (g/kWh)",
+    "temperature": "Temperatur (°C)",
+    "net_import": "Nettoimport (MW medel)",
+    "hdd_sum": "Graddagar (summa)",
+    "nuclear": "Kärnkraft",
+    "hydro": "Vattenkraft",
+    "wind_onshore": "Vindkraft land",
+    "wind_offshore": "Vindkraft hav",
+    "solar": "Solkraft",
+    "gas": "Gas",
+    "coal": "Kol",
+    "lignite": "Brunkol",
+    "oil": "Olja",
+    "other": "Övrigt",
+    "total": "Totalt"
+  },
+  "methodology_fields": {
+    "version": "Version",
+    "scope": "Omfattning",
+    "source_description": "EEA 2023 emissionsfaktorer, enbart direkt förbränning",
+    "aggregation": "PT15M till PT60M aritmetiskt medelvärde",
+    "import_co2": "Import-CO₂: EU-genomsnitt 242 gCO₂/kWh (Ember 2023)"
+  },
+  "verification_fields": {
+    "dataset_eve_id": "dataset_eve_id",
+    "registry_hash": "registry_hash",
+    "vault_root_hash": "vault.root_hash",
+    "vault_chain_hash": "vault.chain_hash",
+    "vault_event_index": "vault.event_index",
+    "query_hash": "query_hash",
+    "language": "språk",
+    "template_version": "mallversion",
+    "rebuild": "Reproducerbarhet"
+  },
+  "disclaimer": "Denna rapport är en deterministisk ögonblicksbild av låst EVE Timeseries V2-data. Alla värden kan oberoende reproduceras med kommandot ovan. EVE gör inga normativa anspråk. EVE tillhandahåller en reproducerbar beräkningsreferens. Dokumentspråk påverkar PDF-hash men inte dataset-identitet eller beräkningsresultat.",
+  "footer": "EVE Electricity Witness — Organiq Sweden AB — github.com/elekto-energy/EVE-Electricity-Witness"
+}

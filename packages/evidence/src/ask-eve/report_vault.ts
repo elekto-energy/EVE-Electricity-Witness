@@ -24,9 +24,12 @@ export interface ReportVaultEntry {
   report_hash: string;         // SHA256 of PDF file
   dataset_eve_id: string;
   root_hash: string;
+  query_hash: string;          // SHA256 of computation identity
   zone: string;
   period_start: string;
   period_end: string;
+  language: string;            // en, sv — affects document hash, not dataset
+  template_version: string;    // layout version
   query_command: string;
   created_at_utc: string;
   prev_hash: string | null;
@@ -45,9 +48,12 @@ export function appendReportToVault(entry: {
   report_hash: string;
   dataset_eve_id: string;
   root_hash: string;
+  query_hash: string;
   zone: string;
   period_start: string;
   period_end: string;
+  language: string;
+  template_version: string;
   query_command: string;
 }): ReportVaultEntry {
   // Ensure directory exists
@@ -78,9 +84,12 @@ export function appendReportToVault(entry: {
     report_hash: entry.report_hash,
     dataset_eve_id: entry.dataset_eve_id,
     root_hash: entry.root_hash,
+    query_hash: entry.query_hash,
     zone: entry.zone,
     period_start: entry.period_start,
     period_end: entry.period_end,
+    language: entry.language,
+    template_version: entry.template_version,
     query_command: entry.query_command,
     created_at_utc: createdAt,
     prev_hash: prevHash,
@@ -99,9 +108,12 @@ export function appendReportToVault(entry: {
     report_hash: entry.report_hash,
     dataset_eve_id: entry.dataset_eve_id,
     root_hash: entry.root_hash,
+    query_hash: entry.query_hash,
     zone: entry.zone,
     period_start: entry.period_start,
     period_end: entry.period_end,
+    language: entry.language,
+    template_version: entry.template_version,
     query_command: entry.query_command,
     created_at_utc: createdAt,
     prev_hash: prevHash,
