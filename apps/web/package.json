@@ -10,17 +10,19 @@
     "test": "jest"
   },
   "dependencies": {
+    "@types/pdfkit": "^0.17.5",
     "next": "^15.1.0",
+    "pdfkit": "^0.17.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.7.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.2.0",
-    "@types/jest": "^29.5.0"
+    "typescript": "^5.7.0"
   }
 }
