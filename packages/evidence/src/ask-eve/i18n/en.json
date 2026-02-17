@@ -2,7 +2,7 @@
   "meta": {
     "language": "en",
     "language_name": "English",
-    "template_version": "1.0"
+    "template_version": "1.1"
   },
   "header": {
     "title": "EVE Evidence Report",
@@ -63,6 +63,6 @@
     "template_version": "template_version",
     "rebuild": "Rebuild"
   },
-  "disclaimer": "This report is a deterministic snapshot of locked EVE Timeseries V2 data. All values can be independently reproduced using the rebuild command above. EVE does not claim normative truth. EVE provides a reproducible computational reference. Document language affects PDF hash but not dataset identity or computational results.",
+  "disclaimer": "This report is a deterministic snapshot of locked EVE Timeseries V2 data. All values can be independently reproduced using the rebuild command above. EVE Electricity Witness is built on publicly available regulatory data sources (ENTSO-E, EEA, ERA5). This system is independently built and is not an official publication from any transmission system operator or regulatory authority. This platform is designed so that authorities, journalists and independent experts can verify, challenge and reproduce all results.",
   "footer": "EVE Electricity Witness — Organiq Sweden AB — github.com/elekto-energy/EVE-Electricity-Witness"
 }

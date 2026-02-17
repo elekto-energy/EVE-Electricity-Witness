@@ -2,7 +2,7 @@
   "meta": {
     "language": "sv",
     "language_name": "Svenska",
-    "template_version": "1.0"
+    "template_version": "1.1"
   },
   "header": {
     "title": "EVE Evidensrapport",
@@ -63,6 +63,6 @@
     "template_version": "mallversion",
     "rebuild": "Reproducerbarhet"
   },
-  "disclaimer": "Denna rapport är en deterministisk ögonblicksbild av låst EVE Timeseries V2-data. Alla värden kan oberoende reproduceras med kommandot ovan. EVE gör inga normativa anspråk. EVE tillhandahåller en reproducerbar beräkningsreferens. Dokumentspråk påverkar PDF-hash men inte dataset-identitet eller beräkningsresultat.",
+  "disclaimer": "Denna rapport är en deterministisk ögonblicksbild av låst EVE Timeseries V2-data. Alla värden kan oberoende reproduceras med kommandot ovan. EVE Electricity Witness är baserad på öppna regulatoriska datakällor (ENTSO-E, EEA, ERA5). Systemet är fristående och är inte en officiell publikation från Svenska kraftnät, Energimyndigheten eller annan myndighet. Plattformen är utformad så att myndigheter, journalister och oberoende experter kan verifiera, ifrågasätta och reproducera alla resultat.",
   "footer": "EVE Electricity Witness — Organiq Sweden AB — github.com/elekto-energy/EVE-Electricity-Witness"
 }
