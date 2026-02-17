@@ -1,0 +1,18 @@
+# EVE Sovereign Mode — Light Edition
+# Data mounted externally. Myndigheter / drift.
+
+services:
+  eve-sovereign:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.light
+    container_name: eve_v2_sovereign
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../data:/app/data:ro
+    environment:
+      - NODE_ENV=production
+      - SOVEREIGN_MODE=true
+      - DATA_MODE=external
+    restart: unless-stopped

@@ -1,0 +1,16 @@
+# EVE Sovereign Mode — Full Edition
+# All data baked in. Demo / akademi / arkivering.
+
+services:
+  eve-sovereign:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.full
+    container_name: eve_v2_sovereign_full
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - SOVEREIGN_MODE=true
+      - DATA_MODE=embedded
+    restart: unless-stopped
