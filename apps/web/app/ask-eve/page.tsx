@@ -10,7 +10,9 @@ export default function AskEvePage() {
   const [result, setResult] = useState<any>(null);
   const [pdfResult, setPdfResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [queryParams, setQueryParams] = useState<any>(null);
 
   async function handleQuery(params: {
     zone: string;
@@ -21,6 +23,7 @@ export default function AskEvePage() {
     setLoading(true);
     setError(null);
     setPdfResult(null);
+    setQueryParams(params);
 
     try {
       const res = await fetch("/api/ask-eve", {
@@ -38,6 +41,49 @@ export default function AskEvePage() {
       setResult(null);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleGeneratePdf() {
+    if (!queryParams || !result) return;
+    setPdfLoading(true);
+
+    try {
+      const res = await fetch("/api/ask-eve/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(queryParams),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "PDF generation failed");
+      }
+
+      // Extract metadata from headers
+      const meta = {
+        pdf_hash: res.headers.get("X-EVE-PDF-Hash") ?? "",
+        query_hash: res.headers.get("X-EVE-Query-Hash") ?? "",
+        language: res.headers.get("X-EVE-Language") ?? "",
+        template_version: res.headers.get("X-EVE-Template-Version") ?? "",
+        report_index: parseInt(res.headers.get("X-EVE-Report-Index") ?? "0"),
+        chain_hash: res.headers.get("X-EVE-Chain-Hash") ?? "",
+      };
+      setPdfResult(meta);
+
+      // Download PDF
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `evidence_${queryParams.zone}_${queryParams.start}_${queryParams.end}_${queryParams.lang}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setPdfLoading(false);
     }
   }
 
@@ -80,7 +126,34 @@ export default function AskEvePage() {
           <>
             <ResultPanel result={result} />
             <EvidencePanel result={result} pdfResult={pdfResult} />
+
+            {/* PDF Actions */}
+            <div className="mt-4 flex gap-3">
+              <button
+                onClick={handleGeneratePdf}
+                disabled={pdfLoading}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white text-sm font-semibold rounded transition-colors"
+              >
+                {pdfLoading ? "Generating..." : pdfResult ? "Regenerate PDF" : "Generate Evidence PDF"}
+              </button>
+
+              {pdfResult && (
+                <div className="flex items-center gap-2 text-xs text-emerald-400 font-mono">
+                  <span>✅ Sealed — report_index: {pdfResult.report_index}</span>
+                </div>
+              )}
+            </div>
+
             <IdentityStack result={result} pdfResult={pdfResult} />
+
+            {/* Methodology footer */}
+            <div className="mt-6 pt-4 border-t border-slate-800">
+              <p className="text-[10px] text-slate-600">
+                EVE is a deterministic evidence engine. It produces reproducible reports based on public regulatory sources.
+                It makes no autonomous decisions. It presents computable results. Language affects document hash but not
+                dataset identity or computational results.
+              </p>
+            </div>
           </>
         )}
       </div>

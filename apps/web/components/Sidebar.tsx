@@ -8,9 +8,11 @@ const NAV_ITEMS = [
   { href: "/witness",     label: "Witness",       icon: "🔍", status: "seed" },
   { href: "/witness/statements", label: "Statements", icon: "📜", status: "live" },
   { href: "/witness/decisions",  label: "Decisions",   icon: "⚖️", status: "live" },
+  { href: "/analysis",    label: "Analysis",      icon: "📊", status: "live" },
   { href: "/nyheter",     label: "Nyheter",       icon: "📰", status: "live" },
   { href: "/opinion",     label: "Opinion",       icon: "🗳", status: "live" },
   { href: "/methodology", label: "Methodology",   icon: "📐", status: "live" },
+  { href: "/ask-eve",     label: "Ask-EVE",       icon: "🔒", status: "live" },
 ] as const;
 
 export function Sidebar() {
