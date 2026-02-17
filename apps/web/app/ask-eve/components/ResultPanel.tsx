@@ -4,72 +4,108 @@ interface ResultPanelProps {
   result: any;
 }
 
-function Stat({ label, value, unit }: { label: string; value: string | number | null; unit?: string }) {
+function fmt(v: number | null, d = 2): string {
+  if (v === null || v === undefined) return "–";
+  return v.toFixed(d);
+}
+
+function fmtInt(v: number | null): string {
+  if (v === null || v === undefined) return "–";
+  return Math.round(v).toLocaleString("en-US");
+}
+
+function Stat({ label, value, unit, color }: { label: string; value: string; unit?: string; color?: string }) {
   return (
-    <div className="bg-slate-800/50 border border-slate-700/50 rounded p-3">
-      <div className="text-xs text-slate-500 mb-1">{label}</div>
-      <div className="text-lg font-mono font-semibold text-slate-100">
-        {value ?? "—"}
-        {unit && <span className="text-xs text-slate-500 ml-1">{unit}</span>}
+    <div style={{
+      background: "var(--bg-primary)", border: "1px solid var(--border-color)",
+      borderRadius: 6, padding: "8px 10px", flex: "1 1 100px", minWidth: 80,
+    }}>
+      <div style={{ fontSize: 9, color: "var(--text-muted)", marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 18, fontWeight: 700, color: color ?? "var(--text-primary)", fontFamily: "var(--font-mono)", lineHeight: 1.2 }}>
+        {value}
+        {unit && <span style={{ fontSize: 9, fontWeight: 400, marginLeft: 3, color: "var(--text-muted)" }}>{unit}</span>}
       </div>
     </div>
   );
 }
 
-function fmt(v: number | null, d = 2): string {
-  if (v === null) return "—";
-  return v.toFixed(d);
-}
+const GEN_COLORS: Record<string, string> = {
+  nuclear: "#a78bfa", hydro: "#3b82f6", wind_onshore: "#22d3ee", wind_offshore: "#06b6d4",
+  solar: "#facc15", gas: "#f97316", coal: "#78716c", lignite: "#57534e", oil: "#44403c", other: "#a8a29e",
+};
 
-function fmtInt(v: number | null): string {
-  if (v === null) return "—";
-  return Math.round(v).toLocaleString("en-US");
-}
+const GEN_LABELS: Record<string, string> = {
+  nuclear: "Kärnkraft", hydro: "Vatten", wind_onshore: "Vind", wind_offshore: "Vind hav",
+  solar: "Sol", gas: "Gas", coal: "Kol", lignite: "Brunkol", oil: "Olja", other: "Övrigt",
+};
 
 export default function ResultPanel({ result }: ResultPanelProps) {
   const gm = result.generation_mix_avg_mw;
 
+  // Generation mix bar
+  const genEntries = Object.entries(gm as Record<string, number | null>)
+    .filter(([k, v]) => k !== "total" && v != null && v > 0)
+    .map(([k, v]) => ({ key: k, value: v as number }));
+  const genTotal = genEntries.reduce((s, e) => s + e.value, 0);
+
   return (
-    <div className="mt-4 bg-slate-900 border border-slate-800 rounded-lg p-5">
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
-        Result — {result.zone} — {result.period.from} to {result.period.to}
-      </h2>
+    <div className="card" style={{ padding: 20, marginTop: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
+          {result.zone} — {result.period.from} → {result.period.to}
+        </span>
+        <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+          {result.rows_count} rows · {result.hours_total}h
+        </span>
+      </div>
 
       {/* Key metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-        <Stat label="Spot Mean" value={fmt(result.spot.mean)} unit="EUR/MWh" />
-        <Stat label="CO₂ Production" value={fmt(result.production_co2.mean)} unit="g/kWh" />
-        <Stat label="CO₂ Consumption" value={fmt(result.consumption_co2.mean)} unit="g/kWh" />
-        <Stat label="Net Import" value={fmtInt(result.net_import.mean)} unit="MW" />
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+        <Stat label="Spot Mean" value={fmt(result.spot.mean)} unit="€/MWh" color="#f59e0b" />
+        <Stat label="CO₂ Produktion" value={fmt(result.production_co2.mean)} unit="g/kWh" color="#22c55e" />
+        <Stat label="CO₂ Konsumtion" value={fmt(result.consumption_co2.mean)} unit="g/kWh" color="#ef4444" />
+        <Stat label="Nettoimport" value={fmtInt(result.net_import.mean)} unit="MW" color="#3b82f6" />
       </div>
 
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-5">
-        <Stat label="Spot Min" value={fmt(result.spot.min)} />
-        <Stat label="Spot Max" value={fmt(result.spot.max)} />
-        <Stat label="Temp Mean" value={fmt(result.temperature.mean, 1)} unit="°C" />
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+        <Stat label="Spot Min" value={fmt(result.spot.min)} unit="€" />
+        <Stat label="Spot Max" value={fmt(result.spot.max)} unit="€" />
+        <Stat label="Temp" value={fmt(result.temperature.mean, 1)} unit="°C" color="#22d3ee" />
         <Stat label="HDD" value={fmtInt(result.hdd.sum)} />
-        <Stat label="Hours" value={result.hours_total} />
-        <Stat label="Rows" value={result.rows_count} />
       </div>
 
-      {/* Generation mix */}
-      <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-        Generation Mix (Avg MW)
-      </h3>
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-        {[
-          ["Nuclear", gm.nuclear],
-          ["Hydro", gm.hydro],
-          ["Wind", gm.wind_onshore],
-          ["Solar", gm.solar],
-          ["Gas", gm.gas],
-          ["Other", gm.other],
-        ].map(([label, val]) => (
-          <div key={label as string} className="text-center p-2 bg-slate-800/30 rounded">
-            <div className="text-[10px] text-slate-500">{label as string}</div>
-            <div className="text-sm font-mono text-slate-300">{fmtInt(val as number)}</div>
-          </div>
-        ))}
+      {/* Generation mix stacked bar */}
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Produktionsmix (medel MW)
+        </div>
+        {genTotal > 0 && (
+          <>
+            <div style={{ display: "flex", height: 24, borderRadius: 6, overflow: "hidden", marginBottom: 6 }}>
+              {genEntries.map(e => {
+                const pct = (e.value / genTotal) * 100;
+                if (pct < 0.5) return null;
+                return (
+                  <div key={e.key} style={{
+                    width: `${pct}%`, background: GEN_COLORS[e.key] ?? "#666",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: pct > 8 ? 8 : 0, color: "#fff", fontWeight: 600, fontFamily: "var(--font-mono)",
+                  }} title={`${GEN_LABELS[e.key] ?? e.key}: ${Math.round(e.value)} MW (${pct.toFixed(1)}%)`}>
+                    {pct > 12 ? `${GEN_LABELS[e.key] ?? e.key} ${pct.toFixed(0)}%` : pct > 5 ? `${pct.toFixed(0)}%` : ""}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 10px" }}>
+              {genEntries.filter(e => (e.value / genTotal) * 100 >= 1).map(e => (
+                <span key={e.key} style={{ fontSize: 9, color: "var(--text-muted)" }}>
+                  <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: GEN_COLORS[e.key] ?? "#666", marginRight: 3, verticalAlign: "middle" }} />
+                  {GEN_LABELS[e.key] ?? e.key} {fmtInt(e.value)} MW
+                </span>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

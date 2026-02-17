@@ -25,63 +25,65 @@ export default function QueryPanel({ onSubmit, loading }: QueryPanelProps) {
     onSubmit({ zone, start, end, lang });
   }
 
-  return (
-    <form onSubmit={handleSubmit} className="bg-slate-900 border border-slate-800 rounded-lg p-5">
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
-        Query
-      </h2>
+  const labelStyle: React.CSSProperties = {
+    fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase",
+    letterSpacing: "0.05em", marginBottom: 4, display: "block",
+  };
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+  const inputStyle: React.CSSProperties = {
+    width: "100%", background: "var(--bg-primary)", border: "1px solid var(--border-color)",
+    borderRadius: 6, padding: "8px 10px", fontSize: 13, color: "var(--text-primary)",
+    fontFamily: "var(--font-mono)", outline: "none",
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="card" style={{ padding: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>Query</span>
+        <span style={{
+          fontSize: 9, padding: "2px 6px", borderRadius: 4, fontFamily: "var(--font-mono)",
+          background: "rgba(16, 185, 129, 0.1)", border: "1px solid rgba(16, 185, 129, 0.3)",
+          color: "#10b981",
+        }}>deterministic</span>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
         {/* Zone */}
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Zone</label>
-          <select
-            value={zone}
-            onChange={(e) => setZone(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 font-mono focus:outline-none focus:border-blue-500"
-          >
-            {ZONES.map((z) => (
-              <option key={z} value={z}>{z}</option>
-            ))}
+          <label style={labelStyle}>Bidding Zone</label>
+          <select value={zone} onChange={(e) => setZone(e.target.value)} style={inputStyle}>
+            {ZONES.map((z) => <option key={z} value={z}>{z}</option>)}
           </select>
         </div>
 
         {/* From */}
         <div>
-          <label className="block text-xs text-slate-500 mb-1">From</label>
-          <input
-            type="date"
-            value={start}
-            onChange={(e) => setStart(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 font-mono focus:outline-none focus:border-blue-500"
-          />
+          <label style={labelStyle}>From</label>
+          <input type="date" value={start} onChange={(e) => setStart(e.target.value)} style={inputStyle} />
         </div>
 
         {/* To */}
         <div>
-          <label className="block text-xs text-slate-500 mb-1">To</label>
-          <input
-            type="date"
-            value={end}
-            onChange={(e) => setEnd(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 font-mono focus:outline-none focus:border-blue-500"
-          />
+          <label style={labelStyle}>To</label>
+          <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} style={inputStyle} />
         </div>
 
         {/* Language */}
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Language</label>
-          <div className="flex gap-1">
-            {["en", "sv"].map((l) => (
+          <label style={labelStyle}>Report Language</label>
+          <div style={{ display: "flex", gap: 4 }}>
+            {(["en", "sv"] as const).map((l) => (
               <button
                 key={l}
                 type="button"
                 onClick={() => setLang(l)}
-                className={`flex-1 px-3 py-2 text-sm font-mono rounded border ${
-                  lang === l
-                    ? "bg-blue-600 border-blue-500 text-white"
-                    : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600"
-                }`}
+                style={{
+                  flex: 1, padding: "8px 0", fontSize: 13, fontFamily: "var(--font-mono)",
+                  borderRadius: 6, cursor: "pointer", fontWeight: lang === l ? 700 : 400,
+                  background: lang === l ? "rgba(59, 130, 246, 0.15)" : "var(--bg-primary)",
+                  border: `1px solid ${lang === l ? "rgba(59, 130, 246, 0.5)" : "var(--border-color)"}`,
+                  color: lang === l ? "#3b82f6" : "var(--text-muted)",
+                }}
               >
                 {l.toUpperCase()}
               </button>
@@ -93,7 +95,14 @@ export default function QueryPanel({ onSubmit, loading }: QueryPanelProps) {
       <button
         type="submit"
         disabled={loading}
-        className="mt-4 w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 text-white text-sm font-semibold rounded transition-colors"
+        style={{
+          marginTop: 16, width: "100%", padding: "10px 0",
+          background: loading ? "var(--bg-card)" : "#2563eb",
+          color: loading ? "var(--text-muted)" : "#fff",
+          border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700,
+          cursor: loading ? "not-allowed" : "pointer",
+          transition: "background 0.15s",
+        }}
       >
         {loading ? "Computing..." : "Generate Evidence Report"}
       </button>
