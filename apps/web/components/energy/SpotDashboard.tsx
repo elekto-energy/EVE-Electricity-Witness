@@ -704,6 +704,22 @@ export default function SpotDashboard() {
                 </span>
               ))}
             </div>
+            {/* Asymmetric publication notice */}
+            {mode === "live" && datasets.length > 1 && (() => {
+              const withTomorrow = datasets.filter(ds => ds.rows.some(r => r.is_forecast && r.spot !== null));
+              const withoutTomorrow = datasets.filter(ds => !ds.rows.some(r => r.is_forecast && r.spot !== null));
+              if (withTomorrow.length > 0 && withoutTomorrow.length > 0) {
+                return (
+                  <div style={{ fontSize: 8, color: "var(--text-muted)", marginTop: 6, padding: "4px 8px", background: "rgba(251, 191, 36, 0.05)", border: "1px solid rgba(251, 191, 36, 0.15)", borderRadius: 4 }}>
+                    <span style={{ color: "#fbbf24", fontWeight: 600 }}>Obs:</span> ENTSO-E publicerar day-ahead-priser vid olika tidpunkter per budområde.
+                    {" "}{withTomorrow.map(d => d.zone).join(", ")} har morgondagens priser.
+                    {" "}{withoutTomorrow.map(d => d.zone).join(", ")} inväntar publicering.
+                    {" "}Marknadsaktörer i tidigt publicerade zoner har informationsövertag under denna period.
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </div>
 
           {/* Sub-panels */}
