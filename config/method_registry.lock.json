@@ -1,0 +1,9 @@
+{
+  "methodology_version": "TS_V2_EEA_2023_DIRECT",
+  "registry_file": "docs/METHOD_REGISTRY_V2.md",
+  "registry_hash": "83CCEEBC71A265CB7B7482AA29BB9A4DF966460DEABEBA5809F59C3ADF320628",
+  "hash_algorithm": "SHA256",
+  "hash_note": "Computed on file before hash insertion (placeholder text present)",
+  "locked_at": "2026-02-17",
+  "locked_by": "Organiq Sweden AB"
+}
