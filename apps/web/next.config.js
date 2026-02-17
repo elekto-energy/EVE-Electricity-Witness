@@ -1,8 +1,15 @@
 /** @type {import('next').NextConfig} */
+const path = require("path");
+
 const nextConfig = {
-  // Serve canonical data as static assets for API routes
-  // All data access goes through API routes, never direct client fetch
-  output: undefined, // default (not static export — we need API routes)
+  // Always standalone — EVE is infrastructure, not frontend-first.
+  // Deterministic build: Docker, local, CI all produce same artifact.
+  output: "standalone",
+
+  // Monorepo tracing: ensures standalone includes packages/ dependencies
+  experimental: {
+    outputFileTracingRoot: path.join(__dirname, "../../"),
+  },
 };
 
 module.exports = nextConfig;
