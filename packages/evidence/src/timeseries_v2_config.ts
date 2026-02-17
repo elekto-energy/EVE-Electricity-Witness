@@ -5,7 +5,7 @@
  *   - IT_NORD (Italy North) per V2 spec
  *   - EE, LV, LT (Baltic chain for FI→PL flow path)
  *
- * Period: 2022-01 → present (V2 narrows from V1's 2016-2025)
+ * Period: 2020-01 → present (V2 Golden Scope decision 2026-02-17)
  *
  * Emission factors: direct combustion only (Scope 1).
  * Margin CO₂ is V3 scope.
@@ -46,8 +46,22 @@ export const TIMESERIES_V2_ZONES: Record<string, TimeseriesZone> = {
 
 export const V2_ZONE_CODES = Object.keys(TIMESERIES_V2_ZONES);
 
-/** V2 period start */
-export const V2_PERIOD_START = "2022-01-01";
+/** V2 period start — locked per Golden Scope decision 2026-02-17 */
+export const V2_PERIOD_START = "2020-01-01";
 
-/** Zones to begin golden testing with */
-export const V2_GOLDEN_ZONES = ["SE3", "DE_LU", "FI"] as const;
+/**
+ * V2 Golden Zones — 14 zones locked per Golden Scope decision 2026-02-17.
+ * Any addition = V3. No removal allowed.
+ *
+ * Coverage: All Swedish bidding zones + all physical interconnector neighbours
+ * in scope for production/consumption CO₂ and cross-border flow analysis.
+ */
+export const V2_GOLDEN_ZONES = [
+  "SE1", "SE2", "SE3", "SE4",  // Sweden (full internal structure)
+  "NO1", "NO2",                // Norway (Oslo + Kristiansand, SE3/SE4 interconnected)
+  "FI",                        // Finland (SE1/SE3 + Baltic chain via EE)
+  "DE_LU",                     // Germany/Luxembourg (SE4, FR, NL, PL interconnected)
+  "PL",                        // Poland (SE4, LT, DE_LU interconnected)
+  "EE", "LV", "LT",           // Baltic chain (FI→EE→LV→LT→PL)
+  "FR", "NL",                  // EU core (DE_LU interconnected)
+] as const;
