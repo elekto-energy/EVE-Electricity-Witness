@@ -115,18 +115,60 @@ export default function AskEvePage() {
 
           <IdentityStack result={result} pdfResult={pdfResult} />
 
-          {/* Legal positioning */}
-          <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid var(--border-color)" }}>
-            <p style={{ fontSize: 9, color: "var(--text-muted)", lineHeight: 1.5, marginBottom: 6 }}>
-              EVE Electricity Witness is a deterministic evidence engine built on publicly available regulatory data sources
-              (ENTSO-E Transparency Platform, EEA emission factors, ERA5 reanalysis). All reports are reproducible and
-              cryptographically verifiable. This system is independently built and is not an official publication from
-              Svenska kraftnät, Energimyndigheten, or any other authority.
+          {/* Positioning block — language aware */}
+          <div className="card" style={{ marginTop: 16, padding: 20 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 10 }}>
+              {queryParams?.lang === "sv" ? "Vad denna panel g\u00f6r" : "What This Panel Does"}
+            </div>
+
+            <p style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.6, margin: "0 0 10px" }}>
+              {queryParams?.lang === "sv"
+                ? "Denna panel genererar deterministiska evidensrapporter baserade p\u00e5 den l\u00e5sta EVE Timeseries V2-dataseten. Systemet g\u00f6r inga prognoser, simuleringar eller policyrekommendationer. Det ber\u00e4knar reproducerbara statistikv\u00e4rden fr\u00e5n \u00f6ppna regulatoriska datak\u00e4llor:"
+                : "This panel generates deterministic evidence reports based on the locked EVE Timeseries V2 dataset. It does not forecast, simulate, or provide policy recommendations. It computes reproducible statistics from publicly available regulatory data sources:"
+              }
             </p>
-            <p style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", lineHeight: 1.5 }}>
-              This platform is designed so that authorities, journalists and independent experts can verify, challenge
-              and reproduce all results. Methodology: TS_V2_EEA_2023_DIRECT · Scope 1 only.
+
+            <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.8, marginBottom: 12, paddingLeft: 12 }}>
+              \u2022 ENTSO-E Transparency Platform<br/>
+              \u2022 EEA 2023 {queryParams?.lang === "sv" ? "emissionsfaktorer" : "emission factors"}<br/>
+              \u2022 ERA5 {queryParams?.lang === "sv" ? "v\u00e4derdata" : "weather reanalysis"}
+            </div>
+
+            <p style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.6, margin: "0 0 10px" }}>
+              {queryParams?.lang === "sv" ? "Varje rapport \u00e4r:" : "Every report is:"}
             </p>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+              {[
+                { en: "Deterministic", sv: "Deterministisk", color: "#10b981" },
+                { en: "Cryptographically hashed", sv: "Kryptografiskt hashad", color: "#3b82f6" },
+                { en: "Linked to sealed dataset", sv: "L\u00e4nkad till f\u00f6rseglad dataset", color: "#a855f7" },
+                { en: "Fully reproducible", sv: "Fullt reproducerbar", color: "#f59e0b" },
+              ].map(b => (
+                <span key={b.en} style={{
+                  fontSize: 10, padding: "3px 8px", borderRadius: 4, fontFamily: "var(--font-mono)",
+                  background: `${b.color}12`, border: `1px solid ${b.color}35`, color: b.color,
+                }}>
+                  {queryParams?.lang === "sv" ? b.sv : b.en}
+                </span>
+              ))}
+            </div>
+
+            <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", marginBottom: 6 }}>
+                {queryParams?.lang === "sv" ? "Om oberoende" : "On Independence"}
+              </div>
+              <p style={{ fontSize: 10, color: "var(--text-muted)", lineHeight: 1.6, margin: 0 }}>
+                {queryParams?.lang === "sv"
+                  ? "EVE Electricity Witness \u00e4r ett frist\u00e5ende verifieringssystem. Det \u00e4r inte anslutet till eller godk\u00e4nt av n\u00e5gon systemoperat\u00f6r, tillsynsmyndighet eller annan myndighet. Plattformen \u00e4r utformad s\u00e5 att myndigheter, journalister och oberoende experter kan verifiera, ifr\u00e5gas\u00e4tta och reproducera alla resultat."
+                  : "EVE Electricity Witness is an independent verification system. It is not affiliated with or endorsed by any transmission system operator, regulator, or authority. This platform is designed so that authorities, journalists and independent experts can verify, challenge and reproduce all results."
+                }
+              </p>
+            </div>
+
+            <div style={{ marginTop: 12, fontSize: 9, color: "rgba(255,255,255,0.2)", fontFamily: "var(--font-mono)" }}>
+              TS_V2_EEA_2023_DIRECT \u00b7 Scope 1 \u00b7 Direct combustion only
+            </div>
           </div>
         </>
       )}
