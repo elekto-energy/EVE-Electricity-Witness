@@ -103,9 +103,9 @@ export default function StatementsPage() {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">📜 Statements</h1>
+        <h1 className="page-title">⚡ Energy Statements</h1>
         <p className="page-subtitle">
-          Political statements from verified sources. Evidence-traced, no interpretation.
+          Political statements on energy and electricity from verified sources. Evidence-traced, no interpretation.
         </p>
       </div>
 

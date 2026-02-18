@@ -28,8 +28,11 @@ export async function GET(request: NextRequest) {
   const pageSizeStr = searchParams.get("sz");
   const pageSize = pageSizeStr ? Math.min(parseInt(pageSizeStr, 10), 100) : 20;
 
+  const energyOnlyParam = searchParams.get("energyOnly");
+  const energyOnly = energyOnlyParam === "false" ? false : true; // default: true
+
   const all = loadAllStatements();
-  const filtered = filterStatements(all, { from, to, speaker, q, source });
+  const filtered = filterStatements(all, { from, to, speaker, q, source, energyOnly });
   const { page, next_cursor } = paginate(filtered, cursor, pageSize);
 
   const evidence = loadStatementsEvidence();

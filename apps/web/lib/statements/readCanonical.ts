@@ -74,6 +74,35 @@ export function loadAllStatements(): StatementEventDTO[] {
   return deduped;
 }
 
+/**
+ * Energy topic keywords for filtering.
+ * Matches title (case-insensitive, Swedish + English).
+ * EVE Electricity Witness scope: energy, electricity, grid, nuclear, renewables, emissions.
+ */
+const ENERGY_KEYWORDS = [
+  // Swedish
+  "energi", "el ", "elpriser", "elpris", "elnät", "elmarknad", "elproduktion",
+  "kärnkraft", "vindkraft", "solenergi", "vattenkraft", "fjärrvärme",
+  "kraftvärme", "bioenergi", "bränsle", "utsläpp", "klimat",
+  "koldioxid", "co2", "fossi", "förnybar", "hållbar energi",
+  "kraftledning", "transmissionsnät", "elcertifikat", "energiskatt",
+  "effektbrist", "effektreserv", "elområde", "spotpris",
+  "svenska kraftnät", "energimyndigheten", "strålsäkerhetsmyndigheten",
+  "ringhals", "forsmark", "oskarshamn", "vattenfall",
+  "laddinfrastruktur", "laddstolp", "elbil",
+  "kraftvärmeverk", "fjärrvärmeverk", "energieffektiv",
+  // English
+  "energy", "electricity", "nuclear", "renewable", "wind power",
+  "solar power", "hydropower", "grid", "emission", "carbon",
+  "fossil fuel", "power plant", "power grid",
+];
+
+/** Check if a statement title/excerpt matches energy topics */
+function isEnergyRelated(stmt: StatementEventDTO): boolean {
+  const text = ((stmt.title ?? "") + " " + (stmt.excerpt ?? "")).toLowerCase();
+  return ENERGY_KEYWORDS.some(kw => text.includes(kw));
+}
+
 /** Filter statements */
 export function filterStatements(
   items: StatementEventDTO[],
@@ -83,9 +112,15 @@ export function filterStatements(
     speaker?: string;
     q?: string;
     source?: string;
+    energyOnly?: boolean;
   }
 ): StatementEventDTO[] {
   let result = items;
+
+  // Energy filter — default ON for EVE Electricity Witness scope
+  if (filters.energyOnly !== false) {
+    result = result.filter(isEnergyRelated);
+  }
 
   if (filters.from) {
     const fromDate = filters.from + "T00:00:00Z";
