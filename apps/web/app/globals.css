@@ -127,6 +127,67 @@ a:hover { text-decoration: underline; }
   font-size: 0.95rem;
 }
 
+/* Sidebar hamburger — hidden on desktop */
+.sidebar-hamburger {
+  display: none;
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 1001;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px;
+  cursor: pointer;
+}
+
+/* Sidebar overlay — mobile only */
+.sidebar-overlay {
+  display: none;
+}
+
+/* Mobile responsive */
+@media (max-width: 767px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "topbar"
+      "main";
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -260px;
+    width: 250px;
+    height: 100vh;
+    z-index: 1000;
+    transition: left 0.25s ease;
+    box-shadow: none;
+  }
+
+  .sidebar.sidebar-open {
+    left: 0;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+  }
+
+  .sidebar-hamburger {
+    display: block;
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+  }
+
+  .topbar {
+    padding-left: 52px;
+  }
+}
+
 /* Main */
 .main-content {
   grid-area: main;

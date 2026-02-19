@@ -563,7 +563,7 @@ export default function SpotDashboard() {
               background: mode === m ? "#f59e0b22" : "transparent",
               border: `1px solid ${mode === m ? "#f59e0b" : "var(--border-color)"}`,
               color: mode === m ? "#f59e0b" : "var(--text-muted)",
-            }}>{m === "live" ? "🔴 Live" : m === "day" ? "📅 Dag" : "📊 Månad"}</button>
+            }}>{m === "live" ? "● Live" : m === "day" ? "📅 Dag" : "📊 Månad"}</button>
           ))}
 
           {mode !== "live" && (
