@@ -75,7 +75,7 @@ export async function fetchAnforanden(opts: FetchAnforandenOptions): Promise<{
   const url = `${BASE_URL}?${params.toString()}`;
   console.log(`[riksdagen] GET ${url}`);
 
-  const body = await httpGet(url);
+  const body = await httpGetWithRetry(url, 3);
 
   let parsed: AnforandeListResponse;
   try {
@@ -106,21 +106,42 @@ export async function fetchAnforanden(opts: FetchAnforandenOptions): Promise<{
 
 /**
  * Fetch all pages for given options (paginated).
+ * Uses smaller page size and longer delays for stability.
  */
 export async function fetchAllAnforanden(opts: FetchAnforandenOptions): Promise<RiksdagenAnforandeRaw[]> {
   const all: RiksdagenAnforandeRaw[] = [];
-  const sz = opts.sz ?? 100;
+  const sz = Math.min(opts.sz ?? 20, 20); // Riksdagen rejects large page sizes
   let page = 1;
 
-  while (true) {
-    const result = await fetchAnforanden({ ...opts, page, sz });
-    all.push(...result.items);
+  // First call to get total
+  const first = await fetchAnforanden({ ...opts, page: 1, sz });
+  all.push(...first.items);
+  const totalPages = first.pages;
+  const totalItems = first.total;
 
-    if (page >= result.pages || result.items.length === 0) break;
-    page++;
+  console.log(`[riksdagen] Total: ${totalItems} items across ${totalPages} pages (sz=${sz})`);
 
-    // Polite delay
-    await sleep(500);
+  if (totalPages <= 1) return all;
+
+  page = 2;
+  while (page <= totalPages) {
+    await sleep(1000); // 1s between requests — polite
+
+    try {
+      const result = await fetchAnforanden({ ...opts, page, sz });
+      all.push(...result.items);
+
+      if (page % 10 === 0 || page === totalPages) {
+        console.log(`[riksdagen] Progress: page ${page}/${totalPages} — ${all.length}/${totalItems} items`);
+      }
+
+      if (result.items.length === 0) break;
+      page++;
+    } catch (err: any) {
+      console.warn(`[riksdagen] Page ${page} failed: ${err.message}. Retrying in 5s...`);
+      await sleep(5000);
+      // Don't increment page — retry same page
+    }
   }
 
   return all;
@@ -130,9 +151,37 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function httpGet(url: string): Promise<string> {
+/**
+ * HTTP GET with retry logic and timeout.
+ */
+async function httpGetWithRetry(url: string, maxRetries: number): Promise<string> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await httpGet(url, 30_000); // 30s timeout
+    } catch (err: any) {
+      lastError = err;
+      if (attempt < maxRetries) {
+        const delay = attempt * 3000; // 3s, 6s, 9s backoff
+        console.warn(`[riksdagen] Attempt ${attempt}/${maxRetries} failed: ${err.message}. Retrying in ${delay / 1000}s...`);
+        await sleep(delay);
+      }
+    }
+  }
+
+  throw lastError ?? new Error("httpGetWithRetry: unknown error");
+}
+
+function httpGet(url: string, timeoutMs: number = 30_000): Promise<string> {
   return new Promise((resolve, reject) => {
-    https.get(url, { headers: { "Accept": "application/json" } }, (res) => {
+    const req = https.get(url, {
+      headers: {
+        "Accept": "application/json",
+        "User-Agent": "EVE-Electricity-Witness/1.0 (research; contact@organiq.se)",
+      },
+      timeout: timeoutMs,
+    }, (res) => {
       let data = "";
       res.setEncoding("utf-8");
       res.on("data", chunk => data += chunk);
@@ -144,6 +193,12 @@ function httpGet(url: string): Promise<string> {
         }
       });
       res.on("error", reject);
-    }).on("error", reject);
+    });
+
+    req.on("error", reject);
+    req.on("timeout", () => {
+      req.destroy();
+      reject(new Error(`Request timed out after ${timeoutMs}ms`));
+    });
   });
 }

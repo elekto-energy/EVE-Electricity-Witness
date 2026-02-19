@@ -49,16 +49,21 @@ interface LiveRow {
 
 // ─── ENTSO-E day-ahead fetch ─────────────────────────────────────────────────
 
+interface SpotResult {
+  prices: Map<string, number>;
+  resolution: "PT15M" | "PT60M";
+}
+
 async function fetchSpotPrices(
   zone: string, dateStart: Date, dateEnd: Date
-): Promise<Map<string, number>> {
+): Promise<SpotResult> {
   const eic = ZONE_EIC[zone];
-  if (!eic) return new Map();
+  if (!eic) return { prices: new Map(), resolution: "PT60M" as const };
 
   const token = process.env.ENTSOE_TOKEN;
   if (!token) {
     console.warn("[live] ENTSOE_TOKEN not set, skipping spot fetch");
-    return new Map();
+    return { prices: new Map(), resolution: "PT60M" };
   }
 
   const fmt = (d: Date) => d.toISOString().replace(/[-:T]/g, "").slice(0, 12);
@@ -68,12 +73,14 @@ async function fetchSpotPrices(
 
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
-    if (!res.ok) return new Map();
+    if (!res.ok) return { prices: new Map(), resolution: "PT60M" as const };
     const xml = await res.text();
 
     const priceMap = new Map<string, number>();
+    let detectedResolution: "PT15M" | "PT60M" = "PT60M";
 
     // Parse TimeSeries periods
+    // Prefer PT15M if available (highest resolution)
     const tsBlocks = xml.split("<TimeSeries>");
     for (let ti = 1; ti < tsBlocks.length; ti++) {
       const block = tsBlocks[ti];
@@ -89,6 +96,8 @@ async function fetchSpotPrices(
         const isQuarter = resolution === "PT15M";
         const stepMs = isQuarter ? 900_000 : 3600_000;
 
+        if (isQuarter) detectedResolution = "PT15M";
+
         const points = period.split("<Point>");
         for (let i = 1; i < points.length; i++) {
           const posMatch = points[i].match(/<position>(\d+)<\/position>/);
@@ -97,30 +106,21 @@ async function fetchSpotPrices(
 
           const pos = parseInt(posMatch[1]);
           const price = parseFloat(priceMatch[1]);
-          const hourMs = periodStart.getTime() + (pos - 1) * stepMs;
-
-          if (isQuarter) {
-            // Aggregate to hourly
-            const hourKey = new Date(Math.floor(hourMs / 3600_000) * 3600_000).toISOString().slice(0, 13) + ":00:00Z";
-            const existing = priceMap.get(hourKey);
-            if (existing !== undefined) {
-              // Running average (rough — good enough for live)
-              priceMap.set(hourKey, (existing + price) / 2);
-            } else {
-              priceMap.set(hourKey, price);
-            }
-          } else {
-            const ts = new Date(hourMs).toISOString().slice(0, 13) + ":00:00Z";
-            priceMap.set(ts, price);
-          }
+          const pointMs = periodStart.getTime() + (pos - 1) * stepMs;
+          const ts = new Date(pointMs).toISOString();
+          priceMap.set(ts, price);
         }
       }
     }
 
-    return priceMap;
+    // If we got both PT15M and PT60M series, PT15M keys already in map.
+    // PT60M keys will have :00:00 timestamps that overlap with PT15M :00:00.
+    // This is fine — PT15M provides finer granularity.
+
+    return { prices: priceMap, resolution: detectedResolution };
   } catch (err) {
     console.error("[live] ENTSO-E fetch error:", err);
-    return new Map();
+    return { prices: new Map(), resolution: "PT60M" };
   }
 }
 
@@ -178,18 +178,32 @@ export async function GET(req: NextRequest) {
   const tomorrowStart = new Date(todayStart.getTime() + 86400_000);
 
   // Fetch in parallel
-  const [spotMap, weatherMap] = await Promise.all([
+  const [spotResult, weatherMap] = await Promise.all([
     fetchSpotPrices(zone, todayStart, dayAfterTomorrow),
     fetchWeatherForecast(coords.lat, coords.lon, 2),
   ]);
 
-  // Build rows: today + tomorrow
+  const { prices: spotMap, resolution } = spotResult;
+  const stepMs = resolution === "PT15M" ? 900_000 : 3600_000;
+
+  // Build rows at native resolution
   const rows: LiveRow[] = [];
-  for (let t = todayStart.getTime(); t < dayAfterTomorrow.getTime(); t += 3600_000) {
-    const ts = new Date(t).toISOString().slice(0, 13) + ":00:00Z";
+  for (let t = todayStart.getTime(); t < dayAfterTomorrow.getTime(); t += stepMs) {
+    const ts = new Date(t).toISOString();
     const isTomorrow = t >= tomorrowStart.getTime();
-    const spot = spotMap.get(ts) ?? null;
-    const weather = weatherMap.get(ts);
+
+    // Try exact match first, then try matching without ms precision
+    let spot = spotMap.get(ts) ?? null;
+    if (spot === null) {
+      // Try alternate key formats
+      const altKey1 = new Date(t).toISOString().slice(0, 19) + ".000Z";
+      const altKey2 = new Date(t).toISOString().slice(0, 16) + ":00.000Z";
+      spot = spotMap.get(altKey1) ?? spotMap.get(altKey2) ?? null;
+    }
+
+    // Weather is hourly — use nearest hour
+    const hourTs = new Date(Math.floor(t / 3600_000) * 3600_000).toISOString().slice(0, 13) + ":00:00Z";
+    const weather = weatherMap.get(hourTs);
     const temp = weather?.temp ?? null;
 
     rows.push({
@@ -214,6 +228,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     zone,
+    resolution,
     fetched_at: now.toISOString(),
     today: todayStart.toISOString().slice(0, 10),
     tomorrow: tomorrowStart.toISOString().slice(0, 10),

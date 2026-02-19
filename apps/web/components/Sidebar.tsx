@@ -3,15 +3,22 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+/**
+ * Status badges reflect actual data freshness, not aspiration.
+ *
+ * live   = data updates automatically via ingest pipelines
+ * seed   = initial dataset, growing
+ * static = manually curated or historical, updated periodically
+ */
 const NAV_ITEMS = [
   { href: "/witness/price-structure", label: "Energidata", icon: "⚡", status: "live" },
   { href: "/witness",     label: "Witness",       icon: "🔍", status: "seed" },
-  { href: "/witness/statements", label: "Statements", icon: "📜", status: "live" },
-  { href: "/witness/decisions",  label: "Decisions",   icon: "⚖️", status: "live" },
-  { href: "/analysis",    label: "Analysis",      icon: "📊", status: "live" },
-  { href: "/nyheter",     label: "Nyheter",       icon: "📰", status: "live" },
-  { href: "/opinion",     label: "Opinion",       icon: "🗳", status: "live" },
-  { href: "/methodology", label: "Methodology",   icon: "📐", status: "live" },
+  { href: "/witness/statements", label: "Statements", icon: "📜", status: "seed" },
+  { href: "/witness/decisions",  label: "Decisions",   icon: "⚖️", status: "static" },
+  // { href: "/analysis",    label: "Analysis",      icon: "📊", status: "live" }, // Removed — saved for later
+  { href: "/nyheter",     label: "Nyheter",       icon: "📰", status: "static" },
+  { href: "/opinion",     label: "Opinion",       icon: "🗳", status: "static" },
+  { href: "/methodology", label: "Methodology",   icon: "📐", status: "static" },
   { href: "/ask-eve",     label: "Ask-EVE",       icon: "🔒", status: "live" },
 ] as const;
 

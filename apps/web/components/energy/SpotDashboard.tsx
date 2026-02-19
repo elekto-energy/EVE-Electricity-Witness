@@ -193,13 +193,20 @@ function UnifiedChart({ datasets, activeSeries, mode, priceUnit }: {
     }
   }
 
-  const step = len <= 25 ? 3 : len <= 48 ? 6 : len <= 168 ? 24 : Math.floor(len / 8);
+  const step = len <= 25 ? 3 : len <= 48 ? 6 : len <= 96 ? 12 : len <= 192 ? 24 : Math.floor(len / 8);
   const xTicks: number[] = []; for (let i = 0; i < len; i += step) xTicks.push(i);
 
   let nowIdx: number | null = null;
   if (mode === "live" && len > 0) {
-    const h = new Date().getHours();
-    if (h < len) nowIdx = h;
+    const now = new Date();
+    const nowMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes());
+    // Find closest row to current time
+    let bestDist = Infinity;
+    for (let i = 0; i < len; i++) {
+      const rowMs = new Date(primary.rows[i].ts).getTime();
+      const dist = Math.abs(nowMs - rowMs);
+      if (dist < bestDist) { bestDist = dist; nowIdx = i; }
+    }
   }
 
   let tmrIdx: number | null = null;
@@ -222,9 +229,11 @@ function UnifiedChart({ datasets, activeSeries, mode, priceUnit }: {
   const hRow = hoverIdx != null ? primary.rows[hoverIdx] : null;
   const hTime = hRow ? (() => {
     const d = new Date(hRow.ts);
+    const hh = d.getUTCHours().toString().padStart(2, "0");
+    const mm = d.getUTCMinutes().toString().padStart(2, "0");
     return (mode === "live" || mode === "day")
-      ? d.getUTCHours().toString().padStart(2, "0") + ":00"
-      : `${d.getUTCDate()}/${d.getUTCMonth() + 1} ${d.getUTCHours().toString().padStart(2, "0")}:00`;
+      ? `${hh}:${mm}`
+      : `${d.getUTCDate()}/${d.getUTCMonth() + 1} ${hh}:${mm}`;
   })() : null;
 
   return (
@@ -241,7 +250,9 @@ function UnifiedChart({ datasets, activeSeries, mode, priceUnit }: {
         {xTicks.map(i => {
           const row = primary.rows[i]; if (!row) return null;
           const d = new Date(row.ts);
-          const label = (mode === "live" || mode === "day") ? d.getUTCHours().toString().padStart(2, "0") + ":00" : `${d.getUTCDate()}/${d.getUTCMonth() + 1}`;
+          const hh = d.getUTCHours().toString().padStart(2, "0");
+          const mm = d.getUTCMinutes().toString().padStart(2, "0");
+          const label = (mode === "live" || mode === "day") ? `${hh}:${mm}` : `${d.getUTCDate()}/${d.getUTCMonth() + 1}`;
           return <text key={i} x={x(i)} y={H - 4} textAnchor="middle" fontSize={9} fill="var(--text-muted)" fontFamily="var(--font-mono)">{label}</text>;
         })}
         {/* Tomorrow divider */}
@@ -431,7 +442,7 @@ function TablePanel({ datasets, mode, priceUnit }: { datasets: Dataset[]; mode: 
                 <tbody>{display.map(row => (
                   <tr key={row.ts} style={row.is_forecast ? { opacity: 0.5 } : undefined}>
                     <td style={{ fontFamily: "var(--font-mono)" }}>
-                      {(mode === "live" || mode === "day") ? new Date(row.ts).getUTCHours().toString().padStart(2, "0") + ":00" : row.ts.slice(5, 13).replace("T", " ")}
+                      {(mode === "live" || mode === "day") ? (() => { const d = new Date(row.ts); return d.getUTCHours().toString().padStart(2, "0") + ":" + d.getUTCMinutes().toString().padStart(2, "0"); })() : row.ts.slice(5, 16).replace("T", " ")}
                       {row.is_forecast && <span style={{ color: "#3b82f6", fontSize: 7, marginLeft: 2 }}>prog</span>}
                     </td>
                     <td style={{ color: "#f59e0b", fontWeight: 600 }}>{spotDisplay(row.spot, priceUnit)}</td>
@@ -525,10 +536,18 @@ export default function SpotDashboard() {
   const nowRow = (() => {
     if (!primaryDs) return null;
     const now = new Date();
-    const h = now.getUTCHours();
+    const nowMs = now.getTime();
     const today = now.toISOString().slice(0, 10);
-    return primaryDs.rows.find(r => r.ts.startsWith(today) && new Date(r.ts).getUTCHours() === h)
-      ?? primaryDs.rows.find(r => new Date(r.ts).getUTCHours() === h);
+    // Find closest row to current time
+    const todayRows = primaryDs.rows.filter(r => r.ts.startsWith(today) && !r.is_forecast);
+    if (todayRows.length === 0) return null;
+    let best = todayRows[0];
+    let bestDist = Math.abs(nowMs - new Date(best.ts).getTime());
+    for (const r of todayRows) {
+      const dist = Math.abs(nowMs - new Date(r.ts).getTime());
+      if (dist < bestDist) { best = r; bestDist = dist; }
+    }
+    return best;
   })();
 
   return (
@@ -633,7 +652,7 @@ export default function SpotDashboard() {
 
         {/* Info */}
         <div style={{ display: "flex", gap: 10, fontSize: 9, color: "var(--text-muted)", alignItems: "center" }}>
-          {datasets.map(ds => <span key={ds.id} style={{ color: ds.color }}>{ds.label} ({ds.rows.length} pt)</span>)}
+          {datasets.map(ds => <span key={ds.id} style={{ color: ds.color }}>{ds.label} ({ds.rows.length} pt{ds.rows.length > 48 ? " · PT15M" : ""})</span>)}
           <span>Senast {lastRefresh.toLocaleTimeString("sv-SE")}</span>
           {priceUnit === "sek" && <span style={{ color: "var(--text-muted)" }}>Kurs: {EUR_SEK} SEK/EUR (fast)</span>}
           {datasets[0]?.evidence && <EvidenceBadge manifestId={datasets[0].evidence.dataset_eve_id} rootHash={datasets[0].evidence.root_hash} />}

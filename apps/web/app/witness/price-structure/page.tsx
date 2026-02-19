@@ -2,6 +2,7 @@ import PriceCompositionPanel from "@/components/price/PriceCompositionPanel";
 import CongestionRevenuePanel from "@/components/price/CongestionRevenuePanel";
 import ProducerFinancialsPanel from "@/components/price/ProducerFinancialsPanel";
 import SpotDashboard from "@/components/energy/SpotDashboard";
+import EnergyIntelPanel from "@/components/price/EnergyIntelPanel";
 
 
 export const metadata = {
@@ -18,6 +19,11 @@ export default function PriceStructurePage() {
 
       {/* Divider */}
       <div style={{ borderTop: "1px solid var(--border-color)", margin: "32px 0 24px" }} />
+
+      {/* EVE Energipanel — allt i ett fönster */}
+      <div id="energy-intel" style={{ marginBottom: 24 }}>
+        <EnergyIntelPanel />
+      </div>
 
       {/* Prisstruktur sections */}
       <h2 style={{ color: "#f5f5f5", fontSize: 20, fontWeight: 700, marginBottom: 4 }}>

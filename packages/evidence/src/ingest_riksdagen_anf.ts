@@ -81,7 +81,7 @@ async function main() {
     to: opts.to,
     iid: opts.iid,
     rm: opts.rm,
-    sz: 100,
+    sz: 20,
   });
   console.log(`  → ${rawItems.length} anföranden fetched`);
 

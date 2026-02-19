@@ -1,0 +1,7 @@
+elmonitor.se {
+	reverse_proxy web:3000
+}
+
+www.elmonitor.se {
+	redir https://elmonitor.se{uri} permanent
+}

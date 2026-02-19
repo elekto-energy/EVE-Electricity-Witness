@@ -13,6 +13,8 @@ import { V2_GOLDEN_ZONES, V2_PERIOD_START } from "../timeseries_v2_config";
 
 export const ALLOWED_METRICS = [
   "spot",
+  "system_price",
+  "bottleneck",
   "production_co2_g_kwh",
   "consumption_co2_g_kwh",
   "net_import_mw",
@@ -31,6 +33,8 @@ export const ALLOWED_METRICS = [
   "wind_speed",
   "solar_rad",
   "hdd",
+  "flows_import",
+  "flows_export",
 ] as const;
 
 export type AllowedMetric = typeof ALLOWED_METRICS[number];

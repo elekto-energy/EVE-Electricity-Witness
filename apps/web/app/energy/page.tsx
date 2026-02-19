@@ -10,9 +10,10 @@
  * TR6: Code renders — never invents.
  */
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { EvidenceBadge } from "@/components/EvidenceBadge";
 import PriceDriverPanel from "@/components/price/PriceDriverPanel";
+import CongestionPanel from "@/components/price/CongestionPanel";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -100,10 +101,36 @@ type ViewMode = "day" | "month";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+const DATE_MIN = "2020-01-01";
+
 function defaultDate(): string {
   const d = new Date();
   d.setDate(d.getDate() - 1);
   return d.toISOString().slice(0, 10);
+}
+
+function todayStr(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function addDays(dateStr: string, n: number): string {
+  const d = new Date(dateStr + "T12:00:00Z");
+  d.setDate(d.getDate() + n);
+  const s = d.toISOString().slice(0, 10);
+  if (s < DATE_MIN) return DATE_MIN;
+  const today = todayStr();
+  if (s > today) return today;
+  return s;
+}
+
+/** Is this date "today"? If so, auto-refresh is relevant. */
+function isToday(dateStr: string): boolean {
+  return dateStr === todayStr();
+}
+
+/** Is this date "yesterday"? Day-ahead data is final. */
+function isComplete(dateStr: string): boolean {
+  return dateStr < todayStr();
 }
 
 function defaultMonth(): string {
@@ -305,6 +332,25 @@ export default function SpotV2Page() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Auto-refresh for today: spot data published ~13:00 CET for next day,
+  // intraday updates every ~15 min for live generation/flows.
+  // Historical dates: no auto-refresh needed.
+  useEffect(() => {
+    if (mode !== "day" || !isToday(date)) return;
+    // For today: refresh every 60s (generation/flows update frequently)
+    const iv = setInterval(fetchData, 60_000);
+    return () => clearInterval(iv);
+  }, [date, mode, fetchData]);
+
+  // For yesterday (day-ahead final): refresh once after 5 min in case data was just ingested
+  useEffect(() => {
+    if (mode !== "day" || isToday(date)) return;
+    const yesterday = addDays(todayStr(), -1);
+    if (date !== yesterday) return; // only for yesterday
+    const t = setTimeout(fetchData, 300_000);
+    return () => clearTimeout(t);
+  }, [date, mode, fetchData]);
+
   return (
     <div>
       {/* Header */}
@@ -340,15 +386,53 @@ export default function SpotV2Page() {
 
           <div style={{ width: 1, height: 24, background: "var(--border-color)" }} />
 
-          {/* Date / Month picker */}
+          {/* Date / Month picker with ◄ ► nav */}
           {mode === "day" ? (
-            <input type="date" value={date} onChange={e => setDate(e.target.value)}
-              style={{
-                padding: "5px 8px", fontSize: "0.82rem", fontFamily: "var(--font-mono)",
-                background: "var(--bg-card)", color: "var(--text-primary)",
-                border: "1px solid var(--border-color)", borderRadius: 4,
-              }}
-            />
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <button
+                onClick={() => setDate(addDays(date, -1))}
+                disabled={date <= DATE_MIN}
+                style={{
+                  background: "none", border: "1px solid var(--border-color)", borderRadius: 4,
+                  padding: "4px 8px", fontSize: 14, cursor: "pointer", color: "var(--text-muted)",
+                  opacity: date <= DATE_MIN ? 0.3 : 1,
+                }}
+                title="Föregående dag"
+              >◄</button>
+              <input type="date" value={date} min={DATE_MIN} max={todayStr()}
+                onChange={e => setDate(e.target.value)}
+                style={{
+                  padding: "5px 8px", fontSize: "0.82rem", fontFamily: "var(--font-mono)",
+                  background: "var(--bg-card)", color: "var(--text-primary)",
+                  border: "1px solid var(--border-color)", borderRadius: 4,
+                }}
+              />
+              <button
+                onClick={() => setDate(addDays(date, 1))}
+                disabled={date >= todayStr()}
+                style={{
+                  background: "none", border: "1px solid var(--border-color)", borderRadius: 4,
+                  padding: "4px 8px", fontSize: 14, cursor: "pointer", color: "var(--text-muted)",
+                  opacity: date >= todayStr() ? 0.3 : 1,
+                }}
+                title="Nästa dag"
+              >►</button>
+              {isToday(date) && (
+                <span style={{
+                  fontSize: 9, padding: "2px 6px", borderRadius: 3,
+                  background: "rgba(34,197,94,0.15)", color: "var(--accent-green)",
+                  border: "1px solid rgba(34,197,94,0.3)",
+                  animation: "pulse 2s ease-in-out infinite",
+                }}>LIVE</span>
+              )}
+              {isComplete(date) && (
+                <span style={{
+                  fontSize: 9, padding: "2px 6px", borderRadius: 3,
+                  background: "rgba(96,165,250,0.15)", color: "var(--accent-blue)",
+                  border: "1px solid rgba(96,165,250,0.3)",
+                }}>Komplett</span>
+              )}
+            </div>
           ) : (
             <input type="month" value={month} onChange={e => setMonth(e.target.value)}
               style={{
@@ -427,7 +511,12 @@ export default function SpotV2Page() {
             <GenMixBar mix={data.generation_mix} />
           </div>
 
-          {/* Price Drivers — the key panel */}
+          {/* ═══ Congestion / DDM Panel ═══ */}
+          {mode === "day" && (
+            <CongestionPanel zone={zone} date={date} />
+          )}
+
+          {/* Price Drivers — correlation panel */}
           <PriceDriverPanel rows={data.rows} zone={zone} mode={mode} />
 
           {/* Weather */}
