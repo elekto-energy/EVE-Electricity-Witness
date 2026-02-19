@@ -186,6 +186,46 @@ a:hover { text-decoration: underline; }
   .topbar {
     padding-left: 52px;
   }
+
+  .main-content {
+    padding: 12px;
+  }
+
+  .card {
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .page-header {
+    margin-bottom: 14px;
+  }
+
+  .page-title {
+    font-size: 1.1rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.78rem;
+  }
+
+  .data-table {
+    font-size: 0.72rem;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 4px 6px;
+  }
+
+  .tab {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
+  /* Force horizontal scroll on wide tables */
+  .card:has(.data-table) {
+    overflow-x: auto;
+  }
 }
 
 /* Main */

@@ -110,38 +110,55 @@ export async function fetchAnforanden(opts: FetchAnforandenOptions): Promise<{
  */
 export async function fetchAllAnforanden(opts: FetchAnforandenOptions): Promise<RiksdagenAnforandeRaw[]> {
   const all: RiksdagenAnforandeRaw[] = [];
-  const sz = Math.min(opts.sz ?? 20, 20); // Riksdagen rejects large page sizes
+  const sz = Math.min(opts.sz ?? 10, 10); // Riksdagen rejects sz>10 from Node.js
   let page = 1;
 
-  // First call to get total
+  // Riksdagen API does not return total count or total pages.
+  // @antal = items on current page, @sidor = not provided.
+  // Strategy: paginate until we get fewer items than sz (= last page).
+
   const first = await fetchAnforanden({ ...opts, page: 1, sz });
   all.push(...first.items);
-  const totalPages = first.pages;
-  const totalItems = first.total;
 
-  console.log(`[riksdagen] Total: ${totalItems} items across ${totalPages} pages (sz=${sz})`);
+  console.log(`[riksdagen] Page 1: ${first.items.length} items (sz=${sz})`);
 
-  if (totalPages <= 1) return all;
+  if (first.items.length < sz) {
+    console.log(`[riksdagen] Done: ${all.length} total items (single page)`);
+    return all;
+  }
 
   page = 2;
-  while (page <= totalPages) {
-    await sleep(1000); // 1s between requests — polite
+  let consecutiveErrors = 0;
+  const MAX_ERRORS = 5;
+
+  while (consecutiveErrors < MAX_ERRORS) {
+    await sleep(1500); // 1.5s between requests — polite
 
     try {
       const result = await fetchAnforanden({ ...opts, page, sz });
       all.push(...result.items);
+      consecutiveErrors = 0;
 
-      if (page % 10 === 0 || page === totalPages) {
-        console.log(`[riksdagen] Progress: page ${page}/${totalPages} — ${all.length}/${totalItems} items`);
+      if (page % 20 === 0) {
+        console.log(`[riksdagen] Progress: page ${page} — ${all.length} items so far`);
       }
 
-      if (result.items.length === 0) break;
+      // Last page: fewer items than requested
+      if (result.items.length < sz) {
+        console.log(`[riksdagen] Done: ${all.length} total items across ${page} pages`);
+        break;
+      }
       page++;
     } catch (err: any) {
-      console.warn(`[riksdagen] Page ${page} failed: ${err.message}. Retrying in 5s...`);
+      consecutiveErrors++;
+      console.warn(`[riksdagen] Page ${page} failed (${consecutiveErrors}/${MAX_ERRORS}): ${err.message}. Retrying in 5s...`);
       await sleep(5000);
       // Don't increment page — retry same page
     }
+  }
+
+  if (consecutiveErrors >= MAX_ERRORS) {
+    console.warn(`[riksdagen] Stopped after ${MAX_ERRORS} consecutive errors. Got ${all.length} items from ${page - 1} pages.`);
   }
 
   return all;
@@ -176,6 +193,7 @@ async function httpGetWithRetry(url: string, maxRetries: number): Promise<string
 function httpGet(url: string, timeoutMs: number = 30_000): Promise<string> {
   return new Promise((resolve, reject) => {
     const req = https.get(url, {
+      family: 4, // Force IPv4 — Riksdagen IPv6 drops connections
       headers: {
         "Accept": "application/json",
         "User-Agent": "EVE-Electricity-Witness/1.0 (research; contact@organiq.se)",
