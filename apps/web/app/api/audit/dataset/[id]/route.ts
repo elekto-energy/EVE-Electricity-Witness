@@ -141,9 +141,9 @@ function loadRegistryLock(root: string): MethodRegistryLock | null {
 
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const datasetId = params.id;
+  const { id: datasetId } = await params;
   const root = getProjectRoot();
 
   // Find manifest
