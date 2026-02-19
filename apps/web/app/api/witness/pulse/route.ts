@@ -53,11 +53,11 @@ export async function GET() {
 
   try {
     const statements = loadAllStatements();
-    const recentStatements = statements.filter(s => s.delivered_at_utc >= d30str);
+    const recentStatements = statements.filter(s => s.published_at_utc >= d30str);
     statementsLast30 = recentStatements.length;
 
     // Baseline
-    const stmtDates = statements.map(s => new Date(s.delivered_at_utc).getTime()).filter(t => !isNaN(t));
+    const stmtDates = statements.map(s => new Date(s.published_at_utc).getTime()).filter(t => !isNaN(t));
     if (stmtDates.length > 1) {
       const spanDays = (Math.max(...stmtDates) - Math.min(...stmtDates)) / (1000 * 60 * 60 * 24);
       const periods30 = Math.max(1, spanDays / 30);
