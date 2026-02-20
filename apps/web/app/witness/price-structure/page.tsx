@@ -26,26 +26,29 @@ export default function PriceStructurePage() {
       </div>
 
       {/* Prisstruktur sections */}
-      <h2 style={{ color: "#f5f5f5", fontSize: 20, fontWeight: 700, marginBottom: 4 }}>
-        Prisstruktur & Intäktsbarometer
+      <h2 style={{ color: "var(--text-primary)", fontSize: 20, fontWeight: 700, marginBottom: 4 }}>
+        Prisstruktur &amp; Kostnadsanalys
       </h2>
-      <p style={{ color: "#888", fontSize: 13, marginBottom: 20 }}>
-        Tre separata lager — elräkningens uppdelning, flaskhalsintäkter, producentresultat.
+      <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 20 }}>
+        Tre separata lager — vad hushållet betalar, prisområdesdifferenser (SvK/BC), producentresultat.
         Inga slutsatser. Inga motiv. Bara data och källa.
       </p>
 
       {/* Taxonomy notice */}
       <div style={{
-        background: "#1c1917",
-        border: "1px solid #44403c",
+        background: "var(--bg-card)",
+        border: "1px solid var(--border-color)",
+        borderLeft: "3px solid #fbbf24",
         borderRadius: 8,
         padding: 12,
         marginBottom: 24,
         fontSize: 12,
-        color: "#a8a29e",
+        color: "var(--text-secondary)",
       }}>
-        <strong style={{ color: "#fbbf24" }}>Taxonomi:</strong> Tre intäktsflöden visas separat och blandas aldrig.{" "}
-        <strong>A)</strong> Elhandel (retail) · <strong>B)</strong> Systemoperatör (Svk/BC) · <strong>C)</strong> Producenter (generation).
+        <strong style={{ color: "#fbbf24" }}>Taxonomi:</strong> Tre kostnadslager visas separat och blandas aldrig.{" "}
+        <strong>A)</strong> Hushållets elräkning (spot + nät + skatt + moms) ·{" "}
+        <strong>B)</strong> Prisområdesdifferenser &amp; flaskhalsintäkter (SvK/BC) ·{" "}
+        <strong>C)</strong> Producentresultat (generation).
         Korrelation ≠ avsikt.
       </div>
 
@@ -65,29 +68,29 @@ export default function PriceStructurePage() {
       </div>
 
       {/* Methodology */}
-      <section id="methodology" style={{ background: "#111", border: "1px solid #333", borderRadius: 8, padding: 20 }}>
-        <h3 style={{ color: "#f5f5f5", margin: "0 0 12px", fontSize: 16, fontWeight: 600 }}>
+      <section id="methodology" style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 8, padding: 20 }}>
+        <h3 style={{ color: "var(--text-primary)", margin: "0 0 12px", fontSize: 16, fontWeight: 600 }}>
           Metodik
         </h3>
-        <div style={{ fontSize: 13, color: "#999", lineHeight: 1.6 }}>
+        <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
           <p style={{ margin: "0 0 8px" }}>
-            <strong style={{ color: "#ccc" }}>Datakällor:</strong> ENTSO-E (spotpriser, generation, flöden), Open-Meteo/ERA5 (väder),
+            <strong style={{ color: "var(--text-primary)" }}>Datakällor:</strong> ENTSO-E (spotpriser, generation, flöden), Open-Meteo/ERA5 (väder),
             EEA 2023 (emissionsfaktorer), Skatteverket (energiskatt, moms),
-            Energimarknadsinspektionen (flaskhalsintäkter, nätavgifter), bolagsrapporter (producentresultat).
+            Energimarknadsinspektionen (prisområdesdifferenser, nätavgifter), bolagsrapporter (producentresultat).
           </p>
           <p style={{ margin: "0 0 8px" }}>
-            <strong style={{ color: "#ccc" }}>Tidsupplösning:</strong> Timvis (spot, generation, CO₂, väder), årsvis (skatt, flaskhals, finansiella).
+            <strong style={{ color: "var(--text-primary)" }}>Tidsupplösning:</strong> Timvis (spot, generation, CO₂, väder), årsvis (skatt, prisområdesintäkter, finansiella).
           </p>
           <p style={{ margin: "0 0 8px" }}>
-            <strong style={{ color: "#ccc" }}>CO₂-metodik:</strong> Produktions-CO₂ beräknas som viktat medel av emissionsfaktorer (EEA 2023, Scope 1).
+            <strong style={{ color: "var(--text-primary)" }}>CO₂-metodik:</strong> Produktions-CO₂ beräknas som viktat medel av emissionsfaktorer (EEA 2023, Scope 1).
             Konsumtions-CO₂ justeras för import med EU-medel 242 g/kWh.
           </p>
           <p style={{ margin: "0 0 8px" }}>
-            <strong style={{ color: "#ccc" }}>Språkpolicy:</strong> Inga påståenden om motiv. Inga formuleringar som
+            <strong style={{ color: "var(--text-primary)" }}>Språkpolicy:</strong> Inga påståenden om motiv. Inga formuleringar som
             &ldquo;staten tjänar på&rdquo;. Korrelation ≠ avsikt. Alla siffror har källhänvisning.
           </p>
           <p style={{ margin: 0 }}>
-            <strong style={{ color: "#ccc" }}>Verifiering:</strong> All data kryptografiskt sealad i X-Vault (SHA-256, WORM).
+            <strong style={{ color: "var(--text-primary)" }}>Verifiering:</strong> All data kryptografiskt sealad i X-Vault (SHA-256, WORM).
             Dataset-ID och root-hash visas per vy.
           </p>
         </div>

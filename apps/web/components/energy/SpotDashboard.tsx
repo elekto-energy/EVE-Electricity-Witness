@@ -1,757 +1,824 @@
 "use client";
 
 /**
- * Spot Page V3.1 — Unified Energy Dashboard
+ * SpotDashboard — Folkets Spotprisverktyg
  *
- * Controls: Mode (Live/Day/Month) + ONE date picker + Zone multi-select
- * Default: SEK kr/kWh. Toggle to EUR €/MWh.
- * Shift+click zones to compare.
+ * Data: /api/spot/live (ENTSO-E A44, PT15M, 96 punkter idag+imorgon)
+ *       /api/spot/v2   (historisk data, Vecka/Manad/Ar)
  *
- * TR1: No source, no number.
- * TR6: Code renders — never invents.
+ * X-axel skalas med period:
+ *   Dag    -> timmar (00:00, 04:00, ...)
+ *   Vecka  -> dagar (man 17, tis 18, ...)
+ *   Manad  -> datum (1/2, 5/2, ...)
+ *   Ar     -> manader (jan, feb, ...)
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { EvidenceBadge } from "@/components/EvidenceBadge";
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Types
-// ═══════════════════════════════════════════════════════════════════════════════
+const FONT = "var(--font-mono, 'JetBrains Mono', monospace)";
 
-interface V2Row {
-  ts: string; zone: string; spot: number | null; temp: number | null;
-  wind_speed: number | null; solar_rad: number | null; hdd: number | null;
-  nuclear_mw: number | null; hydro_mw: number | null;
-  wind_onshore_mw: number | null; wind_offshore_mw: number | null;
-  solar_mw: number | null; gas_mw: number | null; coal_mw: number | null;
-  lignite_mw: number | null; oil_mw: number | null; other_mw: number | null;
-  total_gen_mw: number | null; net_import_mw: number | null;
-  production_co2_g_kwh: number | null; consumption_co2_g_kwh: number | null;
-  is_forecast?: boolean;
-}
+const C = {
+  bg:      "var(--bg-primary)",
+  card:    "var(--bg-card)",
+  card2:   "var(--bg-primary)",
+  border:  "var(--border-color)",
+  text:    "var(--text-primary)",
+  muted:   "var(--text-muted)",
+  dim:     "var(--text-ghost)",
+  spot:    "#f59e0b",
+  green:   "#22c55e",
+  blue:    "#3b82f6",
+  red:     "#ef4444",
+  wind:    "#34d399",
+  nuclear: "#a78bfa",
+  hydro:   "#3b82f6",
+  solar:   "#fbbf24",
+  other:   "#6b7280",
+};
 
-interface V2Response {
-  zone: string; period: string; count: number; rows: V2Row[];
-  stats: any; generation_mix: Record<string, number | null>;
-  evidence: { dataset_eve_id: string; root_hash: string; methodology_version: string } | null;
-}
-
-interface LiveResponse {
-  zone: string; rows: V2Row[]; has_tomorrow: boolean;
-  stats: { today_spot: { avg: number | null; min: number | null; max: number | null };
-           tomorrow_spot: { avg: number | null; min: number | null; max: number | null };
-           temp: { avg: number | null } };
-}
-
-interface Dataset {
-  id: string; zone: string; period: string; label: string; color: string;
-  rows: V2Row[]; genMix: Record<string, number | null>; stats: any; evidence: any;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Constants
-// ═══════════════════════════════════════════════════════════════════════════════
-
-import { ZONE_COLORS, ZONE_NAMES, getZoneColor } from "@/lib/zone-colors";
-
-const ALL_ZONES = ["SE1", "SE2", "SE3", "SE4", "FI", "DE_LU"] as const;
-const ZC = ZONE_COLORS;
-const ZN = ZONE_NAMES;
-const PALETTE = ["#f59e0b", "#22d3ee", "#ef4444", "#10b981", "#a78bfa", "#38bdf8", "#f97316", "#ec4899"];
+const ZONE_COLORS: Record<string, string> = {
+  SE1: "#3b82f6", SE2: "#22d3ee", SE3: "#f59e0b", SE4: "#10b981",
+};
+const ZONE_NAMES: Record<string, string> = {
+  SE1: "Luleå", SE2: "Sundsvall", SE3: "Stockholm", SE4: "Malmö",
+};
+const SE_ZONES = ["SE1", "SE2", "SE3", "SE4"] as const;
+type SEZone = typeof SE_ZONES[number];
 
 const GC: Record<string, string> = {
-  nuclear_mw: "#a78bfa", hydro_mw: "#3b82f6", wind_onshore_mw: "#22d3ee", wind_offshore_mw: "#06b6d4",
-  solar_mw: "#facc15", gas_mw: "#f97316", coal_mw: "#78716c", lignite_mw: "#57534e", oil_mw: "#44403c", other_mw: "#a8a29e",
+  nuclear_mw: C.nuclear, hydro_mw: C.hydro,
+  wind_onshore_mw: C.wind, wind_offshore_mw: "#06b6d4",
+  solar_mw: C.solar, other_mw: C.other,
 };
 const GL: Record<string, string> = {
-  nuclear_mw: "Kärnkraft", hydro_mw: "Vatten", wind_onshore_mw: "Vind land", wind_offshore_mw: "Vind hav",
-  solar_mw: "Sol", gas_mw: "Gas", coal_mw: "Kol", lignite_mw: "Brunkol", oil_mw: "Olja", other_mw: "Övrigt",
+  nuclear_mw: "Kärnkraft", hydro_mw: "Vatten",
+  wind_onshore_mw: "Vind land", wind_offshore_mw: "Vind hav",
+  solar_mw: "Sol", other_mw: "Övrigt",
 };
-const GF = Object.keys(GC);
 
-type TimeMode = "live" | "day" | "month";
-type PriceUnit = "sek" | "eur";
+type Period = "day" | "week" | "month" | "year";
+type Unit   = "sek" | "eur";
 
-// EUR→SEK approximate. TODO: live FX from Riksbanken API
-const EUR_SEK = 11.20;
+// ─── Types ───────────────────────────────────────────────────────────────────
 
-interface SeriesConfig {
-  key: string; label: string; color: string; dash?: string;
-  extract: (r: V2Row) => number | null; unit: string; perDataset?: boolean;
+interface LiveRow {
+  ts: string; zone: string; spot: number | null;
+  temp: number | null; wind_speed: number | null;
+  solar_rad: number | null; is_forecast: boolean;
+}
+interface LiveResp {
+  zone: string; resolution: "PT15M" | "PT60M"; rows: LiveRow[];
+  stats: {
+    today_spot: { avg: number | null; min: number | null; max: number | null };
+    tomorrow_spot: { avg: number | null; min: number | null; max: number | null };
+  };
+  has_tomorrow: boolean; today: string; tomorrow: string;
+}
+interface V2Row {
+  ts: string; spot: number | null;
+  nuclear_mw: number | null; hydro_mw: number | null;
+  wind_onshore_mw: number | null; wind_offshore_mw: number | null;
+  solar_mw: number | null; total_gen_mw: number | null;
+  net_import_mw: number | null; production_co2_g_kwh: number | null;
+}
+interface V2Resp {
+  rows: V2Row[];
+  stats: { spot: { avg: number | null; min: number | null; max: number | null } };
+  generation_mix?: Record<string, number | null>;
 }
 
-const SERIES_DEFS: SeriesConfig[] = [
-  { key: "spot", label: "Spotpris", color: "#f59e0b", extract: r => r.spot, unit: "€/MWh", perDataset: true },
-  { key: "co2p", label: "CO₂ prod", color: "#22c55e", dash: "4 2", extract: r => r.production_co2_g_kwh, unit: "g/kWh" },
-  { key: "co2c", label: "CO₂ kons", color: "#ef4444", dash: "6 3", extract: r => r.consumption_co2_g_kwh, unit: "g/kWh" },
-  { key: "temp", label: "Temp", color: "#22d3ee", dash: "3 2", extract: r => r.temp, unit: "°C" },
-  { key: "wind", label: "Vind", color: "#94a3b8", dash: "5 2", extract: r => r.wind_onshore_mw != null ? (r.wind_onshore_mw + (r.wind_offshore_mw ?? 0)) : r.wind_speed, unit: "MW" },
-  { key: "solar", label: "Sol", color: "#facc15", dash: "2 2", extract: r => r.solar_mw ?? r.solar_rad, unit: "MW" },
-  { key: "gen", label: "Total gen", color: "#3b82f6", dash: "8 3", extract: r => r.total_gen_mw, unit: "MW" },
-  { key: "import", label: "Import", color: "#ec4899", dash: "4 4", extract: r => r.net_import_mw, unit: "MW" },
-];
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const PANEL_OPTIONS = [
-  { key: "genmix", label: "Produktionsmix" },
-  { key: "co2import", label: "CO₂-avtryck" },
-  { key: "heatmap", label: "Intensitetskarta" },
-  { key: "table", label: "Timdata" },
-] as const;
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Helpers
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function yesterday(): string { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); }
-function todayStr(): string { return new Date().toISOString().slice(0, 10); }
-const r1 = (n: number | null | undefined) => n != null && !isNaN(n) ? n.toFixed(1) : "–";
-const r0 = (n: number | null | undefined) => n != null && !isNaN(n) ? Math.round(n).toString() : "–";
-function norm(v: number, mn: number, mx: number) { return mx === mn ? 0.5 : Math.max(0, Math.min(1, (v - mn) / (mx - mn))); }
-
-/** Convert EUR/MWh → öre/kWh (multiply by EUR_SEK / 10) */
-function spotDisplay(eurMwh: number | null | undefined, unit: PriceUnit): string {
-  if (eurMwh == null || isNaN(eurMwh)) return "–";
-  if (unit === "eur") return eurMwh.toFixed(1);
-  return (eurMwh * EUR_SEK / 10).toFixed(1);
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+function toOre(eur: number | null, eurSek: number) { return eur != null ? +(eur * eurSek / 10).toFixed(1) : null; }
+function dp(eur: number | null, unit: Unit, eurSek: number) {
+  if (eur == null) return "–";
+  return unit === "eur" ? eur.toFixed(1) : toOre(eur, eurSek)!.toFixed(1);
 }
-function spotUnit(unit: PriceUnit): string { return unit === "eur" ? "€/MWh" : "öre/kWh"; }
+function pu(unit: Unit) { return unit === "eur" ? "EUR/MWh" : "öre/kWh"; }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Small UI
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function Stat({ label, value, unit, color }: { label: string; value: string; unit?: string; color: string }) {
-  return (
-    <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 6, padding: "5px 8px", minWidth: 70, flex: "1 1 70px" }}>
-      <div style={{ fontSize: 8, color: "var(--text-muted)" }}>{label}</div>
-      <div style={{ fontSize: 15, fontWeight: 700, color, fontFamily: "var(--font-mono)" }}>
-        {value}{unit && <span style={{ fontSize: 8, fontWeight: 400, marginLeft: 2, color: "var(--text-muted)" }}>{unit}</span>}
-      </div>
-    </div>
-  );
+function currentRow(rows: LiveRow[]): LiveRow | null {
+  if (!rows.length) return null;
+  const now = Date.now();
+  let best: LiveRow | null = null, d = Infinity;
+  for (const r of rows) {
+    if (r.is_forecast) continue;
+    const x = Math.abs(now - new Date(r.ts).getTime());
+    if (x < d) { d = x; best = r; }
+  }
+  return best;
 }
 
-function Toggle({ on, label, color, onClick }: { on: boolean; label: string; color: string; onClick: () => void }) {
+function addDays(s: string, n: number) {
+  const d = new Date(s + "T12:00:00Z");
+  d.setDate(d.getDate() + n);
+  const r = d.toISOString().slice(0, 10);
+  return r > todayStr() ? todayStr() : r;
+}
+
+function fmtPeriodLabel(date: string, period: Period) {
+  const d = new Date(date + "T12:00:00Z");
+  if (period === "day") return d.toLocaleDateString("sv-SE", { weekday: "short", day: "numeric", month: "short" });
+  if (period === "week") {
+    const e = new Date(d); e.setUTCDate(e.getUTCDate() + 6);
+    return `${d.getDate()}–${e.getDate()} ${e.toLocaleDateString("sv-SE", { month: "short" })}`;
+  }
+  if (period === "month") return d.toLocaleDateString("sv-SE", { month: "long", year: "numeric" });
+  return d.getUTCFullYear().toString();
+}
+
+// ─── X-axis label per period ─────────────────────────────────────────────────
+
+const WEEKDAYS = ["sön","mån","tis","ons","tor","fre","lör"];
+const MONTHS   = ["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
+
+function xLabel(ts: string, period: Period, resolution: "PT15M" | "PT60M"): string {
+  const d = new Date(ts);
+  if (period === "day") {
+    const h = d.getUTCHours().toString().padStart(2, "0");
+    const m = d.getUTCMinutes().toString().padStart(2, "0");
+    return resolution === "PT15M" ? `${h}:${m}` : `${h}:00`;
+  }
+  if (period === "week") return `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()}`;
+  if (period === "month") return `${d.getUTCDate()}/${d.getUTCMonth() + 1}`;
+  return MONTHS[d.getUTCMonth()];
+}
+
+function tooltipLabel(ts: string, period: Period, resolution: "PT15M" | "PT60M"): string {
+  const d = new Date(ts);
+  if (period === "day") {
+    const h = d.getUTCHours().toString().padStart(2, "0");
+    const m = d.getUTCMinutes().toString().padStart(2, "0");
+    return resolution === "PT15M" ? `${h}:${m}` : `${h}:00`;
+  }
+  const date = `${d.getUTCDate()}/${d.getUTCMonth() + 1}`;
+  if (period === "week") return `${WEEKDAYS[d.getUTCDay()]} ${date} ${d.getUTCHours().toString().padStart(2,"0")}:00`;
+  if (period === "month") return `${date} ${d.getUTCHours().toString().padStart(2,"0")}:00`;
+  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
+// ─── Fetch ────────────────────────────────────────────────────────────────────
+
+async function fetchLive(zone: string): Promise<LiveResp | null> {
+  try { const r = await fetch(`/api/spot/live?zone=${zone}`); return r.ok ? r.json() : null; } catch { return null; }
+}
+async function fetchV2Month(zone: string, month: string): Promise<V2Resp | null> {
+  try { const r = await fetch(`/api/spot/v2?zone=${zone}&month=${month}`); return r.ok ? r.json() : null; } catch { return null; }
+}
+
+// ─── ZoneCard ─────────────────────────────────────────────────────────────────
+
+function ZoneCard({ zone, live, selected, unit, eurSek, onClick }: {
+  zone: SEZone; live: LiveResp | null | "loading";
+  selected: boolean; unit: Unit; eurSek: number; onClick: () => void;
+}) {
+  const col = ZONE_COLORS[zone];
+  const loading = live === "loading";
+  const data = live && live !== "loading" ? live : null;
+  const now = data ? currentRow(data.rows) : null;
+  const spot = now?.spot ?? null;
+  const avg = data?.stats.today_spot.avg ?? null;
+  const diff = spot != null && avg != null ? spot - avg : null;
+  const diffVal = diff != null ? (unit === "eur" ? diff : toOre(diff, eurSek)) : null;
+
+  const sparkRows = data ? data.rows.filter(r => !r.is_forecast).slice(-24) : [];
+  const sparkSpots = sparkRows.map(r => r.spot).filter((v): v is number => v != null);
+  const sMin = sparkSpots.length ? Math.min(...sparkSpots) : 0;
+  const sMax = sparkSpots.length ? Math.max(...sparkSpots) : 1;
+  const sR = sMax - sMin || 1;
+  const sw = 80, sh = 28;
+  const sparkPath = sparkRows.map((r, i) => {
+    if (r.spot == null) return "";
+    const x = (i / Math.max(sparkRows.length - 1, 1)) * sw;
+    const y = sh - ((r.spot - sMin) / sR) * sh;
+    return `${i === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`;
+  }).filter(Boolean).join(" ");
+
   return (
     <button onClick={onClick} style={{
-      padding: "2px 7px", fontSize: 10, borderRadius: 4, cursor: "pointer",
-      background: on ? color + "22" : "transparent",
-      border: `1px solid ${on ? color : "var(--border-color)"}`,
-      color: on ? color : "var(--text-muted)", fontWeight: on ? 600 : 400,
-    }}>{label}</button>
+      flex: "1 1 0", minWidth: 0, textAlign: "left", cursor: "pointer",
+      background: selected ? `${col}12` : C.card,
+      border: `1.5px solid ${selected ? col : C.border}`,
+      borderRadius: 8, padding: "12px 14px",
+      transition: "border-color 0.15s, background 0.15s",
+      position: "relative", overflow: "hidden",
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: selected ? col : C.text, fontFamily: FONT }}>{zone}</span>
+        <span style={{ fontSize: 9, color: C.muted }}>{ZONE_NAMES[zone]}</span>
+      </div>
+      <div style={{ fontSize: 26, fontWeight: 800, color: col, fontFamily: FONT, lineHeight: 1, marginBottom: 1 }}>
+        {loading ? "…" : dp(spot, unit, eurSek)}
+      </div>
+      <div style={{ fontSize: 9, color: C.muted, marginBottom: 8 }}>{pu(unit)}</div>
+      {diffVal != null && Math.abs(diffVal) > 0.5 && (
+        <div style={{ fontSize: 9, fontWeight: 600, fontFamily: FONT,
+          color: diffVal > 5 ? C.red : diffVal < -5 ? C.green : C.muted }}>
+          {diffVal > 0 ? "▲" : "▼"} {Math.abs(diffVal).toFixed(1)} vs medel
+        </div>
+      )}
+      {sparkPath && (
+        <div style={{ position: "absolute", bottom: 10, right: 10, opacity: 0.4 }}>
+          <svg width={sw} height={sh} viewBox={`0 0 ${sw} ${sh}`}>
+            <path d={sparkPath} fill="none" stroke={col} strokeWidth={1.5} />
+          </svg>
+        </div>
+      )}
+    </button>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Chart
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── SpotChart ────────────────────────────────────────────────────────────────
 
-function UnifiedChart({ datasets, activeSeries, mode, priceUnit }: {
-  datasets: Dataset[]; activeSeries: Set<string>; mode: TimeMode; priceUnit: PriceUnit;
+function SpotChart({ rows, resolution, unit, zone, showTomorrow, period, eurSek }: {
+  rows: LiveRow[]; resolution: "PT15M" | "PT60M";
+  unit: Unit; zone: string; showTomorrow: boolean; period: Period; eurSek: number;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [hi, setHi] = useState<number | null>(null);
+  const col = ZONE_COLORS[zone] ?? C.spot;
 
-  if (datasets.flatMap(d => d.rows).length < 2) return <div style={{ color: "var(--text-muted)", fontSize: 12, padding: 16 }}>Ingen data att visa</div>;
+  const display = showTomorrow ? rows : rows.filter(r => !r.is_forecast);
+  if (display.length < 2) return (
+    <div style={{ padding: "32px 0", textAlign: "center", color: C.muted, fontSize: 12 }}>
+      Ingen data — ENTSO-E publicerar dagspriser ~12:42 CET
+    </div>
+  );
 
-  const W = 1000, H = 300;
-  const PAD = { top: 20, right: 12, bottom: 32, left: 40 };
-  const pW = W - PAD.left - PAD.right, pH = H - PAD.top - PAD.bottom;
-  const primary = datasets[0];
-  // Use the longest series that has actual spot data to determine chart length
-  const maxDataLen = Math.max(...datasets.map(ds => {
-    let last = ds.rows.length - 1;
-    while (last >= 0 && ds.rows[last].spot === null) last--;
-    return last + 1;
-  }));
-  const len = maxDataLen > 0 ? maxDataLen : primary.rows.length;
-  const x = (i: number) => PAD.left + (i / Math.max(len - 1, 1)) * pW;
+  const W = 900, H = 220;
+  const P = { t: 16, r: 12, b: 28, l: 44 };
+  const pw = W - P.l - P.r, ph = H - P.t - P.b;
+  const len = display.length;
 
-  const active = SERIES_DEFS.filter(s => activeSeries.has(s.key));
-  type DrawLine = { path: string; color: string; width: number; dash?: string; label: string };
-  const lines: DrawLine[] = [];
+  const spots = display.map(r => r.spot).filter((v): v is number => v != null);
+  const sMin = spots.length ? Math.floor(Math.min(...spots) / 10) * 10 : 0;
+  const sMax = spots.length ? Math.ceil(Math.max(...spots) / 10) * 10 + 5 : 100;
+  const sR   = sMax - sMin || 1;
 
-  for (const series of active) {
-    if (series.perDataset) {
-      for (const ds of datasets) {
-        const vals = ds.rows.map(series.extract);
-        const valid = vals.filter((v): v is number => v !== null);
-        if (valid.length < 2) continue;
-        const mn = Math.min(...valid), mx = Math.max(...valid), rng = mx - mn || 1;
-        const yFn = (v: number) => PAD.top + pH - ((v - mn) / rng) * pH;
-        const path = vals.map((v, i) => { if (v === null) return ""; return `${i === 0 || vals[i - 1] === null ? "M" : "L"} ${x(i)} ${yFn(v)}`; }).filter(Boolean).join(" ");
-        lines.push({ path, color: ds.color, width: 2.5, label: ds.label });
-      }
-    } else {
-      const vals = primary.rows.map(series.extract);
-      const valid = vals.filter((v): v is number => v !== null);
-      if (valid.length < 2) continue;
-      const mn = Math.min(...valid), mx = Math.max(...valid), rng = mx - mn || 1;
-      const yFn = (v: number) => PAD.top + pH - ((v - mn) / rng) * pH;
-      const path = vals.map((v, i) => { if (v === null) return ""; return `${i === 0 || vals[i - 1] === null ? "M" : "L"} ${x(i)} ${yFn(v)}`; }).filter(Boolean).join(" ");
-      lines.push({ path, color: series.color, width: 1.5, dash: series.dash, label: series.label });
-    }
-  }
+  const xp = (i: number) => P.l + (i / Math.max(len - 1, 1)) * pw;
+  const yp = (v: number) => P.t + ph - ((v - sMin) / sR) * ph;
 
-  const step = len <= 25 ? 3 : len <= 48 ? 6 : len <= 96 ? 12 : len <= 192 ? 24 : Math.floor(len / 8);
-  const xTicks: number[] = []; for (let i = 0; i < len; i += step) xTicks.push(i);
+  const pts = display.map((r, i) => r.spot != null ? { i, v: r.spot } : null).filter(Boolean) as {i:number;v:number}[];
+  const areaD = pts.length >= 2
+    ? pts.map((p, j) => `${j===0?"M":"L"} ${xp(p.i).toFixed(1)} ${yp(p.v).toFixed(1)}`).join(" ")
+      + ` L ${xp(pts[pts.length-1].i).toFixed(1)} ${P.t+ph} L ${xp(pts[0].i).toFixed(1)} ${P.t+ph} Z`
+    : "";
 
+  const linePath = display.map((r, i) => {
+    if (r.spot == null) return "";
+    return `${i===0||display[i-1]?.spot==null?"M":"L"} ${xp(i).toFixed(1)} ${yp(r.spot).toFixed(1)}`;
+  }).filter(Boolean).join(" ");
+
+  const splitIdx = display.findIndex(r => r.is_forecast);
+
+  // Now marker — only day view
   let nowIdx: number | null = null;
-  if (mode === "live" && len > 0) {
-    const now = new Date();
-    const nowMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes());
-    // Find closest row to current time
-    let bestDist = Infinity;
-    for (let i = 0; i < len; i++) {
-      const rowMs = new Date(primary.rows[i].ts).getTime();
-      const dist = Math.abs(nowMs - rowMs);
-      if (dist < bestDist) { bestDist = dist; nowIdx = i; }
-    }
+  if (period === "day") {
+    const nowMs = Date.now();
+    let bd = Infinity;
+    display.forEach((r, i) => {
+      if (r.is_forecast) return;
+      const d = Math.abs(nowMs - new Date(r.ts).getTime());
+      if (d < bd) { bd = d; nowIdx = i; }
+    });
   }
 
-  let tmrIdx: number | null = null;
-  if (mode === "live") { const idx = primary.rows.findIndex(r => r.is_forecast); if (idx > 0) tmrIdx = idx; }
+  // ─── X-axis ticks scaled to period ────────────────────────────────────────
+  // day:   every 4h  → stepPts = 16 (PT15M) or 4 (PT60M)
+  // week:  one per day
+  // month: every ~5 days
+  // year:  one per month
+  let tickStep: number;
+  if (period === "day") {
+    tickStep = resolution === "PT15M" ? 16 : 4;
+  } else if (period === "week") {
+    tickStep = Math.max(1, Math.round(len / 7));
+  } else if (period === "month") {
+    tickStep = Math.max(1, Math.round(len / 30 * 5));
+  } else {
+    tickStep = Math.max(1, Math.round(len / 12));
+  }
 
-  // Mouse/touch → index
-  const getIdxFromEvent = (e: React.MouseEvent | React.TouchEvent) => {
-    const el = containerRef.current;
-    if (!el) return null;
-    const rect = el.getBoundingClientRect();
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const pxRatio = W / rect.width;
-    const svgX = (clientX - rect.left) * pxRatio;
-    const frac = (svgX - PAD.left) / pW;
+  const ticks: number[] = [];
+  const seenLbls = new Set<string>();
+  for (let i = 0; i < len; i += tickStep) {
+    const lbl = xLabel(display[i].ts, period, resolution);
+    if (!seenLbls.has(lbl)) { ticks.push(i); seenLbls.add(lbl); }
+  }
+
+  const getIdx = (e: React.MouseEvent) => {
+    const svg = svgRef.current; if (!svg) return null;
+    const rect = svg.getBoundingClientRect();
+    const frac = ((e.clientX - rect.left) / rect.width * W - P.l) / pw;
     const idx = Math.round(frac * (len - 1));
     return idx >= 0 && idx < len ? idx : null;
   };
 
-  // Tooltip data for hovered index
-  const hRow = hoverIdx != null ? primary.rows[hoverIdx] : null;
-  const hTime = hRow ? (() => {
-    const d = new Date(hRow.ts);
-    const hh = d.getUTCHours().toString().padStart(2, "0");
-    const mm = d.getUTCMinutes().toString().padStart(2, "0");
-    return (mode === "live" || mode === "day")
-      ? `${hh}:${mm}`
-      : `${d.getUTCDate()}/${d.getUTCMonth() + 1} ${hh}:${mm}`;
-  })() : null;
+  const hRow = hi != null ? display[hi] : null;
 
   return (
-    <div ref={containerRef} style={{ position: "relative", cursor: "crosshair" }}
-      onMouseMove={e => setHoverIdx(getIdxFromEvent(e))}
-      onTouchMove={e => setHoverIdx(getIdxFromEvent(e))}
-      onMouseLeave={() => setHoverIdx(null)}
-      onTouchEnd={() => setHoverIdx(null)}
-    >
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
-        {/* Grid */}
-        {[0, 0.25, 0.5, 0.75, 1].map(f => <line key={f} x1={PAD.left} x2={W - PAD.right} y1={PAD.top + pH * (1 - f)} y2={PAD.top + pH * (1 - f)} stroke="var(--border-color)" strokeWidth={0.5} />)}
-        {/* X labels */}
-        {xTicks.map(i => {
-          const row = primary.rows[i]; if (!row) return null;
-          const d = new Date(row.ts);
-          const hh = d.getUTCHours().toString().padStart(2, "0");
-          const mm = d.getUTCMinutes().toString().padStart(2, "0");
-          const label = (mode === "live" || mode === "day") ? `${hh}:${mm}` : `${d.getUTCDate()}/${d.getUTCMonth() + 1}`;
-          return <text key={i} x={x(i)} y={H - 4} textAnchor="middle" fontSize={9} fill="var(--text-muted)" fontFamily="var(--font-mono)">{label}</text>;
+    <div style={{ position: "relative" }}>
+      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`}
+        style={{ width: "100%", height: "auto", display: "block", cursor: "crosshair" }}
+        onMouseMove={e => setHi(getIdx(e))}
+        onMouseLeave={() => setHi(null)}
+      >
+        <defs>
+          <linearGradient id="sd-area" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={col} stopOpacity={0.25} />
+            <stop offset="100%" stopColor={col} stopOpacity={0.02} />
+          </linearGradient>
+        </defs>
+
+        {[0, 0.25, 0.5, 0.75, 1].map(f => (
+          <line key={f} x1={P.l} x2={W-P.r} y1={P.t+ph*(1-f)} y2={P.t+ph*(1-f)}
+            stroke={C.border} strokeWidth={0.6} />
+        ))}
+
+        {[0, 0.5, 1].map(f => {
+          const raw = sMin + sR * f;
+          const val = unit === "eur" ? Math.round(raw) : Math.round(toOre(raw, eurSek)!);
+          return <text key={f} x={P.l-5} y={P.t+ph*(1-f)+4}
+            textAnchor="end" fontSize={9} fill={C.muted} fontFamily={FONT}>{val}</text>;
         })}
-        {/* Tomorrow divider */}
-        {tmrIdx !== null && <>
-          <line x1={x(tmrIdx)} x2={x(tmrIdx)} y1={PAD.top} y2={PAD.top + pH} stroke="var(--border-color)" strokeWidth={1} strokeDasharray="4 3" />
-          <text x={x(tmrIdx) + 4} y={PAD.top + 10} fontSize={7} fill="var(--text-muted)">imorgon</text>
-        </>}
-        {/* Lines */}
-        {lines.map((l, i) => <path key={i} d={l.path} fill="none" stroke={l.color} strokeWidth={l.width} strokeDasharray={l.dash ?? "none"} opacity={0.9} />)}
-        {/* Now marker */}
-        {nowIdx !== null && <>
-          <line x1={x(nowIdx)} x2={x(nowIdx)} y1={PAD.top} y2={PAD.top + pH} stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="3 2" opacity={0.6} />
-          <text x={x(nowIdx)} y={PAD.top - 4} textAnchor="middle" fontSize={8} fill="#f59e0b" fontFamily="var(--font-mono)" fontWeight={700}>NU</text>
-        </>}
-        {/* Hover crosshair */}
-        {hoverIdx !== null && <>
-          <line x1={x(hoverIdx)} x2={x(hoverIdx)} y1={PAD.top} y2={PAD.top + pH} stroke="rgba(255,255,255,0.4)" strokeWidth={1} />
-          {/* Dots on each line at hover index */}
-          {datasets.map((ds, di) => {
-            const row = ds.rows[hoverIdx];
-            if (!row) return null;
-            return active.filter(s => s.perDataset).map(s => {
-              const v = s.extract(row);
-              if (v == null) return null;
-              const vals = ds.rows.map(s.extract).filter((v): v is number => v !== null);
-              const mn = Math.min(...vals), mx = Math.max(...vals), rng = mx - mn || 1;
-              const cy = PAD.top + pH - ((v - mn) / rng) * pH;
-              return <circle key={`${di}-${s.key}`} cx={x(hoverIdx)} cy={cy} r={4} fill={ds.color} stroke="var(--bg-primary)" strokeWidth={1.5} />;
-            });
-          })}
-        </>}
+        <text x={P.l-5} y={P.t-4} textAnchor="end" fontSize={7} fill={C.dim} fontFamily={FONT}>{pu(unit)}</text>
+
+        {/* X labels — period-aware */}
+        {ticks.map(i => {
+          const r = display[i]; if (!r) return null;
+          return <text key={i} x={xp(i)} y={H-5} textAnchor="middle"
+            fontSize={9} fill={C.muted} fontFamily={FONT}>
+            {xLabel(r.ts, period, resolution)}
+          </text>;
+        })}
+
+        {showTomorrow && splitIdx > 0 && (
+          <rect x={xp(splitIdx)} y={P.t} width={W-P.r-xp(splitIdx)} height={ph} fill="var(--bg-card-hover)" opacity={0.3} />
+        )}
+        {showTomorrow && splitIdx > 0 && (
+          <text x={xp(splitIdx)+4} y={P.t+10} fontSize={8} fill={C.dim} fontFamily={FONT}>imorgon</text>
+        )}
+
+        {areaD && <path d={areaD} fill="url(#sd-area)" />}
+        {linePath && <path d={linePath} fill="none" stroke={col} strokeWidth={2.5} />}
+
+        {/* NU marker — dag only */}
+        {nowIdx != null && (
+          <>
+            <line x1={xp(nowIdx)} x2={xp(nowIdx)} y1={P.t} y2={P.t+ph}
+              stroke={col} strokeWidth={1.5} strokeDasharray="3 2" opacity={0.5} />
+            <text x={xp(nowIdx)} y={P.t-4} textAnchor="middle"
+              fontSize={8} fill={col} fontFamily={FONT} fontWeight={700}>NU</text>
+          </>
+        )}
+
+        {hi != null && hRow && (
+          <>
+            <line x1={xp(hi)} x2={xp(hi)} y1={P.t} y2={P.t+ph}
+              stroke="var(--border-color)" strokeWidth={1} />
+            {hRow.spot != null && (
+              <circle cx={xp(hi)} cy={yp(hRow.spot)} r={5} fill={col} stroke={C.card} strokeWidth={2} />
+            )}
+          </>
+        )}
       </svg>
 
-      {/* Tooltip overlay */}
-      {hoverIdx !== null && hRow && (
-        <div style={{
-          position: "absolute",
-          left: `${((x(hoverIdx) / W) * 100)}%`,
-          top: 8,
-          transform: hoverIdx > len * 0.65 ? "translateX(-105%)" : "translateX(5%)",
-          background: "rgba(15, 23, 42, 0.95)",
-          border: "1px solid var(--border-color)",
-          borderRadius: 8,
-          padding: "8px 10px",
-          fontSize: 11,
-          fontFamily: "var(--font-mono)",
-          pointerEvents: "none",
-          zIndex: 10,
-          minWidth: 160,
-          boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
-        }}>
-          <div style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: 4, borderBottom: "1px solid var(--border-color)", paddingBottom: 3 }}>
-            {hTime} {hRow.is_forecast ? <span style={{ color: "#3b82f6", fontSize: 9 }}>prognos</span> : ""}
-          </div>
-          {/* Spot per dataset */}
-          {datasets.map(ds => {
-            const r = ds.rows[hoverIdx];
-            if (!r?.spot) return null;
-            return <div key={ds.id} style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-              <span style={{ color: ds.color }}>{ds.label} spot</span>
-              <span style={{ color: "#f59e0b", fontWeight: 600 }}>{spotDisplay(r.spot, priceUnit)} <span style={{ fontSize: 9, color: "var(--text-muted)" }}>{spotUnit(priceUnit)}</span></span>
-            </div>;
-          })}
-          {/* Other series from primary */}
-          {hRow.production_co2_g_kwh != null && activeSeries.has("co2p") && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "#22c55e" }}>CO₂ prod</span><span>{r0(hRow.production_co2_g_kwh)} g</span></div>}
-          {hRow.consumption_co2_g_kwh != null && activeSeries.has("co2c") && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "#ef4444" }}>CO₂ kons</span><span>{r0(hRow.consumption_co2_g_kwh)} g</span></div>}
-          {hRow.temp != null && activeSeries.has("temp") && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "#22d3ee" }}>Temp</span><span>{r1(hRow.temp)}°C</span></div>}
-          {activeSeries.has("wind") && (hRow.wind_onshore_mw != null || hRow.wind_speed != null) && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "#94a3b8" }}>Vind</span><span>{r0((hRow.wind_onshore_mw ?? 0) + (hRow.wind_offshore_mw ?? 0))} MW</span></div>}
-          {hRow.solar_mw != null && activeSeries.has("solar") && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "#facc15" }}>Sol</span><span>{r0(hRow.solar_mw)} MW</span></div>}
-          {hRow.total_gen_mw != null && activeSeries.has("gen") && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "#3b82f6" }}>Gen</span><span>{r0(hRow.total_gen_mw)} MW</span></div>}
-          {hRow.net_import_mw != null && activeSeries.has("import") && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "#ec4899" }}>Import</span><span>{r0(hRow.net_import_mw)} MW</span></div>}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Sub-panels
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function GenMixPanel({ datasets }: { datasets: Dataset[] }) {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: datasets.length > 1 ? `repeat(${Math.min(datasets.length, 3)}, 1fr)` : "1fr", gap: 12 }}>
-      {datasets.map(ds => {
-        const active = GF.map(f => ({ f, v: ds.genMix[f] ?? 0 })).filter(e => e.v > 0);
-        const total = active.reduce((s, e) => s + e.v, 0);
-        if (total <= 0) return <div key={ds.id} style={{ color: "var(--text-muted)", fontSize: 11 }}>{ds.label}: ingen data</div>;
+      {/* Tooltip */}
+      {hi != null && hRow?.spot != null && (() => {
+        const left = xp(hi) / W * 100;
         return (
-          <div key={ds.id}>
-            <div style={{ fontSize: 10, color: ds.color, fontWeight: 600, marginBottom: 3 }}>{ds.label}</div>
-            <div style={{ display: "flex", height: 20, borderRadius: 4, overflow: "hidden", marginBottom: 3 }}>
-              {active.map(e => { const p = (e.v / total) * 100; if (p < 0.5) return null; return <div key={e.f} style={{ width: `${p}%`, background: GC[e.f], display: "flex", alignItems: "center", justifyContent: "center", fontSize: p > 8 ? 7 : 0, color: "#fff", fontWeight: 600 }} title={`${GL[e.f]}: ${Math.round(e.v)} MW`}>{p > 12 ? `${GL[e.f]} ${p.toFixed(0)}%` : p > 5 ? `${p.toFixed(0)}%` : ""}</div>; })}
+          <div style={{
+            position: "absolute", top: 12,
+            left: `${left}%`,
+            transform: left > 65 ? "translateX(-110%)" : "translateX(8%)",
+            background: "var(--bg-card)",
+            border: `1px solid ${C.border}`,
+            borderRadius: 6, padding: "8px 12px",
+            fontSize: 11, fontFamily: FONT,
+            pointerEvents: "none", zIndex: 10, minWidth: 140,
+          }}>
+            <div style={{ fontSize: 9, color: C.muted, paddingBottom: 4, marginBottom: 4, borderBottom: `1px solid ${C.border}` }}>
+              {tooltipLabel(hRow.ts, period, resolution)}
+              {hRow.is_forecast && <span style={{ color: C.blue, marginLeft: 4 }}>imorgon</span>}
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "2px 8px" }}>
-              {active.filter(e => (e.v / total) * 100 >= 1).map(e => (
-                <span key={e.f} style={{ fontSize: 8, color: "var(--text-muted)" }}><span style={{ display: "inline-block", width: 6, height: 6, borderRadius: 2, background: GC[e.f], marginRight: 2, verticalAlign: "middle" }} />{GL[e.f]} {r0(e.v)}</span>
-              ))}
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 14 }}>
+              <span style={{ color: C.muted }}>Spot</span>
+              <span style={{ color: col, fontWeight: 700 }}>
+                {dp(hRow.spot, unit, eurSek)} <span style={{ fontSize: 8, color: C.muted }}>{pu(unit)}</span>
+              </span>
             </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function CO2ImportPanel({ datasets }: { datasets: Dataset[] }) {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: datasets.length > 1 ? `repeat(${Math.min(datasets.length, 3)}, 1fr)` : "1fr", gap: 12 }}>
-      {datasets.map(ds => {
-        const rows = ds.rows.filter(r => r.production_co2_g_kwh != null && r.consumption_co2_g_kwh != null);
-        if (rows.length === 0) return <div key={ds.id} style={{ fontSize: 10, color: "var(--text-muted)" }}>{ds.label}: ingen CO₂-data</div>;
-        const avgP = rows.reduce((s, r) => s + r.production_co2_g_kwh!, 0) / rows.length;
-        const avgC = rows.reduce((s, r) => s + r.consumption_co2_g_kwh!, 0) / rows.length;
-        const impShare = avgC > 0 ? ((avgC - avgP) / avgC) * 100 : 0;
-        return (
-          <div key={ds.id}>
-            <div style={{ fontSize: 10, color: ds.color, fontWeight: 600, marginBottom: 4 }}>{ds.label}</div>
-            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-              <Stat label="Prod CO₂" value={r0(avgP)} unit="g/kWh" color="#22c55e" />
-              <Stat label="Kons CO₂" value={r0(avgC)} unit="g/kWh" color="#ef4444" />
-              <Stat label="Import-andel" value={impShare.toFixed(0)} unit="%" color="#f59e0b" />
-            </div>
-            <div style={{ fontSize: 8, color: "var(--text-muted)", marginTop: 4 }}>EU-medel 242 g/kWh (EEA 2023) för importerad el.</div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function HeatmapPanel({ datasets }: { datasets: Dataset[] }) {
-  const fields: { key: keyof V2Row; label: string; color: string; inv?: boolean }[] = [
-    { key: "spot", label: "Spot", color: "#f59e0b" },
-    { key: "temp", label: "Temp", color: "#22d3ee", inv: true },
-    { key: "wind_onshore_mw", label: "Vind", color: "#94a3b8", inv: true },
-    { key: "solar_mw", label: "Sol", color: "#facc15", inv: true },
-    { key: "production_co2_g_kwh", label: "CO₂", color: "#22c55e" },
-    { key: "net_import_mw", label: "Import", color: "#3b82f6" },
-  ];
-  return (
-    <div>
-      {datasets.map(ds => (
-        <div key={ds.id} style={{ marginBottom: datasets.length > 1 ? 12 : 0 }}>
-          {datasets.length > 1 && <div style={{ fontSize: 10, color: ds.color, fontWeight: 600, marginBottom: 2 }}>{ds.label}</div>}
-          {fields.map(f => {
-            const vals = ds.rows.map(r => r[f.key] as number | null);
-            const valid = vals.filter((v): v is number => v !== null);
-            if (valid.length === 0) return null;
-            const mn = Math.min(...valid), mx = Math.max(...valid);
-            return (
-              <div key={f.key} style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
-                <span style={{ fontSize: 8, color: "var(--text-muted)", width: 40, textAlign: "right", flexShrink: 0 }}>{f.label}</span>
-                <div style={{ display: "flex", flex: 1, height: 12, borderRadius: 2, overflow: "hidden" }}>
-                  {vals.map((v, i) => {
-                    if (v === null) return <div key={i} style={{ flex: 1, background: "var(--bg-primary)" }} />;
-                    let intensity = norm(v, mn, mx); if (f.inv) intensity = 1 - intensity;
-                    return <div key={i} style={{ flex: 1, background: f.color, opacity: 0.1 + intensity * 0.9 }} title={`${ds.rows[i].ts.slice(11, 16)} ${r1(v)}`} />;
-                  })}
-                </div>
-                <span style={{ fontSize: 7, color: "var(--text-muted)", width: 32, fontFamily: "var(--font-mono)", flexShrink: 0 }}>ø{r1(valid.reduce((s, v) => s + v, 0) / valid.length)}</span>
+            {unit === "sek" && (
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 14, marginTop: 2 }}>
+                <span style={{ color: C.dim, fontSize: 9 }}>EUR/MWh</span>
+                <span style={{ color: C.dim, fontSize: 9 }}>{hRow.spot.toFixed(1)}</span>
               </div>
-            );
-          })}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function TablePanel({ datasets, mode, priceUnit }: { datasets: Dataset[]; mode: TimeMode; priceUnit: PriceUnit }) {
-  const [exp, setExp] = useState(false);
-  return (
-    <div>
-      {datasets.map(ds => {
-        const display = !exp && ds.rows.length > 48 ? ds.rows.slice(0, 48) : ds.rows;
-        return (
-          <div key={ds.id} style={{ marginBottom: datasets.length > 1 ? 16 : 0 }}>
-            {datasets.length > 1 && <div style={{ fontSize: 10, color: ds.color, fontWeight: 600, marginBottom: 2 }}>{ds.label}</div>}
-            <div style={{ overflowX: "auto", maxHeight: 400, overflowY: "auto" }}>
-              <table className="data-table" style={{ fontSize: "0.7rem", whiteSpace: "nowrap" }}>
-                <thead><tr>
-                  <th>Tid</th><th style={{ color: "#f59e0b" }}>{spotUnit(priceUnit)}</th><th style={{ color: "#22d3ee" }}>°C</th>
-                  <th style={{ color: "#22c55e" }}>CO₂p</th><th style={{ color: "#ef4444" }}>CO₂c</th>
-                  <th>Gen</th><th>Import</th><th>Vind</th><th>Sol</th>
-                </tr></thead>
-                <tbody>{display.map(row => (
-                  <tr key={row.ts} style={row.is_forecast ? { opacity: 0.5 } : undefined}>
-                    <td style={{ fontFamily: "var(--font-mono)" }}>
-                      {(mode === "live" || mode === "day") ? (() => { const d = new Date(row.ts); return d.getUTCHours().toString().padStart(2, "0") + ":" + d.getUTCMinutes().toString().padStart(2, "0"); })() : row.ts.slice(5, 16).replace("T", " ")}
-                      {row.is_forecast && <span style={{ color: "#3b82f6", fontSize: 7, marginLeft: 2 }}>prog</span>}
-                    </td>
-                    <td style={{ color: "#f59e0b", fontWeight: 600 }}>{spotDisplay(row.spot, priceUnit)}</td>
-                    <td style={{ color: "#22d3ee" }}>{r1(row.temp)}</td>
-                    <td style={{ color: "#22c55e" }}>{r0(row.production_co2_g_kwh)}</td>
-                    <td style={{ color: "#ef4444" }}>{r0(row.consumption_co2_g_kwh)}</td>
-                    <td>{r0(row.total_gen_mw)}</td>
-                    <td style={{ color: (row.net_import_mw ?? 0) > 0 ? "#3b82f6" : "#ef4444" }}>{r0(row.net_import_mw)}</td>
-                    <td>{r0((row.wind_onshore_mw ?? 0) + (row.wind_offshore_mw ?? 0))}</td>
-                    <td>{r0(row.solar_mw)}</td>
-                  </tr>
-                ))}</tbody>
-              </table>
-            </div>
-            {ds.rows.length > 48 && <button onClick={() => setExp(!exp)} style={{ background: "none", border: "1px solid var(--border-color)", borderRadius: 4, padding: "2px 6px", color: "var(--text-muted)", fontSize: 9, cursor: "pointer", marginTop: 3 }}>{exp ? "Visa färre" : `Alla ${ds.rows.length}`}</button>}
+            )}
+            {period === "day" && resolution === "PT15M" && (
+              <div style={{ marginTop: 4, fontSize: 8, color: C.dim }}>15-min · ENTSO-E A44</div>
+            )}
           </div>
         );
-      })}
+      })()}
     </div>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Main Page
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── GenMixBar ────────────────────────────────────────────────────────────────
+
+function GenMixBar({ mix }: { mix: Record<string, number | null> }) {
+  const active = Object.keys(GC).map(f => ({ f, v: (mix[f] ?? 0) as number })).filter(e => e.v > 0);
+  const total = active.reduce((s, e) => s + e.v, 0);
+  if (total <= 0) return null;
+  return (
+    <div>
+      <div style={{ display: "flex", height: 20, borderRadius: 4, overflow: "hidden", marginBottom: 5 }}>
+        {active.map(e => {
+          const pct = (e.v / total) * 100;
+          if (pct < 0.5) return null;
+          return (
+            <div key={e.f} style={{
+              width: `${pct}%`, background: GC[e.f],
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: pct > 8 ? 8 : 0, color: "#fff", fontWeight: 600,
+            }} title={`${GL[e.f]}: ${pct.toFixed(1)}%`}>
+              {pct > 12 ? GL[e.f] : pct > 6 ? `${pct.toFixed(0)}%` : ""}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 10px" }}>
+        {active.filter(e => (e.v / total) * 100 >= 1).map(e => (
+          <span key={e.f} style={{ fontSize: 9, color: C.muted, display: "flex", alignItems: "center", gap: 3 }}>
+            <span style={{ width: 7, height: 7, borderRadius: 2, background: GC[e.f], display: "inline-block" }} />
+            {GL[e.f]} {((e.v / total) * 100).toFixed(0)}%
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function SpotDashboard() {
-  const [selectedZones, setSelectedZones] = useState<string[]>(["SE3"]);
-  const [mode, setMode] = useState<TimeMode>("live");
-  const [date, setDate] = useState(yesterday());
-  const [priceUnit, setPriceUnit] = useState<PriceUnit>("sek");
-  const [activeSeries, setActiveSeries] = useState<Set<string>>(new Set(["spot"]));
-  const [activePanels, setActivePanels] = useState<Set<string>>(new Set());
-  const [datasets, setDatasets] = useState<Dataset[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [zone, setZone] = useState<SEZone>("SE3");
+  const [period, setPeriod] = useState<Period>("day");
+  const [histDate, setHistDate] = useState(() => todayStr());
+  const [unit, setUnit] = useState<Unit>("sek");
+  const [showTomorrow, setShowTomorrow] = useState(false);
+  const [showAdv, setShowAdv] = useState(false);
 
-  // Zone: click = toggle on/off (multi-select). Always keep at least one.
-  const handleZoneClick = (zone: string) => {
-    setSelectedZones(prev => {
-      if (prev.includes(zone)) {
-        return prev.length > 1 ? prev.filter(z => z !== zone) : prev;
-      }
-      return [...prev, zone];
-    });
-  };
+  const [liveData, setLiveData] = useState<Partial<Record<SEZone, LiveResp | "loading">>>({
+    SE1: "loading", SE2: "loading", SE3: "loading", SE4: "loading",
+  });
+  const [histData, setHistData] = useState<V2Resp | null>(null);
+  const [histLoading, setHistLoading] = useState(false);
 
-  // Fetch
-  const fetchAll = useCallback(async () => {
-    setLoading(true); setError(null);
+  // ─── EUR/SEK from ECB canonical data (TR1) ──────────────────────────────
+  const [eurSek, setEurSek] = useState(11.20); // fallback until API responds
+  useEffect(() => {
+    fetch("/api/energy/forex")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.rate) setEurSek(d.rate); })
+      .catch(() => {});
+  }, []);
+
+  const isLiveMode = period === "day" && histDate >= todayStr();
+
+  const loadLive = useCallback(async () => {
+    const results = await Promise.all(SE_ZONES.map(z => fetchLive(z)));
+    const map: Partial<Record<SEZone, LiveResp>> = {};
+    results.forEach((r, i) => { if (r) map[SE_ZONES[i]] = r; });
+    setLiveData(map);
+  }, []);
+
+  useEffect(() => {
+    loadLive();
+    const iv = setInterval(loadLive, 5 * 60_000);
+    return () => clearInterval(iv);
+  }, [loadLive]);
+
+  const loadHist = useCallback(async () => {
+    if (isLiveMode) { setHistData(null); return; }
+    if (period === "day") {
+      // Historisk dag via v2
+      setHistLoading(true);
+      try {
+        const r = await fetch(`/api/spot/v2?zone=${zone}&date=${histDate}`);
+        setHistData(r.ok ? await r.json() : null);
+      } finally { setHistLoading(false); }
+      return;
+    }
+    setHistLoading(true);
     try {
-      const results: Dataset[] = [];
-      for (let i = 0; i < selectedZones.length; i++) {
-        const zone = selectedZones[i];
-        const color = ZC[zone] ?? PALETTE[i % PALETTE.length];
-        const label = selectedZones.length === 1 ? `${zone} ${ZN[zone] ?? ""}` : zone;
-
-        if (mode === "live") {
-          const res = await fetch(`/api/spot/live?zone=${zone}`);
-          if (res.ok) {
-            const d: LiveResponse = await res.json();
-            results.push({ id: `${zone}_live`, zone, period: "live", label, color, rows: d.rows, genMix: {}, stats: d.stats, evidence: null });
-          }
-        } else {
-          const periodStr = mode === "month" ? date.slice(0, 7) : date;
-          const param = mode === "month" ? `month=${periodStr}` : `date=${periodStr}`;
-          const res = await fetch(`/api/spot/v2?zone=${zone}&${param}`);
-          if (res.ok) {
-            const d: V2Response = await res.json();
-            results.push({ id: `${zone}_${periodStr}`, zone, period: periodStr, label, color, rows: d.rows, genMix: d.generation_mix, stats: d.stats, evidence: d.evidence });
-          }
+      let data: V2Resp | null = null;
+      if (period === "month" || period === "year") {
+        const m = period === "year" ? histDate.slice(0,4)+"-01" : histDate.slice(0,7);
+        data = await fetchV2Month(zone, m);
+      } else if (period === "week") {
+        data = await fetchV2Month(zone, histDate.slice(0,7));
+        if (data) {
+          const start = new Date(histDate+"T00:00:00Z").getTime();
+          const end   = start + 7*86400_000;
+          data.rows = data.rows.filter(r => {
+            const t = new Date(r.ts).getTime();
+            return t >= start && t < end;
+          });
         }
       }
-      if (results.length === 0) setError("Ingen data hittades");
-      setDatasets(results);
-      setLastRefresh(new Date());
-    } catch { setError("Nätverksfel"); }
-    finally { setLoading(false); }
-  }, [selectedZones, mode, date]);
-
-  useEffect(() => { fetchAll(); }, [fetchAll]);
-  useEffect(() => { if (mode !== "live") return; const iv = setInterval(fetchAll, 5 * 60_000); return () => clearInterval(iv); }, [mode, fetchAll]);
-
-  const toggleSeries = (key: string) => setActiveSeries(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
-  const togglePanel = (key: string) => setActivePanels(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
-
-  const primaryDs = datasets[0];
-
-  // Current hour price for hero
-  const nowRow = (() => {
-    if (!primaryDs) return null;
-    const now = new Date();
-    const nowMs = now.getTime();
-    const today = now.toISOString().slice(0, 10);
-    // Find closest row to current time
-    const todayRows = primaryDs.rows.filter(r => r.ts.startsWith(today) && !r.is_forecast);
-    if (todayRows.length === 0) return null;
-    let best = todayRows[0];
-    let bestDist = Math.abs(nowMs - new Date(best.ts).getTime());
-    for (const r of todayRows) {
-      const dist = Math.abs(nowMs - new Date(r.ts).getTime());
-      if (dist < bestDist) { best = r; bestDist = dist; }
+      setHistData(data);
+    } finally {
+      setHistLoading(false);
     }
-    return best;
+  }, [zone, period, histDate, isLiveMode]);
+
+  useEffect(() => { loadHist(); }, [loadHist]);
+
+  const zoneLive = liveData[zone];
+  const liveResp = zoneLive && zoneLive !== "loading" ? zoneLive : null;
+  const nowRow   = liveResp ? currentRow(liveResp.rows) : null;
+  const todayStats = liveResp?.stats.today_spot ?? { avg: null, min: null, max: null };
+  const tomorrowStats = liveResp?.stats.tomorrow_spot ?? { avg: null, min: null, max: null };
+  const hasTomorrow = liveResp?.has_tomorrow ?? false;
+  const res = liveResp?.resolution ?? "PT60M";
+
+  const chartRows: LiveRow[] = isLiveMode
+    ? (liveResp?.rows ?? [])
+    : (histData?.rows.map(r => ({
+        ts: r.ts, zone, spot: r.spot, temp: null,
+        wind_speed: null, solar_rad: null, is_forecast: false,
+      })) ?? []);
+
+  const co2Avg = (() => {
+    if (!histData?.rows.length) return null;
+    const vals = histData.rows.map(r => r.production_co2_g_kwh).filter((v): v is number => v != null);
+    return vals.length ? Math.round(vals.reduce((s,x) => s+x,0)/vals.length) : null;
   })();
 
+  const periodStep = period === "day" ? 1 : period === "week" ? 7 : period === "month" ? 30 : 365;
+
   return (
-    <div>
-      {/* ═══ CONTROLS ═══ */}
-      <div className="card" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <>
+      <style>{`
+        @keyframes sd-live { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.4)} 70%{box-shadow:0 0 0 6px rgba(34,197,94,0)}}
+      `}</style>
 
-        {/* Row 1: Mode + Date picker + Price unit */}
-        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-          {(["live", "day", "month"] as TimeMode[]).map(m => (
-            <button key={m} onClick={() => setMode(m)} style={{
-              padding: "4px 12px", fontSize: 11, borderRadius: 6, cursor: "pointer", fontWeight: mode === m ? 700 : 400,
-              background: mode === m ? "#f59e0b22" : "transparent",
-              border: `1px solid ${mode === m ? "#f59e0b" : "var(--border-color)"}`,
-              color: mode === m ? "#f59e0b" : "var(--text-muted)",
-            }}>{m === "live" ? "● Live" : m === "day" ? "📅 Dag" : "📊 Månad"}</button>
-          ))}
+      <div className="card" style={{ overflow: "hidden", padding: 0 }}>
 
-          {mode !== "live" && (
-            <>
-              <div style={{ width: 1, height: 24, background: "var(--border-color)" }} />
-              <button onClick={() => {
-                const d = new Date(date); d.setDate(d.getDate() - (mode === "month" ? 30 : 1));
-                setDate(d.toISOString().slice(0, 10));
-              }} style={{ padding: "4px 8px", fontSize: 12, borderRadius: 6, cursor: "pointer", background: "transparent", border: "1px solid var(--border-color)", color: "var(--text-muted)" }}>◀</button>
-              <input
-                type={mode === "month" ? "month" : "date"}
-                value={mode === "month" ? date.slice(0, 7) : date}
-                max={todayStr()}
-                onChange={e => setDate(mode === "month" ? e.target.value + "-01" : e.target.value)}
-                style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 6, color: "var(--text-primary)", fontSize: 12, padding: "4px 8px", fontFamily: "var(--font-mono)", cursor: "pointer" }}
-              />
-              <button onClick={() => {
-                const d = new Date(date); d.setDate(d.getDate() + (mode === "month" ? 30 : 1));
-                if (d <= new Date()) setDate(d.toISOString().slice(0, 10));
-              }} style={{ padding: "4px 8px", fontSize: 12, borderRadius: 6, cursor: "pointer", background: "transparent", border: "1px solid var(--border-color)", color: "var(--text-muted)" }}>▶</button>
-            </>
-          )}
+        {/* ── HEADER ──────────────────────────────────────────────────────── */}
+        <div style={{ padding: "12px 20px 0" }}>
 
-          {mode === "live" && (
-            <span style={{ fontSize: 10, color: "#22c55e", display: "flex", alignItems: "center", gap: 3, marginLeft: 4 }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 6px #22c55e" }} />
-              LIVE
+          {/* Row 1 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 10, color: C.muted, letterSpacing: 2, textTransform: "uppercase" }}>Spotpris <span style={{ color: C.dim }}>/</span> Elpris</span>
+            <span style={{ padding: "1px 5px", borderRadius: 3, fontSize: 8, fontWeight: 600,
+              background: "rgba(245,158,11,0.12)", color: C.spot, border: `1px solid ${C.spot}44` }}>
+              ENTSO-E A44
             </span>
-          )}
-
-          <div style={{ marginLeft: "auto", display: "flex", gap: 2 }}>
-            <button onClick={() => setPriceUnit("sek")} style={{
-              padding: "3px 8px", fontSize: 10, borderRadius: "4px 0 0 4px", cursor: "pointer",
-              background: priceUnit === "sek" ? "#f59e0b22" : "transparent",
-              border: `1px solid ${priceUnit === "sek" ? "#f59e0b" : "var(--border-color)"}`,
-              color: priceUnit === "sek" ? "#f59e0b" : "var(--text-muted)", fontWeight: priceUnit === "sek" ? 700 : 400,
-            }}>öre/kWh</button>
-            <button onClick={() => setPriceUnit("eur")} style={{
-              padding: "3px 8px", fontSize: 10, borderRadius: "0 4px 4px 0", cursor: "pointer",
-              background: priceUnit === "eur" ? "#f59e0b22" : "transparent",
-              border: `1px solid ${priceUnit === "eur" ? "#f59e0b" : "var(--border-color)"}`,
-              color: priceUnit === "eur" ? "#f59e0b" : "var(--text-muted)", fontWeight: priceUnit === "eur" ? 700 : 400,
-            }}>€/MWh</button>
-          </div>
-        </div>
-
-        {/* Row 2: Zone buttons */}
-        <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
-          {ALL_ZONES.map(z => {
-            const sel = selectedZones.includes(z);
-            return (
-              <button key={z} onClick={() => handleZoneClick(z)} title="Klicka för att lägga till/ta bort" style={{
-                padding: "4px 10px", fontSize: 11, borderRadius: 6, cursor: "pointer",
-                background: sel ? ZC[z] + "22" : "transparent",
-                border: `2px solid ${sel ? ZC[z] : "var(--border-color)"}`,
-                color: sel ? ZC[z] : "var(--text-muted)", fontWeight: sel ? 700 : 400,
-              }}>{z} <span style={{ fontSize: 8, opacity: 0.7 }}>{ZN[z]}</span></button>
-            );
-          })}
-          {selectedZones.length > 1 && (
-            <button onClick={() => setSelectedZones([selectedZones[0]])} style={{
-              padding: "3px 8px", fontSize: 9, borderRadius: 4, cursor: "pointer",
-              background: "transparent", border: "1px solid var(--border-color)", color: "var(--text-muted)",
-            }}>Rensa jämförelse</button>
-          )}
-        </div>
-
-        {/* Row 3: Series toggles */}
-        <div style={{ display: "flex", gap: 3, alignItems: "center", flexWrap: "wrap" }}>
-          <span style={{ fontSize: 9, color: "var(--text-muted)" }}>Serier:</span>
-          {SERIES_DEFS.map(s => <Toggle key={s.key} on={activeSeries.has(s.key)} label={s.label} color={s.color} onClick={() => toggleSeries(s.key)} />)}
-        </div>
-
-        {/* Row 4: Panel toggles */}
-        <div style={{ display: "flex", gap: 3, alignItems: "center", flexWrap: "wrap" }}>
-          <span style={{ fontSize: 9, color: "var(--text-muted)" }}>Paneler:</span>
-          {PANEL_OPTIONS.map(p => (
-            <button key={p.key} onClick={() => togglePanel(p.key)} style={{
-              padding: "3px 10px", fontSize: 10, borderRadius: 4, cursor: "pointer",
-              background: activePanels.has(p.key) ? "var(--bg-card)" : "transparent",
-              border: `1px solid ${activePanels.has(p.key) ? "#f59e0b" : "var(--border-color)"}`,
-              color: activePanels.has(p.key) ? "var(--text-primary)" : "var(--text-muted)",
-            }}>{activePanels.has(p.key) ? "▾" : "▸"} {p.label}</button>
-          ))}
-        </div>
-
-        {/* Info */}
-        <div style={{ display: "flex", gap: 10, fontSize: 9, color: "var(--text-muted)", alignItems: "center" }}>
-          {datasets.map(ds => <span key={ds.id} style={{ color: ds.color }}>{ds.label} ({ds.rows.length} pt{ds.rows.length > 48 ? " · PT15M" : ""})</span>)}
-          <span>Senast {lastRefresh.toLocaleTimeString("sv-SE")}</span>
-          {priceUnit === "sek" && <span style={{ color: "var(--text-muted)" }}>Kurs: {EUR_SEK} SEK/EUR (fast)</span>}
-          {datasets[0]?.evidence && <EvidenceBadge manifestId={datasets[0].evidence.dataset_eve_id} rootHash={datasets[0].evidence.root_hash} />}
-        </div>
-      </div>
-
-      {/* ═══ CONTENT ═══ */}
-
-      {error && <div className="card" style={{ borderColor: "#ef4444" }}><p style={{ color: "#ef4444", fontSize: 13 }}>{error}</p></div>}
-      {loading && <div className="card"><p style={{ color: "var(--text-muted)" }}>Laddar…</p></div>}
-
-      {!loading && !error && datasets.length > 0 && (
-        <>
-          {/* HERO — current price */}
-          {primaryDs && (() => {
-            const nowSpot = nowRow?.spot;
-            const nowCo2 = nowRow?.production_co2_g_kwh;
-            const avgSpot = primaryDs.stats?.spot?.avg ?? primaryDs.stats?.today_spot?.avg;
-            const diff = nowSpot != null && avgSpot != null ? nowSpot - avgSpot : null;
-            const nextH = nowRow ? primaryDs.rows.find(r => new Date(r.ts).getUTCHours() === (new Date(nowRow.ts).getUTCHours() + 1) % 24) : null;
-            const tomorrowAvg = primaryDs.stats?.tomorrow_spot?.avg;
-
-            const heroPrice = spotDisplay(nowSpot, priceUnit);
-            const heroUnit = spotUnit(priceUnit);
-            const heroSecondary = priceUnit === "sek"
-              ? (nowSpot != null ? nowSpot.toFixed(1) + " €/MWh" : "")
-              : (nowSpot != null ? (nowSpot * EUR_SEK / 10).toFixed(1) + " öre/kWh" : "");
-
-            return (
-              <div className="card" style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
-                {/* Big price */}
-                <div style={{ textAlign: "center", minWidth: 140 }}>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 2 }}>{primaryDs.zone} {ZN[primaryDs.zone]} — just nu</div>
-                  <div style={{ fontSize: 48, fontWeight: 800, color: "#f59e0b", fontFamily: "var(--font-mono)", lineHeight: 1 }}>
-                    {heroPrice}
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{heroUnit}</div>
-                  {heroSecondary && <div style={{ fontSize: 13, color: "var(--text-muted)", fontFamily: "var(--font-mono)", marginTop: 2 }}>{heroSecondary}</div>}
-                </div>
-
-                {/* Context stats */}
-                <div style={{ flex: 1, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <Stat label="Dagmedel" value={spotDisplay(avgSpot, priceUnit)} unit={spotUnit(priceUnit)} color="var(--text-muted)" />
-                  {diff != null && <Stat label="vs medel" value={(diff >= 0 ? "+" : "") + spotDisplay(Math.abs(diff) * (diff >= 0 ? 1 : -1), priceUnit)} color={diff > 0 ? "#ef4444" : "#22c55e"} />}
-                  <Stat label="Min" value={spotDisplay(primaryDs.stats?.spot?.min ?? primaryDs.stats?.today_spot?.min, priceUnit)} color="#22c55e" />
-                  <Stat label="Max" value={spotDisplay(primaryDs.stats?.spot?.max ?? primaryDs.stats?.today_spot?.max, priceUnit)} color="#ef4444" />
-                  {nextH?.spot != null && <Stat label="Nästa tim" value={spotDisplay(nextH.spot, priceUnit)} color="#3b82f6" />}
-                  {tomorrowAvg != null && <Stat label="Imorgon ø" value={spotDisplay(tomorrowAvg, priceUnit)} color="#3b82f6" />}
-                  {nowCo2 != null && <Stat label="CO₂ nu" value={r0(nowCo2)} unit="g/kWh" color="#22c55e" />}
-                  <Stat label="Temp" value={r1(primaryDs.stats?.temp?.avg)} unit="°C" color="#22d3ee" />
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Chart */}
-          <div className="card">
-            <div className="card-header">
-              <span className="card-title">{datasets.map(d => d.label).join(" vs ")}</span>
-            </div>
-            <UnifiedChart datasets={datasets} activeSeries={activeSeries} mode={mode} priceUnit={priceUnit} />
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4, fontSize: 9 }}>
-              {datasets.length > 1 && datasets.map(ds => <span key={ds.id} style={{ color: ds.color, fontWeight: 600 }}>● {ds.label}</span>)}
-              {SERIES_DEFS.filter(s => activeSeries.has(s.key) && !s.perDataset).map(s => (
-                <span key={s.key} style={{ color: s.color }}>
-                  <svg width={12} height={3} style={{ verticalAlign: "middle", marginRight: 2 }}><line x1={0} y1={1.5} x2={12} y2={1.5} stroke={s.color} strokeWidth={1.5} strokeDasharray={s.dash ?? "none"} /></svg>
-                  {s.label}
-                </span>
+            {isLiveMode && res === "PT15M" && (
+              <span style={{ padding: "1px 5px", borderRadius: 3, fontSize: 8, fontWeight: 600,
+                background: "rgba(34,197,94,0.12)", color: C.green, border: "1px solid rgba(34,197,94,0.3)" }}>
+                PT15M · 96 punkter
+              </span>
+            )}
+            <div style={{ display: "flex", gap: 2 }}>
+              {SE_ZONES.map(z => (
+                <button key={z} onClick={() => setZone(z)} style={{
+                  padding: "3px 10px", fontSize: 11, fontWeight: zone===z ? 700 : 400,
+                  background: zone===z ? `${ZONE_COLORS[z]}18` : "transparent",
+                  border: `1px solid ${zone===z ? ZONE_COLORS[z]+"66" : C.border}`,
+                  borderRadius: 4, color: zone===z ? ZONE_COLORS[z] : C.muted,
+                  cursor: "pointer", fontFamily: FONT,
+                }}>{z}</button>
               ))}
             </div>
-            {/* Asymmetric publication notice */}
-            {mode === "live" && datasets.length > 1 && (() => {
-              const withTomorrow = datasets.filter(ds => ds.rows.some(r => r.is_forecast && r.spot !== null));
-              const withoutTomorrow = datasets.filter(ds => !ds.rows.some(r => r.is_forecast && r.spot !== null));
-              if (withTomorrow.length > 0 && withoutTomorrow.length > 0) {
-                return (
-                  <div style={{ fontSize: 8, color: "var(--text-muted)", marginTop: 6, padding: "4px 8px", background: "rgba(251, 191, 36, 0.05)", border: "1px solid rgba(251, 191, 36, 0.15)", borderRadius: 4 }}>
-                    <span style={{ color: "#fbbf24", fontWeight: 600 }}>Obs:</span> ENTSO-E publicerar day-ahead-priser vid olika tidpunkter per budområde.
-                    {" "}{withTomorrow.map(d => d.zone).join(", ")} har morgondagens priser.
-                    {" "}{withoutTomorrow.map(d => d.zone).join(", ")} inväntar publicering.
-                    {" "}Marknadsaktörer i tidigt publicerade zoner har informationsövertag under denna period.
-                  </div>
-                );
-              }
-              return null;
-            })()}
+            {isLiveMode && (
+              <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: C.green, marginLeft: "auto" }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.green, animation: "sd-live 2s infinite" }} />
+                LIVE
+              </span>
+            )}
           </div>
 
-          {/* Sub-panels */}
-          {activePanels.has("genmix") && <div className="card"><div className="card-header"><span className="card-title">Produktionsmix</span><span style={{ fontSize: 10, color: "var(--text-muted)" }}>ENTSO-E A75</span></div><GenMixPanel datasets={datasets} /></div>}
-          {activePanels.has("co2import") && <div className="card"><div className="card-header"><span className="card-title">CO₂-avtryck</span></div><CO2ImportPanel datasets={datasets} /></div>}
-          {activePanels.has("heatmap") && <div className="card"><div className="card-header"><span className="card-title">Intensitetskarta</span></div><HeatmapPanel datasets={datasets} /></div>}
-          {activePanels.has("table") && <div className="card"><div className="card-header"><span className="card-title">Timdata</span></div><TablePanel datasets={datasets} mode={mode} priceUnit={priceUnit} /></div>}
-        </>
-      )}
+          {/* Row 2 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, paddingBottom: 12,
+            borderBottom: `1px solid ${C.border}`, flexWrap: "wrap" }}>
 
-      <div style={{ fontSize: 8, color: "var(--text-muted)", padding: "8px 0", borderTop: "1px solid var(--border-color)", marginTop: 12 }}>
-        Källa: ENTSO-E (A44/A75/A11), Open-Meteo/ERA5, EEA 2023. {priceUnit === "sek" && `Kurs ${EUR_SEK} SEK/EUR (fast, ej realtid).`} Korrelation ≠ kausalitet.
+            <div style={{ display: "flex", gap: 1, background: C.border, borderRadius: 6, padding: 1 }}>
+              {(["day","week","month","year"] as Period[]).map(p => {
+                const L: Record<Period, string> = { day:"Dag", week:"Vecka", month:"Månad", year:"År" };
+                return (
+                  <button key={p} onClick={() => setPeriod(p)} style={{
+                    padding: "4px 12px", fontSize: 10, fontWeight: period===p ? 700 : 400,
+                    background: period===p ? C.card2 : "transparent",
+                    border: "none", borderRadius: 5,
+                    color: period===p ? C.text : C.muted, cursor: "pointer", fontFamily: FONT,
+                  }}>{L[p]}</button>
+                );
+              })}
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <button onClick={() => setHistDate(d => addDays(d, -periodStep))}
+                style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:4,
+                  color:C.muted, fontSize:12, padding:"3px 8px", cursor:"pointer" }}>◀</button>
+              <span style={{ fontSize:11, fontWeight:600, color:C.text, fontFamily:FONT,
+                minWidth:130, textAlign:"center" }}>
+                {isLiveMode ? histDate : fmtPeriodLabel(histDate, period)}
+              </span>
+              <button
+                onClick={() => { const n=addDays(histDate,periodStep); if(n<=todayStr()) setHistDate(n); }}
+                disabled={histDate >= todayStr()}
+                style={{ background:"none", border:`1px solid ${histDate >= todayStr() ? C.dim : C.border}`, borderRadius:4,
+                  color: histDate >= todayStr() ? C.dim : C.muted, fontSize:12, padding:"3px 8px",
+                  cursor: histDate >= todayStr() ? "default" : "pointer" }}>▶</button>
+              {histDate < todayStr() && (
+                <button onClick={() => setHistDate(todayStr())}
+                  style={{ background:"rgba(34,197,94,0.1)", border:"1px solid rgba(34,197,94,0.3)",
+                    borderRadius:4, color:C.green, fontSize:9, padding:"3px 8px",
+                    cursor:"pointer", fontFamily:FONT, fontWeight:600 }}>Idag</button>
+              )}
+            </div>
+
+            <div style={{ flex: 1 }} />
+
+            {isLiveMode && hasTomorrow && (
+              <button onClick={() => setShowTomorrow(v => !v)} style={{
+                padding: "4px 10px", fontSize: 9, fontFamily: FONT,
+                background: showTomorrow ? "rgba(59,130,246,0.12)" : "transparent",
+                border: `1px solid ${showTomorrow ? C.blue+"66" : C.border}`,
+                borderRadius: 5, color: showTomorrow ? C.blue : C.muted, cursor: "pointer",
+              }}>+ Imorgon</button>
+            )}
+
+            <div style={{ display:"flex", borderRadius:4, overflow:"hidden", border:`1px solid ${C.border}` }}>
+              {(["sek","eur"] as Unit[]).map((u,i) => (
+                <button key={u} onClick={() => setUnit(u)} style={{
+                  padding: "4px 10px", fontSize: 9, cursor:"pointer", fontFamily: FONT,
+                  background: unit===u ? `${C.spot}18` : "transparent",
+                  borderLeft: i>0 ? `1px solid ${C.border}` : "none",
+                  color: unit===u ? C.spot : C.muted, fontWeight: unit===u ? 700 : 400,
+                }}>{u==="sek" ? "öre/kWh" : "€/MWh"}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── 4 ZONKORT ──────────────────────────────────────────────────── */}
+        <div style={{ display:"flex", gap:8, padding:"12px 20px", flexWrap:"wrap" }}>
+          {SE_ZONES.map(z => (
+            <ZoneCard key={z} zone={z} live={liveData[z] ?? "loading"}
+              selected={zone===z} unit={unit} eurSek={eurSek} onClick={() => setZone(z)} />
+          ))}
+        </div>
+
+        {/* ── HERO + STATS ────────────────────────────────────────────────── */}
+        <div style={{ padding:"0 20px 12px", borderBottom:`1px solid ${C.border}` }}>
+          <div style={{ display:"flex", gap:16, alignItems:"flex-start", flexWrap:"wrap" }}>
+            <div style={{ minWidth:120 }}>
+              <div style={{ fontSize:10, color:C.muted, marginBottom:3 }}>
+                {zone} {ZONE_NAMES[zone]} — just nu
+              </div>
+              <div style={{ fontSize:52, fontWeight:800, lineHeight:1,
+                color: ZONE_COLORS[zone], fontFamily: FONT }}>
+                {zoneLive === "loading" ? "…" : dp(nowRow?.spot ?? null, unit, eurSek)}
+              </div>
+              <div style={{ fontSize:10, color:C.muted, marginTop:2 }}>{pu(unit)}</div>
+              {unit==="sek" && nowRow?.spot != null && (
+                <div style={{ fontSize:10, color:C.muted, fontFamily:FONT, marginTop:1 }}>
+                  {nowRow.spot.toFixed(1)} EUR/MWh
+                </div>
+              )}
+              {res === "PT15M" && isLiveMode && (
+                <div style={{ fontSize:8, color:C.dim, marginTop:4 }}>15-min · ENTSO-E A44</div>
+              )}
+              {nowRow?.spot != null && unit === "sek" && (
+                <div style={{ marginTop:6, padding:"4px 8px", borderRadius:5, background:"rgba(96,165,250,0.08)", border:"1px solid rgba(96,165,250,0.15)" }}>
+                  <div style={{ fontSize:8, color:"#60a5fa", marginBottom:2 }}>Elpris inkl avgifter</div>
+                  <div style={{ fontSize:16, fontWeight:700, color:"#60a5fa", fontFamily:FONT }}>
+                    {(() => {
+                      const spotOre = toOre(nowRow.spot, eurSek) ?? 0;
+                      const net = 32; // nätavgift öre/kWh
+                      const tax = 36; // energiskatt öre/kWh (2026)
+                      const sub = spotOre + net + tax;
+                      const moms = sub * 0.25;
+                      return (sub + moms).toFixed(0);
+                    })()}
+                    <span style={{ fontSize:9, color:"#60a5fa88", marginLeft:2 }}>öre/kWh</span>
+                  </div>
+                  <div style={{ fontSize:7, color:C.dim }}>nät 32 + skatt 36 + moms 25%</div>
+                </div>
+              )}
+            </div>
+            <div style={{ flex:1, display:"flex", gap:8, flexWrap:"wrap" }}>
+              {[
+                { label: isLiveMode ? "Dagmedel"  : "Periodmedel", val: isLiveMode ? todayStats.avg   : histData?.stats.spot.avg ?? null },
+                { label: isLiveMode ? "Dagsmin"   : "Periodmin",   val: isLiveMode ? todayStats.min   : histData?.stats.spot.min ?? null },
+                { label: isLiveMode ? "Dagsmax"   : "Periodmax",   val: isLiveMode ? todayStats.max   : histData?.stats.spot.max ?? null },
+                ...(hasTomorrow && showTomorrow ? [{ label:"Imorgon avg", val: tomorrowStats.avg }] : []),
+              ].map(({ label, val }) => (
+                <div key={label} style={{
+                  flex:"1 1 70px", background: C.card2,
+                  border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 10px",
+                }}>
+                  <div style={{ fontSize:9, color:C.muted, marginBottom:3 }}>{label}</div>
+                  <div style={{ fontSize:17, fontWeight:700, color:C.text, fontFamily:FONT }}>{dp(val, unit, eurSek)}</div>
+                  <div style={{ fontSize:8, color:C.muted }}>{pu(unit)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── CHART ──────────────────────────────────────────────────────── */}
+        <div style={{ padding:"12px 20px" }}>
+          {histLoading ? (
+            <div style={{ padding:"32px 0", textAlign:"center", color:C.muted, fontSize:12 }}>Laddar…</div>
+          ) : (
+            <SpotChart
+              rows={chartRows}
+              resolution={res}
+              unit={unit}
+              zone={zone}
+              showTomorrow={showTomorrow && isLiveMode}
+              period={period}
+              eurSek={eurSek}
+            />
+          )}
+        </div>
+
+        {/* ── AVANCERAT TOGGLE ───────────────────────────────────────────── */}
+        <div style={{ borderTop:`1px solid ${C.border}` }}>
+          <button onClick={() => setShowAdv(v => !v)} style={{
+            width:"100%", padding:8, background:"none", border:"none",
+            color:C.muted, fontSize:9, cursor:"pointer", fontFamily:FONT,
+            display:"flex", alignItems:"center", justifyContent:"center", gap:6,
+          }}>
+            <span style={{ transform:showAdv?"rotate(180deg)":"none", transition:"transform .2s", display:"inline-block" }}>▾</span>
+            {showAdv ? "Dölj avancerat" : "Visa avancerat — CO₂, vind, produktionsmix"}
+          </button>
+
+          {showAdv && (
+            <div style={{ padding:"0 20px 16px", borderTop:`1px solid ${C.border}` }}>
+              {!histData && (
+                <div style={{ color:C.muted, fontSize:11, padding:"12px 0" }}>
+                  Välj Vecka/Månad/År för avancerad data
+                </div>
+              )}
+              {histData && (
+                <>
+                  <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:14, marginTop:12 }}>
+                    {co2Avg != null && (
+                      <div style={{ flex:"1 1 90px", background:C.card2, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 12px" }}>
+                        <div style={{ fontSize:9, color:C.green, marginBottom:2 }}>CO₂ produktion</div>
+                        <div style={{ fontSize:18, fontWeight:700, color:C.green, fontFamily:FONT }}>{co2Avg}</div>
+                        <div style={{ fontSize:8, color:C.muted }}>g/kWh medel</div>
+                      </div>
+                    )}
+                    {(() => {
+                      const vals = histData.rows.map(r => (r.wind_onshore_mw??0)+(r.wind_offshore_mw??0)).filter(v => v > 0);
+                      const avg = vals.length ? Math.round(vals.reduce((s,x)=>s+x,0)/vals.length) : null;
+                      return avg != null ? (
+                        <div style={{ flex:"1 1 90px", background:C.card2, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 12px" }}>
+                          <div style={{ fontSize:9, color:C.wind, marginBottom:2 }}>Vind</div>
+                          <div style={{ fontSize:18, fontWeight:700, color:C.wind, fontFamily:FONT }}>{avg}</div>
+                          <div style={{ fontSize:8, color:C.muted }}>MW medel</div>
+                        </div>
+                      ) : null;
+                    })()}
+                    {(() => {
+                      const vals = histData.rows.map(r => r.net_import_mw).filter((v): v is number => v != null);
+                      const avg = vals.length ? Math.round(vals.reduce((s,x)=>s+x,0)/vals.length) : null;
+                      return avg != null ? (
+                        <div style={{ flex:"1 1 90px", background:C.card2, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 12px" }}>
+                          <div style={{ fontSize:9, color:avg>0?C.blue:C.red, marginBottom:2 }}>Netto import</div>
+                          <div style={{ fontSize:18, fontWeight:700, color:avg>0?C.blue:C.red, fontFamily:FONT }}>{avg>0?"+":""}{avg}</div>
+                          <div style={{ fontSize:8, color:C.muted }}>MW medel</div>
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                  {histData.generation_mix && (
+                    <div style={{ marginBottom:8 }}>
+                      <div style={{ fontSize:9, color:C.muted, marginBottom:6 }}>Produktionsmix — medel</div>
+                      <GenMixBar mix={histData.generation_mix} />
+                    </div>
+                  )}
+                </>
+              )}
+              <div style={{ fontSize:8, color:C.dim, marginTop:8 }}>
+                ENTSO-E A44 (spot) · A75 (generation) · A11 (flows) · ERA5 (väder) · EEA 2023 (CO₂)
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding:"6px 20px", fontSize:8, color:C.dim,
+          borderTop:`1px solid ${C.border}`, fontFamily:FONT }}>
+          EUR/SEK {eurSek.toFixed(4)} (ECB) · ENTSO-E A44 · Uppdateras var 5:e min
+        </div>
       </div>
-    </div>
+    </>
   );
 }

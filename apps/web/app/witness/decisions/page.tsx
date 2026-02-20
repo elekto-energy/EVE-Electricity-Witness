@@ -86,15 +86,15 @@ export default function DecisionsPage() {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">⚖️ Decisions</h1>
+        <h1 className="page-title">⚖️ Beslut</h1>
         <p className="page-subtitle">
-          Energy decision chain. Propositions → Committee reports → Votes. Evidence-traced.
+          Riksdagsbeslut om el: produktion, skatter, nätavgifter, import/export, elmarknad. Propositioner → Utskottsbetänkanden → Voteringar.
         </p>
       </div>
 
       {/* Stats bar */}
       {stats && (
-        <div style={{ display: "flex", gap: "16px", marginBottom: "12px", fontSize: "0.82rem", color: "var(--text-muted)" }}>
+        <div className="stats-bar" style={{ display: "flex", gap: "16px", marginBottom: "12px", fontSize: "0.82rem", color: "var(--text-muted)" }}>
           <span>{stats.prop_nodes} propositions</span>
           <span>{stats.bet_nodes} committee reports</span>
           <span>{stats.vote_nodes} votes</span>
@@ -103,14 +103,14 @@ export default function DecisionsPage() {
       )}
 
       {/* 2-column: feed + right rail */}
-      <div style={{ display: "flex", gap: "20px", alignItems: "flex-start" }}>
+      <div className="layout-with-aside" style={{ display: "flex", gap: "20px", alignItems: "flex-start" }}>
 
       {/* Feed column */}
       <div style={{ flex: 1, minWidth: 0 }}>
 
       {/* Filters */}
       <div className="card">
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+        <div className="filter-row" style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
           <select value={nodeType} onChange={e => setNodeType(e.target.value)} style={inputStyle}>
             <option value="">All types</option>
             <option value="prop">Propositions</option>
@@ -120,8 +120,21 @@ export default function DecisionsPage() {
           <input type="date" value={from} onChange={e => setFrom(e.target.value)} style={inputStyle} />
           <span style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>to</span>
           <input type="date" value={to} onChange={e => setTo(e.target.value)} style={inputStyle} />
-          <input type="text" placeholder="Search title/dok_id…" value={search}
+          <input type="text" placeholder="Sök titel/dok_id…" value={search}
             onChange={e => setSearch(e.target.value)} style={{ ...inputStyle, minWidth: "180px" }} />
+        </div>
+        {/* Quick topic filters */}
+        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "8px" }}>
+          {["el", "elnät", "elmarknad", "kärnkraft", "vindkraft", "solenergi", "nätavgift", "elcertifikat", "kraftvärme"].map(term => (
+            <button key={term} onClick={() => setSearch(prev => prev === term ? "" : term)}
+              style={{
+                padding: "2px 8px", borderRadius: "4px", fontSize: "0.72rem", fontWeight: 500, cursor: "pointer",
+                background: search === term ? "rgba(59,130,246,0.15)" : "transparent",
+                color: search === term ? "var(--accent-blue)" : "var(--text-muted)",
+                border: `1px solid ${search === term ? "rgba(59,130,246,0.4)" : "var(--border-color)"}`,
+                transition: "all .15s",
+              }}>{term}</button>
+          ))}
           {evidence && <EvidenceBadge manifestId={evidence.manifest_id} rootHash={evidence.root_hash} />}
         </div>
       </div>
@@ -224,7 +237,7 @@ export default function DecisionsPage() {
       </div>{/* end feed column */}
 
       {/* Right rail */}
-      <aside style={{ width: "280px", flexShrink: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
+      <aside className="layout-aside" style={{ width: "280px", flexShrink: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
         <div style={{ position: "sticky", top: "16px" }}>
           <EnergyPulsePanel />
         </div>

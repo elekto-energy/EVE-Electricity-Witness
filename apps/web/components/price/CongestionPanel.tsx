@@ -189,7 +189,7 @@ export default function CongestionPanel({ zone, date }: Props) {
         <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <span className="card-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              ⚡ Prisstruktur & Flaskhals
+              ⚡ Prisstruktur & Prisdifferenser
               <span style={{
                 display: "inline-flex", alignItems: "center", gap: 3,
                 padding: "1px 6px", borderRadius: 3, fontSize: 9, fontWeight: 600,
@@ -275,7 +275,7 @@ export default function CongestionPanel({ zone, date }: Props) {
                 animation: shouldPulse ? "congestion-pulse 2s ease-in-out infinite" : "none",
                 borderLeft: "1px dashed rgba(255,255,255,0.3)",
               }}>
-                {src.fkKr / src.totKr > 0.06 && `F+ ${src.fkKr.toFixed(2)}`}
+                {src.fkKr / src.totKr > 0.06 && `ΔP ${src.fkKr.toFixed(2)}`}
               </div>
             )}
 
@@ -323,11 +323,11 @@ export default function CongestionPanel({ zone, date }: Props) {
           <div style={{ display: "flex", gap: 10, marginTop: 6, fontSize: 9, color: "var(--text-muted)", flexWrap: "wrap" }}>
             <span><span style={{ display: "inline-block", width: 8, height: 8, background: "#2563eb", borderRadius: 1, marginRight: 3 }} />Systempris</span>
             <span style={{ position: "relative" }}>
-              <span style={{
-                display: "inline-block", width: 8, height: 8, borderRadius: 1, marginRight: 3,
-                background: "repeating-linear-gradient(45deg, #2563eb, #2563eb 2px, rgba(239,68,68,0.5) 2px, rgba(239,68,68,0.5) 4px)",
-              }} />
-              Flaskhals
+            <span style={{
+            display: "inline-block", width: 8, height: 8, borderRadius: 1, marginRight: 3,
+            background: "repeating-linear-gradient(45deg, #2563eb, #2563eb 2px, rgba(239,68,68,0.5) 2px, rgba(239,68,68,0.5) 4px)",
+            }} />
+            Prisdifferens
             </span>
             <span><span style={{ display: "inline-block", width: 8, height: 8, background: "#7c3aed", borderRadius: 1, marginRight: 3 }} />Nätavgift</span>
             <span><span style={{ display: "inline-block", width: 8, height: 8, background: "#ef4444", borderRadius: 1, marginRight: 3 }} />Energiskatt</span>
@@ -340,7 +340,7 @@ export default function CongestionPanel({ zone, date }: Props) {
           {[
             { l: "Zonpris", v: src.spKr.toFixed(2), u: "kr/kWh", c: "var(--accent-amber)" },
             { l: "Systempris", v: src.syKr.toFixed(2), u: "kr/kWh", c: "var(--accent-green)" },
-            { l: "Flaskhals", v: (src.fkKr >= 0 ? "+" : "") + src.fkKr.toFixed(2), u: "kr/kWh", c: src.f >= 0 ? "#f87171" : "#60a5fa" },
+            { l: "Prisdifferens", v: (src.fkKr >= 0 ? "+" : "") + src.fkKr.toFixed(2), u: "kr/kWh", c: src.f >= 0 ? "#f87171" : "#60a5fa" },
             { l: "Netto", v: `${src.net >= 0 ? "+" : ""}${(src.net / 1000).toFixed(1)}k`, u: "MW", c: src.net >= 0 ? "var(--accent-green)" : "#f87171" },
             { l: "Import", v: `${(src.imp / 1000).toFixed(1)}k`, u: "MW", c: "var(--accent-blue)" },
             { l: "Export", v: `${(src.exp / 1000).toFixed(1)}k`, u: "MW", c: "#f87171" },
@@ -383,7 +383,7 @@ export default function CongestionPanel({ zone, date }: Props) {
               </tr>
               <tr style={{ fontSize: 10 }}>
                 <td style={{ paddingLeft: 12, color: src.f >= 0 ? "#f87171" : "#60a5fa" }}>
-                  └ {src.f >= 0 ? "Flaskhals" : "Export-rabatt"} (DDM)
+                  └ {src.f >= 0 ? "Prisdifferens" : "Export-differens"} (DDM)
                 </td>
                 <td style={{ textAlign: "right", fontFamily: "var(--font-mono)", color: src.f >= 0 ? "#f87171" : "#60a5fa" }}>
                   {src.fkKr >= 0 ? "+" : ""}{src.fkKr.toFixed(2)}
@@ -424,7 +424,7 @@ export default function CongestionPanel({ zone, date }: Props) {
         {summary && summary.constraint_rent.length > 0 && (
           <div style={{ marginTop: 12 }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>
-              Flaskhalsintäkt per gräns (DDM)
+              Prisområdesintäkt per gräns (DDM)
             </div>
             {summary.constraint_rent.slice(0, 5).map(r => {
               const maxR = summary.constraint_rent[0]?.total_eur || 1;
@@ -458,7 +458,7 @@ export default function CongestionPanel({ zone, date }: Props) {
         {/* Footer */}
         <div style={{ marginTop: 12, fontSize: 9, color: "var(--text-muted)", lineHeight: 1.5, borderTop: "1px solid var(--border-color)", paddingTop: 6 }}>
           <strong>Metodik:</strong> EVE-DDM v1.0 — Inga parametrar. Ren algebra.
-          Flaskhals = Zonpris − Systempris. Rent = max(0, Δp × flow).
+          Prisdiff = Zonpris − Systempris. Rent = max(0, Δp × flow).
           <br />
           <strong>Datakällor:</strong> {data.sources.join(" · ")}
           <br />

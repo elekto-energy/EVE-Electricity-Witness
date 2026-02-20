@@ -10,7 +10,7 @@ function HashRow({ label, value, mono }: { label: string; value: string | number
   return (
     <div style={{
       display: "flex", justifyContent: "space-between", alignItems: "center",
-      padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.04)",
+      padding: "6px 0", borderBottom: "1px solid var(--border-color)",
     }}>
       <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{label}</span>
       <span style={{

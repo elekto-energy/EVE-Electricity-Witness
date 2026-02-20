@@ -170,16 +170,16 @@ export default function ResultPanel({ result, lang, fx }: ResultPanelProps) {
             sub={`${sp.hours_matched}h matched · ${sp.source}`}
           />
           <Stat
-            label={isSv ? "Flaskhals medel" : "Bottleneck Mean"}
+            label={isSv ? "Intern prisdiff medel" : "Internal Price Spread Mean"}
             value={fmtSign(bnMean, bnDecimals)} unit={bnUnit}
             color={bn?.mean != null && bn.mean > 0 ? "#f97316" : "#22c55e"}
-            sub={`${bn?.mean_pct ?? 0}% av zon`}
+            sub={`${bn?.mean_pct ?? 0}% ${isSv ? "av zon" : "of zone"}`}
           />
           <Stat
-            label={isSv ? "Flaskhals max" : "Bottleneck Max"}
+            label={isSv ? "Intern prisdiff max" : "Internal Price Spread Max"}
             value={fmtSign(bnMax, bnDecimals)} unit={bnUnit}
             color={bn?.max != null && bn.max > 5 ? "#f97316" : "var(--text-primary)"}
-            sub={`${bn?.max_pct ?? 0}% av zon`}
+            sub={`${bn?.max_pct ?? 0}% ${isSv ? "av zon" : "of zone"}`}
           />
         </div>
       )}
@@ -189,15 +189,15 @@ export default function ResultPanel({ result, lang, fx }: ResultPanelProps) {
         <div style={{ display: "flex", gap: 12, marginBottom: 8, fontSize: 10, color: "var(--text-muted)" }}>
           <span>
             <span style={{ color: "#f97316", fontWeight: 600 }}>{bn.hours_positive}h</span>{" "}
-            {isSv ? "zon dyrare" : "zone premium"}
+            {isSv ? "zon > sys" : "zone > sys"}
           </span>
           <span>
             <span style={{ color: "#22c55e", fontWeight: 600 }}>{bn.hours_negative}h</span>{" "}
-            {isSv ? "zon billigare" : "zone discount"}
+            {isSv ? "zon < sys" : "zone < sys"}
           </span>
           <span>
             <span style={{ fontWeight: 600 }}>{bn.hours_zero}h</span>{" "}
-            {isSv ? "noll" : "zero"}
+            {isSv ? "zon = sys" : "zone = sys"}
           </span>
         </div>
       )}
@@ -324,7 +324,7 @@ export default function ResultPanel({ result, lang, fx }: ResultPanelProps) {
 
               {/* Dataset IDs */}
               {fl.dataset_ids?.length > 0 && (
-                <div style={{ fontSize: 8, color: "rgba(255,255,255,0.2)", marginTop: 6, fontFamily: "var(--font-mono)" }}>
+                <div style={{ fontSize: 8, color: "var(--text-ghost)", marginTop: 6, fontFamily: "var(--font-mono)" }}>
                   {fl.dataset_ids.join(" · ")}
                 </div>
               )}
@@ -358,7 +358,7 @@ export default function ResultPanel({ result, lang, fx }: ResultPanelProps) {
 
       {/* ═══ PROVENANCE FOOTER ═══ */}
       <div style={{ marginTop: 16, paddingTop: 10, borderTop: "1px solid var(--border-color)" }}>
-        <div style={{ fontSize: 8, color: "rgba(255,255,255,0.2)", fontFamily: "var(--font-mono)", lineHeight: 1.8 }}>
+        <div style={{ fontSize: 8, color: "var(--text-ghost)", fontFamily: "var(--font-mono)", lineHeight: 1.8 }}>
           {result.methodology_version} · {result.emission_scope}
           {sp?.dataset_eve_id && ` · sys: ${sp.dataset_eve_id}`}
           {sp?.canonical_hash && ` · sys_hash: ${sp.canonical_hash.slice(0, 12)}…`}

@@ -1,3 +1,5 @@
+import { ThemeToggle } from "./ThemeToggle";
+
 export function Topbar() {
   return (
     <header className="topbar">
@@ -6,6 +8,8 @@ export function Topbar() {
         <span>ENTSO-E: awaiting first fetch</span>
         <span>|</span>
         <span>Witness: seed v1</span>
+        <span>|</span>
+        <ThemeToggle />
       </div>
     </header>
   );

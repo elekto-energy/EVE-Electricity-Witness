@@ -1,4 +1,5 @@
-:root {
+/* ═══ DARK (default) ═══ */
+:root, [data-theme="dark"] {
   --bg-primary: #0a0f1a;
   --bg-secondary: #111827;
   --bg-card: #1a2235;
@@ -12,6 +13,36 @@
   --accent-amber: #f59e0b;
   --accent-red: #ef4444;
   --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.3);
+  --overlay-bg: rgba(0,0,0,0.5);
+  --text-on-color: #ffffff;
+  --text-ghost: rgba(255,255,255,0.2);
+  --bg-inset: rgba(0,0,0,0.2);
+  --text-dim: #3a3a52;
+  --bg-elevated: #0e0e15;
+}
+
+/* ═══ LIGHT ═══ */
+[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --border-color: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --accent-blue: #2563eb;
+  --accent-green: #059669;
+  --accent-amber: #d97706;
+  --accent-red: #dc2626;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.08);
+  --overlay-bg: rgba(0,0,0,0.3);
+  --text-on-color: #ffffff;
+  --text-ghost: rgba(0,0,0,0.15);
+  --bg-inset: rgba(0,0,0,0.04);
+  --text-dim: #b0b8c8;
+  --bg-elevated: #f1f5f9;
 }
 
 * {
@@ -179,7 +210,7 @@ a:hover { text-decoration: underline; }
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--overlay-bg);
     z-index: 999;
   }
 
@@ -226,6 +257,56 @@ a:hover { text-decoration: underline; }
   .card:has(.data-table) {
     overflow-x: auto;
   }
+
+  /* 2-column layout with aside → stack vertically */
+  .layout-with-aside {
+    flex-direction: column !important;
+  }
+
+  .layout-with-aside > aside,
+  .layout-aside {
+    width: 100% !important;
+    order: -1;
+  }
+
+  /* Spot dashboard controls */
+  .spot-controls {
+    flex-direction: column !important;
+  }
+
+  /* Filter rows */
+  .filter-row {
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+
+  .filter-row input,
+  .filter-row select {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  /* Overflow protection */
+  .main-content * {
+    max-width: 100%;
+  }
+
+  .main-content pre,
+  .main-content code {
+    overflow-x: auto;
+    word-break: break-word;
+  }
+
+  /* Evidence badges inline */
+  .evidence-badge {
+    font-size: 0.65rem !important;
+  }
 }
 
 /* Main */
@@ -242,6 +323,7 @@ a:hover { text-decoration: underline; }
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 16px;
+  box-shadow: var(--shadow-card);
 }
 
 .card-header {
@@ -385,3 +467,82 @@ a:hover { text-decoration: underline; }
 .status-pill.scaffold { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
 .status-pill.disabled { background: rgba(107, 114, 128, 0.15); color: var(--text-muted); }
 .status-pill.static { background: rgba(168, 162, 158, 0.12); color: #a8a29e; }
+
+/* ═══ THEME-AWARE UTILITY ═══ */
+/* Override hardcoded dark inline colors in light mode */
+[data-theme="light"] .card svg text { fill: var(--text-primary) !important; }
+[data-theme="light"] select,
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input[type="number"],
+[data-theme="light"] input[type="date"] {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+[data-theme="light"] button {
+  color: var(--text-secondary);
+}
+[data-theme="light"] code {
+  background: var(--bg-primary);
+}
+
+/* Force theme colors on inline-styled elements */
+[data-theme="light"] [style*="background"] {
+  /* Can't override inline styles with CSS specificity alone.
+     Use !important overrides for known problem patterns. */
+}
+
+/* Panels with hardcoded dark backgrounds */
+[data-theme="light"] section[style],
+[data-theme="light"] .card [style] {
+  /* handled by var() in C objects */
+}
+
+/* SVG text in charts should use theme text color */
+[data-theme="light"] svg text {
+  fill: var(--text-primary);
+}
+[data-theme="light"] svg text[fill] {
+  /* explicit fills preserved */
+}
+
+/* Toggle knob always white */
+[data-theme="light"] .card button span[style*="background: \"#fff\""] {
+  /* knob stays white */
+}
+
+/* Tables */
+[data-theme="light"] table,
+[data-theme="light"] th,
+[data-theme="light"] td {
+  border-color: var(--border-color) !important;
+  color: var(--text-primary);
+}
+
+/* Scrollbar for light mode */
+[data-theme="light"] ::-webkit-scrollbar { width: 8px; }
+[data-theme="light"] ::-webkit-scrollbar-track { background: var(--bg-primary); }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+/*
+ * NUCLEAR OPTION: Force light backgrounds and text on inline-styled elements.
+ * These panels (CongestionRevenuePanel, ProducerFinancialsPanel, etc.)
+ * have hardcoded #111, #0a0a0a, #333 backgrounds. CSS cannot override
+ * inline styles without !important on the specific property.
+ * We target <section> and <div> inside .main-content with common dark patterns.
+ */
+[data-theme="light"] .main-content section {
+  background: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+[data-theme="light"] .main-content section div,
+[data-theme="light"] .main-content section span,
+[data-theme="light"] .main-content section p,
+[data-theme="light"] .main-content section h3,
+[data-theme="light"] .main-content section h4,
+[data-theme="light"] .main-content section td,
+[data-theme="light"] .main-content section th {
+  border-color: var(--border-color) !important;
+}
+

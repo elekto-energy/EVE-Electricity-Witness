@@ -67,12 +67,12 @@ export default function AskEvePage() {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", margin: 0, lineHeight: 1.3 }}>
-          EVE Evidence Report
+          {isSv ? "EVE Detaljerad Rapport" : "EVE Detailed Report"}
         </h1>
         <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
           {isSv
-            ? "Deterministisk evidensrapport — priser, flaskhals, flöden, produktion, utsläpp"
-            : "Deterministic evidence report — prices, bottleneck, flows, generation, emissions"
+            ? "Deterministisk rapport — priser, intern prisdifferens, flöden, produktion, utsläpp"
+            : "Deterministic report — prices, internal price spread, flows, generation, emissions"
           }
         </p>
         <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
@@ -89,8 +89,8 @@ export default function AskEvePage() {
           ))}
           <span style={{
             fontSize: 8, padding: "2px 6px", borderRadius: 4, fontFamily: "var(--font-mono)",
-            background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)",
-            color: "rgba(255,255,255,0.3)",
+            background: "var(--bg-card-hover)", border: "1px solid var(--border-color)",
+            color: "var(--text-muted)",
           }}>{methodVersion}</span>
         </div>
       </div>
@@ -119,16 +119,20 @@ export default function AskEvePage() {
         </div>
 
         <p style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.6, margin: "0 0 10px" }}>
-          {isSv ? "DDM-fält (Derived Data Model) beräknas som ren algebra:" : "DDM fields (Derived Data Model) are computed as pure algebra:"}
+          {isSv ? "DDM v1.1 — formler (observation + algebra):" : "DDM v1.1 — formulas (observation + algebra):"}
         </p>
 
         <div style={{
-          fontSize: 11, color: "#f97316", lineHeight: 1.6, marginBottom: 12,
+          fontSize: 11, color: "#f97316", lineHeight: 2, marginBottom: 12,
           padding: "8px 12px", background: "rgba(249,115,22,0.05)",
           border: "1px solid rgba(249,115,22,0.15)", borderRadius: 6,
           fontFamily: "var(--font-mono)",
         }}>
-          Flaskhals(z,t) = Zonpris(z,t) − Systempris(t)
+          F1: Zonpris(t) = Systempris(t) + InternPrisDiff(t)<br/>
+          F2: InternPrisDiff(t) = Zonpris(t) − Systempris(t)<br/>
+          <span style={{ fontSize: 9, color: "var(--text-muted)" }}>
+            {isSv ? "§5: Om Systempris saknas → InternPrisDiff = null" : "§5: If Systempris missing → InternPrisDiff = null"}
+          </span>
         </div>
 
         <p style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.6, margin: "0 0 10px" }}>
@@ -163,7 +167,7 @@ export default function AskEvePage() {
           </p>
         </div>
 
-        <div style={{ marginTop: 12, fontSize: 9, color: "rgba(255,255,255,0.2)", fontFamily: "var(--font-mono)" }}>
+        <div style={{ marginTop: 12, fontSize: 9, color: "var(--text-ghost)", fontFamily: "var(--font-mono)" }}>
           {methodVersion} · Scope 1 · Direct combustion only · No fallback · No approximation
         </div>
       </div>
@@ -196,7 +200,7 @@ export default function AskEvePage() {
                 ? (isSv ? "Genererar..." : "Generating...")
                 : pdfResult
                   ? (isSv ? "Generera PDF igen" : "Regenerate PDF")
-                  : (isSv ? "Generera Evidence PDF" : "Generate Evidence PDF")
+                  : (isSv ? "Generera PDF-rapport" : "Generate PDF Report")
               }
             </button>
             {pdfResult && (

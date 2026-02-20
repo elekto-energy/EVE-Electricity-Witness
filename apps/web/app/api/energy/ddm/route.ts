@@ -69,6 +69,12 @@ interface FlowEntry {
   points: { position: number; quantity_mw: number }[];
 }
 
+interface SeSpreads {
+  "SE1-SE2": number | null;
+  "SE2-SE3": number | null;
+  "SE3-SE4": number | null;
+}
+
 interface DDMRow {
   ts: string;
   zone: string;
@@ -79,6 +85,7 @@ interface DDMRow {
   net_import_mw: number | null;
   flows_in: Record<string, number>;
   flows_out: Record<string, number>;
+  se_spreads: SeSpreads;
   layer: "DDM";
   resolution: "PT60M";
 }
@@ -100,6 +107,7 @@ interface DDMResponse {
     total_export_mw: number | null;
     constraint_rent: { border: string; total_eur: number; avg_delta: number }[];
     total_rent_eur: number;
+    avg_se_spreads: SeSpreads;
   };
   sources: string[];
   warnings: string[];
@@ -278,6 +286,36 @@ export async function GET(request: NextRequest) {
     warnings.push("Systempris ej tillg\u00e4ngligt f\u00f6r denna period. Nord Pool l\u00e5ser historisk data bakom betalv\u00e4gg (pre-2026). ENTSO-E, EEA, ECB och Riksdagen \u00e4r \u00f6ppna \u2014 Nord Pool \u00e4r undantaget.");
   }
 
+  // ─── Load SE-zone spreads (CMD) — ENTSO-E only, no Nord Pool needed ──────
+  // SE chain: SE1 → SE2 → SE3 → SE4
+  // spread(A-B, t) = max(0, B.spot(t) − A.spot(t))
+  // Only relevant links for the requested zone are used in UI, but we compute all three.
+  const SE_LINKS: Array<["SE1" | "SE2" | "SE3" | "SE4", "SE1" | "SE2" | "SE3" | "SE4", keyof SeSpreads]> = [
+    ["SE1", "SE2", "SE1-SE2"],
+    ["SE2", "SE3", "SE2-SE3"],
+    ["SE3", "SE4", "SE3-SE4"],
+  ];
+
+  // Build ts→spot maps for all four SE zones (only load what differs from requested zone)
+  const seSpotMaps = new Map<string, Map<string, number>>();
+  for (const z of ["SE1", "SE2", "SE3", "SE4"] as const) {
+    const m = new Map<string, number>();
+    if (z === zone) {
+      // Already loaded in tsRows
+      for (const r of tsRows) {
+        if (r.spot !== null) m.set(r.ts, r.spot);
+      }
+    } else {
+      const f = join(TS_DIR, z, `${targetMonth}.ndjson`);
+      const rows = loadNdjson<TSRow>(f);
+      const filtered = targetDate ? rows.filter(r => r.ts.startsWith(targetDate!)) : rows;
+      for (const r of filtered) {
+        if (r.spot !== null) m.set(r.ts, r.spot);
+      }
+    }
+    seSpotMaps.set(z, m);
+  }
+
   // Load flows (CMD)
   let flowsIn: Map<string, Map<string, number>> | undefined;
   let flowsOut: Map<string, Map<string, number>> | undefined;
@@ -359,6 +397,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // SE spreads for this timestamp
+    const se_spreads: SeSpreads = { "SE1-SE2": null, "SE2-SE3": null, "SE3-SE4": null };
+    for (const [zA, zB, key] of SE_LINKS) {
+      const spotA = seSpotMaps.get(zA)?.get(ts.ts);
+      const spotB = seSpotMaps.get(zB)?.get(ts.ts);
+      if (spotA !== undefined && spotB !== undefined) {
+        se_spreads[key] = +Math.max(0, spotB - spotA).toFixed(2);
+      }
+    }
+
     ddmRows.push({
       ts: ts.ts,
       zone,
@@ -369,6 +417,7 @@ export async function GET(request: NextRequest) {
       net_import_mw: ts.net_import_mw,
       flows_in: fIn,
       flows_out: fOut,
+      se_spreads,
       layer: "DDM",
       resolution: "PT60M",
     });
@@ -398,6 +447,13 @@ export async function GET(request: NextRequest) {
     }))
     .sort((a, b) => b.total_eur - a.total_eur);
 
+  // Avg SE spreads over all rows
+  const avgSeSpreads: SeSpreads = { "SE1-SE2": null, "SE2-SE3": null, "SE3-SE4": null };
+  for (const key of ["SE1-SE2", "SE2-SE3", "SE3-SE4"] as const) {
+    const vals = ddmRows.map(r => r.se_spreads[key]).filter((v): v is number => v !== null);
+    avgSeSpreads[key] = vals.length ? +(vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(2) : null;
+  }
+
   const response: DDMResponse = {
     zone,
     period: targetDate ?? targetMonth,
@@ -415,6 +471,7 @@ export async function GET(request: NextRequest) {
       total_export_mw: +totalExport.toFixed(0),
       constraint_rent: constraintRent,
       total_rent_eur: constraintRent.reduce((s, r) => s + r.total_eur, 0),
+      avg_se_spreads: avgSeSpreads,
     },
     sources,
     warnings,

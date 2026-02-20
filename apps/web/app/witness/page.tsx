@@ -79,7 +79,6 @@ export default function WitnessPage() {
           {[
             { href: "/witness/energy-decisions", icon: "⚖️", title: "Svensk energipolitik — beslut för beslut", sub: "38 verifierade beslut: skatter, lagar, nedläggningar, stöd, EU. 1951–2026. EVE Witness Standard v1.1." },
             { href: "/witness/ringhals-cost", icon: "⚛️", title: "Ringhals 1 & 2 — Vad sa de? Vad hände?", sub: "Politiska uttalanden vs verifierade utfall. 2014–2024." },
-            { href: "/witness/price-structure", icon: "💰", title: "Flaskhalsintäkter — vart går pengarna?", sub: "SVK:s intäkter från elprisområden. Siffror och källor." },
           ].map(item => (
             <Link key={item.href} href={item.href} style={{ textDecoration: "none" }}>
               <div className="card" style={{ cursor: "pointer", marginBottom: 0, display: "flex", alignItems: "center", gap: 14 }}>

@@ -123,7 +123,8 @@ export function filterDecisionNodes(
     result = result.filter(n =>
       n.title.toLowerCase().includes(q) ||
       (n.dok_id?.toLowerCase().includes(q) ?? false) ||
-      (n.beteckning?.toLowerCase().includes(q) ?? false)
+      (n.beteckning?.toLowerCase().includes(q) ?? false) ||
+      (n.excerpt?.toLowerCase().includes(q) ?? false)
     );
   }
 

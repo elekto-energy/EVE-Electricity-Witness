@@ -224,7 +224,7 @@ export default function QueryPanel({ onSubmit, loading, onLangChange }: QueryPan
         color: loading ? "var(--text-muted)" : "#fff",
         fontSize: 13, fontWeight: 700, transition: "background 0.15s",
       }}>
-        {loading ? "Computing..." : "Generate Evidence Report"}
+        {loading ? "Beräknar..." : "Generera detaljerad rapport"}
       </button>
     </form>
   );

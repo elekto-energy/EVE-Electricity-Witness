@@ -171,7 +171,10 @@ function loadSpotMonth(
     const filePath = join(DATA_DIR, "entsoe", prefix, "day_ahead_prices.json");
     if (!existsSync(filePath)) continue;
     try {
-      const all: SpotRecord[] = JSON.parse(readFileSync(filePath, "utf-8"));
+      let raw = readFileSync(filePath, "utf-8");
+      // Strip UTF-8 BOM if present (PowerShell/Windows ingest artifacts)
+      if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1);
+      const all: SpotRecord[] = JSON.parse(raw);
       const records = all.filter(r => r.zone_code === zone);
       if (records.length === 0) continue;
 

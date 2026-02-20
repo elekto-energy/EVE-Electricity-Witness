@@ -14,13 +14,13 @@ import { usePathname } from "next/navigation";
 const NAV_ITEMS = [
   { href: "/witness/price-structure", label: "Energidata", icon: "⚡", status: "live" },
   { href: "/witness",     label: "Witness",       icon: "🔍", status: "seed" },
-  { href: "/witness/statements", label: "Statements", icon: "📜", status: "seed" },
-  { href: "/witness/decisions",  label: "Decisions",   icon: "⚖️", status: "static" },
+  // { href: "/witness/statements", label: "Statements", icon: "📜", status: "seed" },  // Hidden — WIP
+  // { href: "/witness/decisions",  label: "Decisions",   icon: "⚖️", status: "static" },  // Hidden — WIP
   // { href: "/analysis",    label: "Analysis",      icon: "📊", status: "live" }, // Removed — saved for later
   { href: "/nyheter",     label: "Nyheter",       icon: "📰", status: "static" },
   { href: "/opinion",     label: "Opinion",       icon: "🗳", status: "static" },
   { href: "/methodology", label: "Methodology",   icon: "📐", status: "static" },
-  { href: "/ask-eve",     label: "Ask-EVE",       icon: "🔒", status: "live" },
+  { href: "/ask-eve",     label: "Rapport",       icon: "📊", status: "live" },
 ] as const;
 
 export function Sidebar() {

@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { EvidenceBadge } from "@/components/EvidenceBadge";
 import PriceDriverPanel from "@/components/price/PriceDriverPanel";
 import CongestionPanel from "@/components/price/CongestionPanel";
+import MethodologyPanel from "@/components/price/MethodologyPanel";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -518,6 +519,9 @@ export default function SpotV2Page() {
 
           {/* Price Drivers — correlation panel */}
           <PriceDriverPanel rows={data.rows} zone={zone} mode={mode} />
+
+          {/* Methodology — always visible below data */}
+          <MethodologyPanel />
 
           {/* Weather */}
           <div className="card">
