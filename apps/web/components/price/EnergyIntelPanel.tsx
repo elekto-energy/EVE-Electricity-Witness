@@ -121,6 +121,7 @@ const C = {
   tax: "#ef4444",
   moms: "#facc15",
   spot: "#f59e0b",
+  amber: "#f59e0b",
   green: "#22c55e",
   imp: "#60a5fa",
   exp: "#f87171",

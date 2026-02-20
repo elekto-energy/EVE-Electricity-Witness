@@ -6,8 +6,11 @@ import EnergyIntelPanel from "@/components/price/EnergyIntelPanel";
 
 
 export const metadata = {
-  title: "Energidata & Prisstruktur | EVE Witness",
-  description: "Spotpris, CO₂, väder, produktion, flaskhalsintäkter och producentresultat — utan tolkning.",
+  title: "Elpris idag — Spotpris, elskatt, flaskhalsintäkter & elräkning uppdelad",
+  description:
+    "Se hela elräkningen uppdelad: spotpris per timme, nätavgift, energiskatt, moms. " +
+    "Flaskhalsintäkter i miljarder — vart går pengarna? Producentresultat, CO₂-utsläpp och " +
+    "elproduktion per kraftslag. SE1–SE4 med källor från ENTSO-E, Ei och Nord Pool.",
 };
 
 export default function PriceStructurePage() {
