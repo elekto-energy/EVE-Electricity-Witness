@@ -297,7 +297,8 @@ export async function parsePDF(buffer: Buffer, filename?: string): Promise<Parse
 
   try {
     // Dynamic import — pdf-parse needs to be installed
-    const pdfParse = (await import("pdf-parse")).default;
+    const pdfParseModule = await import("pdf-parse");
+    const pdfParse = (pdfParseModule as any).default ?? pdfParseModule;
     const data = await pdfParse(buffer);
     const text = data.text;
 
