@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/elekto-energy/EVE-Electricity-Witness#readme",
   "dependencies": {
+    "glpk.js": "^5.0.0",
     "pdfkit": "^0.17.2"
   }
 }

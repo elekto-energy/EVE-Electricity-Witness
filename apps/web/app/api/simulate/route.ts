@@ -26,6 +26,7 @@ import { generateLoadProfile } from "@/lib/simulate/load-engine";
 import { calculateTariff, Period } from "@/lib/simulate/tariff-engine";
 import { nativeResolution, Resolution } from "@/lib/simulate/resolution-utils";
 import { getTariffConfig, listTariffs } from "@/lib/simulate/tariffs";
+import { optimizeBatteryLP } from "@/lib/simulate/battery-engine-lp";
 
 // ─── EUR/SEK ──────────────────────────────────────────────────────────────────
 
@@ -100,6 +101,9 @@ export async function POST(req: NextRequest) {
       tariff = "vattenfall_stockholm",
       has_heat_pump = true,
       has_ev = false,
+      battery_kwh = 0,
+      battery_max_kw = 5,
+      battery_efficiency = 0.90,
     } = body;
 
     // ─── Validate ───────────────────────────────────────────────────────
@@ -187,10 +191,55 @@ export async function POST(req: NextRequest) {
       hasEV: has_ev,
     });
 
-    // ─── 5. Calculate tariff ────────────────────────────────────────────
+    // ─── 5. Battery optimization (if configured) ──────────────────────
+
+    const batteryCapacity = Number(battery_kwh) || 0;
+    const batteryMaxKw = Number(battery_max_kw) || 5;
+    const batteryEff = Math.min(Math.max(Number(battery_efficiency) || 0.90, 0.5), 1.0);
+    const intervalHours = resolution === "PT15M" ? 0.25 : 1.0;
+
+    let finalLoad = profile.loadKwh;
+    let batteryMeta: Record<string, unknown> | null = null;
+
+    if (batteryCapacity > 0 && (period === "month" || period === "year")) {
+      try {
+        const lpResult = await optimizeBatteryLP({
+          prices,
+          load: profile.loadKwh,
+          capacityKwh: batteryCapacity,
+          maxKw: batteryMaxKw,
+          efficiency: batteryEff,
+          intervalHours,
+          effectRateKrPerKw: tariffConfig.effectRateKrPerKw,
+        });
+
+        if (lpResult.status === "optimal") {
+          finalLoad = lpResult.adjustedLoad;
+          batteryMeta = {
+            status: lpResult.status,
+            capacityKwh: batteryCapacity,
+            maxKw: batteryMaxKw,
+            efficiency: batteryEff,
+            peakBefore: Math.round(lpResult.peakKwBefore * 100) / 100,
+            peakAfter: Math.round(lpResult.peakKwAfter * 100) / 100,
+            peakReductionKw: Math.round((lpResult.peakKwBefore - lpResult.peakKwAfter) * 100) / 100,
+            totalGridKwh: Math.round(lpResult.totalGridKwh * 10) / 10,
+            solveTimeMs: lpResult.solveTimeMs,
+            numVars: lpResult.numVars,
+            numConstraints: lpResult.numConstraints,
+          };
+        } else {
+          batteryMeta = { status: lpResult.status, error: "LP solver did not find optimal" };
+        }
+      } catch (e: any) {
+        batteryMeta = { status: "error", error: e.message };
+      }
+    }
+
+    // ─── 6. Calculate tariff ────────────────────────────────────────────
 
     const result = calculateTariff({
-      loadKwh: profile.loadKwh,
+      loadKwh: finalLoad,
       spotPriceSekPerKwh: prices,
       timestamps,
       resolution,
@@ -198,7 +247,7 @@ export async function POST(req: NextRequest) {
       tariff: tariffConfig,
     });
 
-    // ─── 6. Return ──────────────────────────────────────────────────────
+    // ─── 7. Return ──────────────────────────────────────────────────────
 
     return NextResponse.json({
       // Tariff result
@@ -213,6 +262,9 @@ export async function POST(req: NextRequest) {
       peakKw: Math.round(result.peakKw * 100) / 100,
       avgCostOrePerKwh: Math.round(result.avgCostOrePerKwh * 10) / 10,
       monthlyPeaks: result.monthlyPeaks,
+
+      // Battery (null if not configured)
+      battery: batteryMeta,
 
       // Metadata
       meta: {
