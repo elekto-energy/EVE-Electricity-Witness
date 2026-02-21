@@ -516,9 +516,46 @@ export default function SpotDashboard() {
     setHistLoading(true);
     try {
       let data: V2Resp | null = null;
-      if (period === "month" || period === "year") {
-        const m = period === "year" ? histDate.slice(0,4)+"-01" : histDate.slice(0,7);
-        data = await fetchV2Month(zone, m);
+      if (period === "year") {
+        // Fetch all 12 months in parallel and merge
+        const year = histDate.slice(0, 4);
+        const monthKeys = Array.from({ length: 12 }, (_, i) =>
+          `${year}-${String(i + 1).padStart(2, "0")}`
+        );
+        const results = await Promise.all(
+          monthKeys.map(m => fetchV2Month(zone, m))
+        );
+        const allRows: V2Row[] = [];
+        for (const r of results) {
+          if (r?.rows) allRows.push(...r.rows);
+        }
+        if (allRows.length > 0) {
+          // Sort by timestamp
+          allRows.sort((a, b) => a.ts.localeCompare(b.ts));
+          // Compute aggregated stats
+          const spots = allRows.map(r => r.spot).filter((v): v is number => v != null);
+          const avg = (arr: number[]) => arr.length ? arr.reduce((s, x) => s + x, 0) / arr.length : null;
+          // Merge generation_mix from all months
+          const genFields = ["nuclear_mw", "hydro_mw", "wind_onshore_mw", "wind_offshore_mw", "solar_mw", "other_mw"] as const;
+          const generation_mix: Record<string, number | null> = {};
+          for (const f of genFields) {
+            const vals = allRows.map(r => (r as any)[f]).filter((v: any): v is number => v != null);
+            generation_mix[f] = vals.length ? Math.round(vals.reduce((s: number, x: number) => s + x, 0) / vals.length * 100) / 100 : null;
+          }
+          data = {
+            rows: allRows,
+            stats: {
+              spot: {
+                avg: avg(spots) != null ? Math.round(avg(spots)! * 100) / 100 : null,
+                min: spots.length ? Math.min(...spots) : null,
+                max: spots.length ? Math.max(...spots) : null,
+              },
+            },
+            generation_mix,
+          };
+        }
+      } else if (period === "month") {
+        data = await fetchV2Month(zone, histDate.slice(0, 7));
       } else if (period === "week") {
         data = await fetchV2Month(zone, histDate.slice(0,7));
         if (data) {

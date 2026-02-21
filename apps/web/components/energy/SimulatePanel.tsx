@@ -599,37 +599,56 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
                   </div>
 
                   {/* ── Comparison: without vs with ── */}
-                  <div style={{
-                    display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap",
-                    padding: "8px 10px", background: C.card2,
-                    border: `1px solid ${C.border}`, borderRadius: 6,
-                  }}>
-                    <div style={{ flex: "1 1 90px" }}>
-                      <div style={{ fontSize: 8, color: C.muted, marginBottom: 2 }}>Utan batteri</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: C.red, fontFamily: FONT, opacity: 0.7 }}>
-                        {Math.round(b.costWithoutBattery).toLocaleString("sv-SE")}
-                        <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>kr</span>
+                  {(() => {
+                    const avgWithout = result.totalKwh > 0 ? (b.costWithoutBattery / result.totalKwh * 100) : 0;
+                    const avgWith = result.totalKwh > 0 ? (result.totalCost / result.totalKwh * 100) : 0;
+                    const avgDiff = avgWithout - avgWith;
+                    return (
+                      <div style={{
+                        display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap",
+                        padding: "8px 10px", background: C.card2,
+                        border: `1px solid ${C.border}`, borderRadius: 6,
+                      }}>
+                        <div style={{ flex: "1 1 90px" }}>
+                          <div style={{ fontSize: 8, color: C.muted, marginBottom: 2 }}>Utan batteri</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: C.red, fontFamily: FONT, opacity: 0.7 }}>
+                            {Math.round(b.costWithoutBattery).toLocaleString("sv-SE")}
+                            <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>kr</span>
+                          </div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: C.red, fontFamily: FONT, opacity: 0.6, marginTop: 2 }}>
+                            {avgWithout.toFixed(1)}
+                            <span style={{ fontSize: 8, color: C.dim, marginLeft: 2 }}>öre/kWh</span>
+                          </div>
+                        </div>
+                        <div style={{ flex: "0 0 20px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: C.muted }}>→</div>
+                        <div style={{ flex: "1 1 90px" }}>
+                          <div style={{ fontSize: 8, color: C.muted, marginBottom: 2 }}>Med batteri</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: C.green, fontFamily: FONT }}>
+                            {Math.round(result.totalCost).toLocaleString("sv-SE")}
+                            <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>kr</span>
+                          </div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: C.green, fontFamily: FONT, marginTop: 2 }}>
+                            {avgWith.toFixed(1)}
+                            <span style={{ fontSize: 8, color: C.dim, marginLeft: 2 }}>öre/kWh</span>
+                          </div>
+                        </div>
+                        <div style={{ flex: "1 1 90px" }}>
+                          <div style={{ fontSize: 8, color: C.green, marginBottom: 2 }}>Besparing</div>
+                          <div style={{ fontSize: 16, fontWeight: 800, color: C.green, fontFamily: FONT }}>
+                            {Math.round(savings).toLocaleString("sv-SE")}
+                            <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>kr</span>
+                          </div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: C.green, fontFamily: FONT, marginTop: 2 }}>
+                            −{avgDiff.toFixed(1)}
+                            <span style={{ fontSize: 8, color: C.dim, marginLeft: 2 }}>öre/kWh</span>
+                          </div>
+                          <div style={{ fontSize: 8, color: C.dim }}>
+                            {((savings / b.costWithoutBattery) * 100).toFixed(1)}% av totalkostnad
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div style={{ flex: "0 0 20px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: C.muted }}>→</div>
-                    <div style={{ flex: "1 1 90px" }}>
-                      <div style={{ fontSize: 8, color: C.muted, marginBottom: 2 }}>Med batteri</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: C.green, fontFamily: FONT }}>
-                        {Math.round(result.totalCost).toLocaleString("sv-SE")}
-                        <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>kr</span>
-                      </div>
-                    </div>
-                    <div style={{ flex: "1 1 90px" }}>
-                      <div style={{ fontSize: 8, color: C.green, marginBottom: 2 }}>Besparing</div>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: C.green, fontFamily: FONT }}>
-                        {Math.round(savings).toLocaleString("sv-SE")}
-                        <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>kr</span>
-                      </div>
-                      <div style={{ fontSize: 8, color: C.dim }}>
-                        {((savings / b.costWithoutBattery) * 100).toFixed(1)}% av totalkostnad
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
                     {/* Peak before → after */}
