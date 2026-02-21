@@ -1,16 +1,26 @@
 /**
- * SimulatePanel.tsx — 15-min Effekttariff-Simulering
+ * SimulatePanel.tsx — Effekttariff-Simulering
  *
  * Frikopplad komponent. Får all kontext via props från SpotDashboard.
  * Anropar POST /api/simulate med panelens zone/period/datum.
  *
+ * Visar 3 prisnivåer sida vid sida:
+ *   A) Rå spot (marknaden)
+ *   B) Spot inkl rörliga avgifter (jämförbar per-kWh)
+ *   C) Total inkl allt (simulerat, utslaget per kWh)
+ *
  * Sparar inputs i localStorage.
- * Visar totaler, breakdown, peak, och "Så räknar vi"-expander.
  */
 
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import {
+  getClientTariff,
+  listClientTariffs,
+  calcSpotInklRorligt,
+  type ClientTariffConfig,
+} from "@/lib/simulate/tariff-registry";
 
 const FONT = "var(--font-mono, 'JetBrains Mono', monospace)";
 
@@ -64,8 +74,12 @@ interface SimulateResult {
 interface SimulatePanelProps {
   zone: string;
   period: "day" | "week" | "month" | "year";
-  start: string;   // YYYY-MM-DD
-  end: string;     // YYYY-MM-DD
+  start: string;
+  end: string;
+  /** Current live spot in öre/kWh (for A/B display even without simulation) */
+  spotOreNow?: number | null;
+  /** EUR/SEK rate from parent */
+  eurSek?: number;
 }
 
 // ─── localStorage helpers ─────────────────────────────────────────────────────
@@ -83,19 +97,14 @@ function saveStored(key: string, value: unknown) {
   try { localStorage.setItem(`eve-sim-${key}`, JSON.stringify(value)); } catch {}
 }
 
-// ─── Fuse options ─────────────────────────────────────────────────────────────
-
-const FUSES = ["16A", "20A", "25A", "35A"];
-const TARIFFS = [
-  { id: "vattenfall_stockholm", label: "Vattenfall Stockholm" },
-];
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function SimulatePanel({ zone, period, start, end }: SimulatePanelProps) {
+export default function SimulatePanel({ zone, period, start, end, spotOreNow, eurSek }: SimulatePanelProps) {
+  const tariffs = listClientTariffs();
+
   const [annualKwh, setAnnualKwh] = useState(() => loadStored("annualKwh", 20000));
   const [fuse, setFuse] = useState(() => loadStored("fuse", "20A"));
-  const [tariff, setTariff] = useState(() => loadStored("tariff", "vattenfall_stockholm"));
+  const [tariffId, setTariffId] = useState(() => loadStored("tariff", tariffs[0]?.id ?? "vattenfall_stockholm"));
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,36 +115,29 @@ export default function SimulatePanel({ zone, period, start, end }: SimulatePane
   // Persist inputs
   useEffect(() => { saveStored("annualKwh", annualKwh); }, [annualKwh]);
   useEffect(() => { saveStored("fuse", fuse); }, [fuse]);
-  useEffect(() => { saveStored("tariff", tariff); }, [tariff]);
+  useEffect(() => { saveStored("tariff", tariffId); }, [tariffId]);
+
+  const tariffCfg = getClientTariff(tariffId, fuse);
+  const currentTariff = tariffs.find(t => t.id === tariffId);
+  const fuseOptions = currentTariff?.fuses ?? ["16A", "20A", "25A", "35A"];
 
   const runSimulation = useCallback(async () => {
     setLoading(true);
     setError(null);
-
     try {
-      const payload = {
-        zone,
-        period,
-        start,
-        end,
-        annual_kwh: annualKwh,
-        fuse,
-        tariff,
-        has_heat_pump: true,
-        has_ev: false,
-      };
-
       const res = await fetch("/api/simulate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          zone, period, start, end,
+          annual_kwh: annualKwh, fuse, tariff: tariffId,
+          has_heat_pump: true, has_ev: false,
+        }),
       });
-
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Unknown error" }));
         throw new Error(err.error || `HTTP ${res.status}`);
       }
-
       const data: SimulateResult = await res.json();
       setResult(data);
       setLastRun(new Date().toLocaleTimeString("sv-SE"));
@@ -145,9 +147,26 @@ export default function SimulatePanel({ zone, period, start, end }: SimulatePane
     } finally {
       setLoading(false);
     }
-  }, [zone, period, start, end, annualKwh, fuse, tariff]);
+  }, [zone, period, start, end, annualKwh, fuse, tariffId]);
 
   const isFullPeriod = period === "month" || period === "year";
+
+  // ─── A/B/C values ──────────────────────────────────────────────────────────
+
+  // A: Rå spot (live from parent, or from sim result)
+  const spotA = result
+    ? (result.spotCost / result.totalKwh) * 100  // weighted avg in öre
+    : spotOreNow ?? null;
+
+  // B: Spot inkl rörliga (per kWh, no fixed/effect)
+  const spotB = spotA != null && tariffCfg
+    ? calcSpotInklRorligt(spotA, tariffCfg)
+    : null;
+
+  // C: Total inkl allt (only from simulation)
+  const spotC = result
+    ? (result.totalCost / result.totalKwh) * 100
+    : null;
 
   return (
     <div style={{ padding: "12px 0" }}>
@@ -174,9 +193,7 @@ export default function SimulatePanel({ zone, period, start, end }: SimulatePane
       </div>
 
       {/* ── Layout: inputs left, results right ── */}
-      <div className="sim-layout" style={{
-        display: "flex", gap: 16, flexWrap: "wrap",
-      }}>
+      <div className="sim-layout" style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
 
         {/* ── Inputs ── */}
         <div className="sim-inputs" style={{
@@ -218,7 +235,7 @@ export default function SimulatePanel({ zone, period, start, end }: SimulatePane
                 border: `1px solid ${C.border}`, borderRadius: 5,
               }}
             >
-              {FUSES.map(f => <option key={f} value={f}>{f}</option>)}
+              {fuseOptions.map(f => <option key={f} value={f}>{f}</option>)}
             </select>
           </div>
 
@@ -228,8 +245,8 @@ export default function SimulatePanel({ zone, period, start, end }: SimulatePane
               Nätbolag
             </label>
             <select
-              value={tariff}
-              onChange={e => setTariff(e.target.value)}
+              value={tariffId}
+              onChange={e => setTariffId(e.target.value)}
               style={{
                 width: "100%", padding: "6px 8px", fontSize: 12,
                 fontFamily: FONT,
@@ -237,10 +254,25 @@ export default function SimulatePanel({ zone, period, start, end }: SimulatePane
                 border: `1px solid ${C.border}`, borderRadius: 5,
               }}
             >
-              {TARIFFS.map(t => (
-                <option key={t.id} value={t.id}>{t.label}</option>
+              {tariffs.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>
+          </div>
+
+          {/* 🔋 Batteri placeholder */}
+          <div style={{
+            padding: "8px 10px", borderRadius: 6,
+            background: "rgba(107,114,128,0.06)",
+            border: `1px dashed ${C.border}`,
+            opacity: 0.5,
+          }}>
+            <div style={{ fontSize: 10, color: C.dim, fontWeight: 600 }}>
+              🔋 Batteri
+            </div>
+            <div style={{ fontSize: 8, color: C.dim, marginTop: 2 }}>
+              Kommer snart — peak shaving & arbitrage
+            </div>
           </div>
 
           {/* Run button */}
@@ -264,34 +296,81 @@ export default function SimulatePanel({ zone, period, start, end }: SimulatePane
               Senast beräknad: {lastRun}
             </div>
           )}
-
           {error && (
-            <div style={{ fontSize: 10, color: C.red, padding: "4px 0" }}>
-              {error}
-            </div>
+            <div style={{ fontSize: 10, color: C.red, padding: "4px 0" }}>{error}</div>
           )}
         </div>
 
         {/* ── Results ── */}
-        {result && (
-          <div className="sim-results" style={{
-            flex: "1 1 300px", minWidth: 260,
-          }}>
+        {result ? (
+          <div className="sim-results" style={{ flex: "1 1 300px", minWidth: 260 }}>
 
-            {/* ── Totaler ── */}
-            <div style={{
-              display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap",
-            }}>
+            {/* ── A / B / C sida vid sida ── */}
+            <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+
+              {/* A: Rå spot */}
+              <div style={{
+                flex: "1 1 100px", padding: "10px 12px",
+                background: C.card2, border: `1px solid ${C.border}`, borderRadius: 8,
+              }}>
+                <div style={{ fontSize: 8, color: C.muted, marginBottom: 2, textTransform: "uppercase", letterSpacing: 1 }}>
+                  A · Rå spot
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: C.spot, fontFamily: FONT }}>
+                  {spotA != null ? spotA.toFixed(1) : "–"}
+                  <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>öre/kWh</span>
+                </div>
+                <div style={{ fontSize: 8, color: C.dim }}>
+                  {result ? "viktad mot förbrukning" : "marknadspris"}
+                </div>
+              </div>
+
+              {/* B: Spot inkl rörliga */}
+              <div style={{
+                flex: "1 1 100px", padding: "10px 12px",
+                background: "rgba(59,130,246,0.05)",
+                border: "1px solid rgba(59,130,246,0.2)", borderRadius: 8,
+              }}>
+                <div style={{ fontSize: 8, color: C.blue, marginBottom: 2, textTransform: "uppercase", letterSpacing: 1 }}>
+                  B · Inkl rörliga
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: C.blue, fontFamily: FONT }}>
+                  {spotB != null ? spotB.toFixed(1) : "–"}
+                  <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>öre/kWh</span>
+                </div>
+                <div style={{ fontSize: 8, color: C.dim }}>
+                  spot + nät {tariffCfg?.energyRateOrePerKwh ?? "?"} + skatt {tariffCfg?.taxOrePerKwh ?? "?"} + moms
+                </div>
+              </div>
+
+              {/* C: Total inkl allt */}
+              <div style={{
+                flex: "1 1 100px", padding: "10px 12px",
+                background: "rgba(34,197,94,0.05)",
+                border: "1px solid rgba(34,197,94,0.2)", borderRadius: 8,
+              }}>
+                <div style={{ fontSize: 8, color: C.green, marginBottom: 2, textTransform: "uppercase", letterSpacing: 1 }}>
+                  C · Total inkl allt
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: C.green, fontFamily: FONT }}>
+                  {spotC != null ? spotC.toFixed(1) : "–"}
+                  <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>öre/kWh</span>
+                </div>
+                <div style={{ fontSize: 8, color: C.dim }}>
+                  {isFullPeriod ? "inkl effekt + fast + moms" : "inkl moms (ej effekt/fast)"}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Totaler row ── */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
               {/* Total cost */}
               <div style={{
-                flex: "1 1 120px", padding: "10px 12px",
+                flex: "1 1 130px", padding: "10px 12px",
                 background: "rgba(59,130,246,0.06)",
-                border: "1px solid rgba(59,130,246,0.2)",
-                borderRadius: 8,
+                border: "1px solid rgba(59,130,246,0.2)", borderRadius: 8,
               }}>
-                <div style={{ fontSize: 9, color: C.blue, marginBottom: 3 }}>
-                  Total kostnad
-                </div>
+                <div style={{ fontSize: 9, color: C.blue, marginBottom: 3 }}>Total kostnad</div>
                 <div style={{ fontSize: 24, fontWeight: 800, color: C.blue, fontFamily: FONT }}>
                   {Math.round(result.totalCost).toLocaleString("sv-SE")}
                   <span style={{ fontSize: 11, color: C.muted, marginLeft: 4 }}>kr</span>
@@ -301,38 +380,16 @@ export default function SimulatePanel({ zone, period, start, end }: SimulatePane
                 </div>
               </div>
 
-              {/* Avg cost */}
-              <div style={{
-                flex: "1 1 120px", padding: "10px 12px",
-                background: "rgba(245,158,11,0.06)",
-                border: "1px solid rgba(245,158,11,0.2)",
-                borderRadius: 8,
-              }}>
-                <div style={{ fontSize: 9, color: C.spot, marginBottom: 3 }}>
-                  Snittpris inkl allt
-                </div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: C.spot, fontFamily: FONT }}>
-                  {result.avgCostOrePerKwh.toFixed(1)}
-                  <span style={{ fontSize: 11, color: C.muted, marginLeft: 4 }}>öre/kWh</span>
-                </div>
-                <div style={{ fontSize: 9, color: C.muted }}>
-                  spot + nät + skatt + effekt + moms
-                </div>
-              </div>
-
               {/* Peak */}
               <div style={{
                 flex: "1 1 100px", padding: "10px 12px",
                 background: isFullPeriod && result.effectFee > 0
-                  ? "rgba(239,68,68,0.06)" : `${C.card2}`,
+                  ? "rgba(239,68,68,0.06)" : C.card2,
                 border: `1px solid ${isFullPeriod && result.effectFee > 0
                   ? "rgba(239,68,68,0.2)" : C.border}`,
                 borderRadius: 8,
               }}>
-                <div style={{
-                  fontSize: 9, marginBottom: 3,
-                  color: isFullPeriod ? C.red : C.muted,
-                }}>
+                <div style={{ fontSize: 9, color: isFullPeriod ? C.red : C.muted, marginBottom: 3 }}>
                   Effekttopp
                 </div>
                 <div style={{
@@ -345,16 +402,26 @@ export default function SimulatePanel({ zone, period, start, end }: SimulatePane
                 <div style={{ fontSize: 9, color: C.muted }}>
                   {isFullPeriod
                     ? `${Math.round(result.effectFee)} kr effektavgift`
-                    : "Debiteras ej (månadsbaserat)"
-                  }
+                    : "Debiteras ej (månadsbaserat)"}
+                </div>
+              </div>
+
+              {/* Total kWh */}
+              <div style={{
+                flex: "1 1 80px", padding: "10px 12px",
+                background: C.card2, border: `1px solid ${C.border}`, borderRadius: 8,
+              }}>
+                <div style={{ fontSize: 9, color: C.muted, marginBottom: 3 }}>Förbrukning</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: C.text, fontFamily: FONT }}>
+                  {Math.round(result.totalKwh).toLocaleString("sv-SE")}
+                  <span style={{ fontSize: 11, color: C.muted, marginLeft: 4 }}>kWh</span>
                 </div>
               </div>
             </div>
 
             {/* ── Breakdown ── */}
             <div style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr",
+              display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
               gap: 6, marginBottom: 10,
             }}>
               {[
@@ -369,13 +436,8 @@ export default function SimulatePanel({ zone, period, start, end }: SimulatePane
                   padding: "6px 8px", background: C.card2,
                   border: `1px solid ${C.border}`, borderRadius: 6,
                 }}>
-                  <div style={{ fontSize: 8, color: C.muted, marginBottom: 2 }}>
-                    {item.label}
-                  </div>
-                  <div style={{
-                    fontSize: 13, fontWeight: 700, fontFamily: FONT,
-                    color: item.color,
-                  }}>
+                  <div style={{ fontSize: 8, color: C.muted, marginBottom: 2 }}>{item.label}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, fontFamily: FONT, color: item.color }}>
                     {Math.round(item.value).toLocaleString("sv-SE")}
                     <span style={{ fontSize: 8, color: C.dim, marginLeft: 2 }}>kr</span>
                   </div>
@@ -383,14 +445,14 @@ export default function SimulatePanel({ zone, period, start, end }: SimulatePane
               ))}
             </div>
 
-            {/* ── Total kWh ── */}
+            {/* ── Meta row ── */}
             <div style={{
               fontSize: 9, color: C.muted, marginBottom: 8,
-              display: "flex", gap: 12,
+              display: "flex", gap: 12, flexWrap: "wrap",
             }}>
-              <span>Förbrukning: <strong style={{ color: C.text }}>{result.totalKwh.toFixed(0)} kWh</strong></span>
               <span>Spotpunkter: <strong style={{ color: C.text }}>{result.meta.spotPoints}</strong></span>
               <span>Resolution: <strong style={{ color: C.text }}>{result.meta.resolution}</strong></span>
+              <span>EUR/SEK: <strong style={{ color: C.text }}>{result.meta.eurSek}</strong></span>
             </div>
 
             {/* ── Monthly peaks (year only) ── */}
@@ -399,9 +461,7 @@ export default function SimulatePanel({ zone, period, start, end }: SimulatePane
                 <div style={{ fontSize: 9, color: C.muted, marginBottom: 4 }}>
                   Effekttoppar per månad (kW)
                 </div>
-                <div style={{
-                  display: "flex", gap: 3, alignItems: "flex-end", height: 50,
-                }}>
+                <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 50 }}>
                   {result.monthlyPeaks
                     .sort((a, b) => a.month.localeCompare(b.month))
                     .map(mp => {
@@ -470,8 +530,14 @@ export default function SimulatePanel({ zone, period, start, end }: SimulatePane
                 <div><strong style={{ color: C.text }}>Säkring:</strong> {result.meta.fuse}</div>
                 <div><strong style={{ color: C.text }}>Tariff:</strong> {result.meta.tariff} {result.meta.tariffVerified ? "✓" : "(ej verifierad)"}</div>
                 <div><strong style={{ color: C.text }}>Resolution:</strong> {result.meta.resolution}</div>
-                <div><strong style={{ color: C.text }}>Spotpunkter:</strong> {result.meta.spotPoints}</div>
                 <div><strong style={{ color: C.text }}>EUR/SEK:</strong> {result.meta.eurSek}</div>
+
+                <div style={{ marginTop: 6, borderTop: `1px solid ${C.border}`, paddingTop: 6 }}>
+                  <div style={{ color: C.text, fontWeight: 600, marginBottom: 4 }}>Formler:</div>
+                  <div>A = viktad spot (spotCost / totalKwh × 100)</div>
+                  <div>B = (A + nät {tariffCfg?.energyRateOrePerKwh} + skatt {tariffCfg?.taxOrePerKwh}) × {tariffCfg?.vatMultiplier}</div>
+                  <div>C = totalCost / totalKwh × 100</div>
+                </div>
 
                 {result.monthlyPeaks.length > 0 && (
                   <div style={{ marginTop: 6, borderTop: `1px solid ${C.border}`, paddingTop: 6 }}>
@@ -481,7 +547,7 @@ export default function SimulatePanel({ zone, period, start, end }: SimulatePane
                       .map(mp => (
                         <div key={mp.month}>
                           {mp.month}: top3 avg = {mp.peakKw.toFixed(2)} kW
-                          → {isFullPeriod ? `${(mp.peakKw * 75).toFixed(0)} kr` : "(ej debiterad)"}
+                          → {isFullPeriod ? `${(mp.peakKw * (tariffCfg?.effectRateKrPerKw ?? 75)).toFixed(0)} kr` : "(ej debiterad)"}
                         </div>
                       ))}
                   </div>
@@ -493,18 +559,63 @@ export default function SimulatePanel({ zone, period, start, end }: SimulatePane
               </div>
             )}
           </div>
-        )}
-
-        {/* ── Empty state ── */}
-        {!result && !loading && !error && (
+        ) : (
+          /* ── Empty state ── */
           <div className="sim-results" style={{
             flex: "1 1 300px", minWidth: 260,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            padding: "40px 20px",
-            color: C.dim, fontSize: 12,
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            padding: "30px 20px", gap: 10,
             border: `1px dashed ${C.border}`, borderRadius: 8,
           }}>
-            Tryck "Kör simulering" för att beräkna din elkostnad
+            {/* Show A/B even before simulation if we have live spot */}
+            {spotOreNow != null && tariffCfg ? (
+              <div style={{ width: "100%" }}>
+                <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+                  <div style={{
+                    flex: "1 1 100px", padding: "10px 12px",
+                    background: C.card2, border: `1px solid ${C.border}`, borderRadius: 8,
+                  }}>
+                    <div style={{ fontSize: 8, color: C.muted, marginBottom: 2, textTransform: "uppercase", letterSpacing: 1 }}>
+                      A · Rå spot nu
+                    </div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: C.spot, fontFamily: FONT }}>
+                      {spotOreNow.toFixed(1)}
+                      <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>öre/kWh</span>
+                    </div>
+                  </div>
+                  <div style={{
+                    flex: "1 1 100px", padding: "10px 12px",
+                    background: "rgba(59,130,246,0.05)",
+                    border: "1px solid rgba(59,130,246,0.2)", borderRadius: 8,
+                  }}>
+                    <div style={{ fontSize: 8, color: C.blue, marginBottom: 2, textTransform: "uppercase", letterSpacing: 1 }}>
+                      B · Inkl rörliga nu
+                    </div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: C.blue, fontFamily: FONT }}>
+                      {calcSpotInklRorligt(spotOreNow, tariffCfg).toFixed(1)}
+                      <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>öre/kWh</span>
+                    </div>
+                    <div style={{ fontSize: 8, color: C.dim }}>
+                      spot + nät {tariffCfg.energyRateOrePerKwh} + skatt {tariffCfg.taxOrePerKwh} + moms
+                    </div>
+                  </div>
+                  <div style={{
+                    flex: "1 1 100px", padding: "10px 12px",
+                    border: `1px dashed ${C.border}`, borderRadius: 8,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <div style={{ fontSize: 9, color: C.dim, textAlign: "center" }}>
+                      C · Kör simulering<br />för total inkl allt
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ color: C.dim, fontSize: 12 }}>
+                Tryck "Kör simulering" för att beräkna din elkostnad
+              </div>
+            )}
           </div>
         )}
       </div>

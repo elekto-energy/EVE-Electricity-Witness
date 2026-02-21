@@ -15,6 +15,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import SimulatePanel from "./SimulatePanel";
+import { getClientTariff, calcSpotInklRorligt } from "@/lib/simulate/tariff-registry";
 
 const FONT = "var(--font-mono, 'JetBrains Mono', monospace)";
 
@@ -672,6 +673,8 @@ export default function SpotDashboard() {
           <SimulatePanel
             zone={zone}
             period={period}
+            spotOreNow={nowRow?.spot != null ? toOre(nowRow.spot, eurSek) : null}
+            eurSek={eurSek}
             start={(() => {
               if (period === "day") return histDate;
               if (period === "week") return histDate;
@@ -715,23 +718,21 @@ export default function SpotDashboard() {
               {res === "PT15M" && isLiveMode && (
                 <div style={{ fontSize:8, color:C.dim, marginTop:4 }}>15-min · ENTSO-E A44</div>
               )}
-              {nowRow?.spot != null && unit === "sek" && (
-                <div style={{ marginTop:6, padding:"4px 8px", borderRadius:5, background:"rgba(96,165,250,0.08)", border:"1px solid rgba(96,165,250,0.15)" }}>
-                  <div style={{ fontSize:8, color:"#60a5fa", marginBottom:2 }}>Elpris inkl avgifter</div>
-                  <div style={{ fontSize:16, fontWeight:700, color:"#60a5fa", fontFamily:FONT }}>
-                    {(() => {
-                      const spotOre = toOre(nowRow.spot, eurSek) ?? 0;
-                      const net = 32; // nätavgift öre/kWh
-                      const tax = 36; // energiskatt öre/kWh (2026)
-                      const sub = spotOre + net + tax;
-                      const moms = sub * 0.25;
-                      return (sub + moms).toFixed(0);
-                    })()}
-                    <span style={{ fontSize:9, color:"#60a5fa88", marginLeft:2 }}>öre/kWh</span>
+              {nowRow?.spot != null && unit === "sek" && (() => {
+                const spotOre = toOre(nowRow.spot, eurSek) ?? 0;
+                const cfg = getClientTariff("vattenfall_stockholm", "20A");
+                const bVal = cfg ? calcSpotInklRorligt(spotOre, cfg) : null;
+                return bVal != null ? (
+                  <div style={{ marginTop:6, padding:"4px 8px", borderRadius:5, background:"rgba(96,165,250,0.08)", border:"1px solid rgba(96,165,250,0.15)" }}>
+                    <div style={{ fontSize:8, color:"#60a5fa", marginBottom:2 }}>Elpris inkl rörliga avgifter</div>
+                    <div style={{ fontSize:16, fontWeight:700, color:"#60a5fa", fontFamily:FONT }}>
+                      {bVal.toFixed(0)}
+                      <span style={{ fontSize:9, color:"#60a5fa88", marginLeft:2 }}>öre/kWh</span>
+                    </div>
+                    <div style={{ fontSize:7, color:C.dim }}>nät {cfg!.energyRateOrePerKwh} + skatt {cfg!.taxOrePerKwh} + moms · Rå spot: {spotOre.toFixed(1)}</div>
                   </div>
-                  <div style={{ fontSize:7, color:C.dim }}>nät 32 + skatt 36 + moms 25%</div>
-                </div>
-              )}
+                ) : null;
+              })()}
             </div>
             <div className="spot-stats-row" style={{ flex:1, display:"flex", gap:8, flexWrap:"wrap" }}>
               {[
