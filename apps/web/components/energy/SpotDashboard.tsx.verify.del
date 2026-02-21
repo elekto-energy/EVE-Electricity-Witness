@@ -1,0 +1,16 @@
+"use client";
+
+/**
+ * SpotDashboard — Folkets Spotprisverktyg
+ *
+ * Data: /api/spot/live (ENTSO-E A44, PT15M, 96 punkter idag+imorgon)
+ *       /api/spot/v2   (historisk data, Vecka/Manad/Ar)
+ *
+ * X-axel skalas med period:
+ *   Dag    -> timmar (00:00, 04:00, ...)
+ *   Vecka  -> dagar (man 17, tis 18, ...)
+ *   Manad  -> datum (1/2, 5/2, ...)
+ *   Ar     -> manader (jan, feb, ...)
+ *
+ * Layout order: Header → Hero+Stats → Chart → SimulatePanel → Avancerat → Footer
+ */

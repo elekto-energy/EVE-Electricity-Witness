@@ -705,36 +705,6 @@ export default function SpotDashboard() {
           </div>
         </div>
 
-        {/* ── SIMULATE PANEL ─────────────────────────────────────── */}
-        <div style={{ padding: "0 20px" }}>
-          <SimulatePanel
-            zone={zone}
-            period={period}
-            spotOreNow={nowRow?.spot != null ? toOre(nowRow.spot, eurSek) : null}
-            eurSek={eurSek}
-            start={(() => {
-              if (period === "day") return histDate;
-              if (period === "week") return histDate;
-              if (period === "month") return histDate.slice(0, 7) + "-01";
-              return histDate.slice(0, 4) + "-01-01";
-            })()}
-            end={(() => {
-              if (period === "day") return histDate;
-              if (period === "week") {
-                const d = new Date(histDate + "T12:00:00Z");
-                d.setUTCDate(d.getUTCDate() + 6);
-                return d.toISOString().slice(0, 10);
-              }
-              if (period === "month") {
-                const [y, m] = histDate.slice(0, 7).split("-").map(Number);
-                const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
-                return `${y}-${String(m).padStart(2, "0")}-${last}`;
-              }
-              return histDate.slice(0, 4) + "-12-31";
-            })()}
-          />
-        </div>
-
         {/* ── HERO + STATS ────────────────────────────────────────────────── */}
         <div style={{ padding:"0 20px 12px", borderBottom:`1px solid ${C.border}` }}>
           <div style={{ display:"flex", gap:16, alignItems:"flex-start", flexWrap:"wrap" }}>
@@ -806,6 +776,36 @@ export default function SpotDashboard() {
               eurSek={eurSek}
             />
           )}
+        </div>
+
+        {/* ── SIMULATE PANEL ─────────────────────────────────────── */}
+        <div style={{ padding: "0 20px" }}>
+          <SimulatePanel
+            zone={zone}
+            period={period}
+            spotOreNow={nowRow?.spot != null ? toOre(nowRow.spot, eurSek) : null}
+            eurSek={eurSek}
+            start={(() => {
+              if (period === "day") return histDate;
+              if (period === "week") return histDate;
+              if (period === "month") return histDate.slice(0, 7) + "-01";
+              return histDate.slice(0, 4) + "-01-01";
+            })()}
+            end={(() => {
+              if (period === "day") return histDate;
+              if (period === "week") {
+                const d = new Date(histDate + "T12:00:00Z");
+                d.setUTCDate(d.getUTCDate() + 6);
+                return d.toISOString().slice(0, 10);
+              }
+              if (period === "month") {
+                const [y, m] = histDate.slice(0, 7).split("-").map(Number);
+                const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+                return `${y}-${String(m).padStart(2, "0")}-${last}`;
+              }
+              return histDate.slice(0, 4) + "-12-31";
+            })()}
+          />
         </div>
 
         {/* ── AVANCERAT TOGGLE ───────────────────────────────────────────── */}
