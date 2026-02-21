@@ -195,8 +195,8 @@ function ZoneCard({ zone, live, selected, unit, eurSek, onClick }: {
   }).filter(Boolean).join(" ");
 
   return (
-    <button onClick={onClick} style={{
-      flex: "1 1 0", minWidth: 0, textAlign: "left", cursor: "pointer",
+    <button onClick={onClick} className="zone-card" style={{
+      flex: "1 1 100px", minWidth: 100, textAlign: "left", cursor: "pointer",
       background: selected ? `${col}12` : C.card,
       border: `1.5px solid ${selected ? col : C.border}`,
       borderRadius: 8, padding: "12px 14px",
@@ -319,9 +319,11 @@ function SpotChart({ rows, resolution, unit, zone, showTomorrow, period, eurSek 
   return (
     <div style={{ position: "relative" }}>
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`}
-        style={{ width: "100%", height: "auto", display: "block", cursor: "crosshair" }}
+        style={{ width: "100%", height: "auto", display: "block", cursor: "crosshair", touchAction: "none" }}
         onMouseMove={e => setHi(getIdx(e))}
         onMouseLeave={() => setHi(null)}
+        onTouchMove={e => { const t = e.touches[0]; if (t && svgRef.current) { const rect = svgRef.current.getBoundingClientRect(); const frac = ((t.clientX - rect.left) / rect.width * W - P.l) / pw; const idx = Math.round(frac * (len - 1)); setHi(idx >= 0 && idx < len ? idx : null); } }}
+        onTouchEnd={() => setHi(null)}
       >
         <defs>
           <linearGradient id="sd-area" x1="0" y1="0" x2="0" y2="1">
@@ -679,7 +681,7 @@ export default function SpotDashboard() {
               <div style={{ fontSize:10, color:C.muted, marginBottom:3 }}>
                 {zone} {ZONE_NAMES[zone]} — just nu
               </div>
-              <div style={{ fontSize:52, fontWeight:800, lineHeight:1,
+              <div className="spot-hero-price" style={{ fontSize:52, fontWeight:800, lineHeight:1,
                 color: ZONE_COLORS[zone], fontFamily: FONT }}>
                 {zoneLive === "loading" ? "…" : dp(nowRow?.spot ?? null, unit, eurSek)}
               </div>
@@ -710,7 +712,7 @@ export default function SpotDashboard() {
                 </div>
               )}
             </div>
-            <div style={{ flex:1, display:"flex", gap:8, flexWrap:"wrap" }}>
+            <div className="spot-stats-row" style={{ flex:1, display:"flex", gap:8, flexWrap:"wrap" }}>
               {[
                 { label: isLiveMode ? "Dagmedel"  : "Periodmedel", val: isLiveMode ? todayStats.avg   : histData?.stats.spot.avg ?? null },
                 { label: isLiveMode ? "Dagsmin"   : "Periodmin",   val: isLiveMode ? todayStats.min   : histData?.stats.spot.min ?? null },

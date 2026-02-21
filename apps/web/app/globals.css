@@ -178,14 +178,21 @@ a:hover { text-decoration: underline; }
 }
 
 /* Mobile responsive */
+/* Mobile responsive */
 @media (max-width: 767px) {
+  /* ── Layout ── */
   .app-layout {
     grid-template-columns: 1fr;
     grid-template-areas:
       "topbar"
       "main";
+    grid-template-rows: 48px 1fr;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
+  /* ── Sidebar (hamburger/drawer) ── */
   .sidebar {
     position: fixed;
     top: 0;
@@ -214,19 +221,43 @@ a:hover { text-decoration: underline; }
     z-index: 999;
   }
 
+  /* ── Topbar ── */
   .topbar {
-    padding-left: 52px;
+    padding: 0 12px 0 52px;
+    width: 100%;
+    max-width: 100vw;
+    overflow: hidden;
   }
 
+  .topbar-title {
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .topbar-status {
+    display: none !important;
+  }
+
+  /* ── Main content ── */
   .main-content {
-    padding: 12px;
+    padding: 10px;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
+  /* ── Cards ── */
   .card {
     padding: 12px;
     margin-bottom: 10px;
+    overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
   }
 
+  /* ── Page headers ── */
   .page-header {
     margin-bottom: 14px;
   }
@@ -239,6 +270,7 @@ a:hover { text-decoration: underline; }
     font-size: 0.78rem;
   }
 
+  /* ── Tables (global classes) ── */
   .data-table {
     font-size: 0.72rem;
   }
@@ -248,17 +280,30 @@ a:hover { text-decoration: underline; }
     padding: 4px 6px;
   }
 
-  .tab {
-    padding: 8px 12px;
-    font-size: 0.8rem;
-  }
-
   /* Force horizontal scroll on wide tables */
   .card:has(.data-table) {
     overflow-x: auto;
   }
 
-  /* 2-column layout with aside → stack vertically */
+  /* Inline-styled tables from JSX components */
+  table {
+    font-size: 10px;
+  }
+
+  table th,
+  table td {
+    padding: 4px 5px;
+    font-size: 10px;
+    white-space: normal;
+  }
+
+  /* ── Tab buttons ── */
+  .tab {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
+  /* ── 2-column layout with aside → stack vertically ── */
   .layout-with-aside {
     flex-direction: column !important;
   }
@@ -269,12 +314,56 @@ a:hover { text-decoration: underline; }
     order: -1;
   }
 
-  /* Spot dashboard controls */
+  /* ── Inline-styled containers (SpotDashboard, EnergyIntelPanel etc.) ── */
+  .main-content div[style],
+  .main-content section[style],
+  .main-content main[style] {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ── SE-area-buttons: prevent overflow (flex-row → wrap) ── */
+  div[style*="display:flex;gap:2px"],
+  div[style*="display: flex; gap: 2px"] {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+
+  div[style*="display:flex;gap:2px"] > button,
+  div[style*="display: flex; gap: 2px"] > button {
+    padding: 3px 6px !important;
+    font-size: 10px !important;
+    flex: 1 !important;
+  }
+
+  /* ── Horizontal flex rows → wrap ── */
+  div[style*="display: flex; gap: 8px"],
+  div[style*="display:flex;gap:8px"],
+  div[style*="display: flex; gap: 12px"],
+  div[style*="display:flex;gap:12px"] {
+    flex-wrap: wrap !important;
+  }
+
+  /* ── Inline-styled table containers: scrollable ── */
+  div[style*="background: var(--bg-primary)"][style*="border"],
+  section[style*="background: var(--bg-card)"],
+  div[style*="margin-bottom: 16px"] {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Reduce inline padding on component wrappers ── */
+  .card > div[style*="padding:12px 20px"],
+  .card > div[style*="padding: 12px 20px"] {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  /* ── Filter/control rows ── */
   .spot-controls {
     flex-direction: column !important;
   }
 
-  /* Filter rows */
   .filter-row {
     flex-direction: column !important;
     gap: 6px !important;
@@ -286,13 +375,22 @@ a:hover { text-decoration: underline; }
     min-width: 0 !important;
   }
 
-  /* Stats bar */
   .stats-bar {
     flex-wrap: wrap !important;
     gap: 8px !important;
   }
 
-  /* Overflow protection */
+  /* ── max-width: 1100px component overrides ── */
+  main[style*="max-width:1100px"],
+  main[style*="max-width: 1100px"],
+  div[style*="max-width:1100px"],
+  div[style*="max-width: 1100px"] {
+    max-width: 100% !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  /* ── Global overflow protection ── */
   .main-content * {
     max-width: 100%;
   }
@@ -303,11 +401,35 @@ a:hover { text-decoration: underline; }
     word-break: break-word;
   }
 
-  /* Evidence badges inline */
   .evidence-badge {
     font-size: 0.65rem !important;
   }
+
+  /* ─── SpotDashboard mobile ─── */
+
+  /* Zone cards: 2x2 grid */
+  .zone-card {
+    flex: 1 1 calc(50% - 4px) !important;
+    min-width: calc(50% - 4px) !important;
+    padding: 8px 10px !important;
+  }
+
+  /* Hero price */
+  .spot-hero-price {
+    font-size: 36px !important;
+  }
+
+  /* Stats row */
+  .spot-stats-row {
+    gap: 6px !important;
+  }
+  .spot-stats-row > div {
+    flex: 1 1 calc(33% - 4px) !important;
+    min-width: 75px !important;
+    padding: 6px 8px !important;
+  }
 }
+
 
 /* Main */
 .main-content {
