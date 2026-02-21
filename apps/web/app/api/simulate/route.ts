@@ -244,6 +244,17 @@ export async function POST(req: NextRequest) {
     let loadForTariff = profile.loadKwh; // default: raw load
     let solarMeta: Record<string, unknown> | null = null;
 
+    // Calculate baseline cost (no solar, no battery) for ROI comparison
+    const baselineResult = calculateTariff({
+      loadKwh: profile.loadKwh,
+      spotPriceSekPerKwh: prices,
+      timestamps,
+      resolution,
+      period: period as Period,
+      tariff: tariffConfig,
+    });
+    const costBaseline = Math.round(baselineResult.totalCost * 100) / 100;
+
     if (solarKwp > 0) {
       const solarProfile = generateSolarProfile({
         kWp: solarKwp,
@@ -395,6 +406,9 @@ export async function POST(req: NextRequest) {
 
       // Battery (null if not configured)
       battery: batteryMeta,
+
+      // Baseline cost (no solar, no battery) for ROI calculation
+      costBaseline,
 
       // Metadata
       meta: {

@@ -77,6 +77,7 @@ interface SimulateResult {
     peakKw: number;
     topHours: number[];
   }>;
+  costBaseline: number; // Cost without solar or battery
   solar: {
     kWp: number;
     orientation: string;
@@ -981,10 +982,18 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
               const savings = b.costWithoutBattery - result.totalCost;
               const monthlySavings = period === "year" ? savings / 12 : savings;
               const annualSavings = period === "year" ? savings : savings * 12;
+              // ROI: Combined solar + battery investment vs total savings
               const maxDeduct = batteryDeductPct === 100 ? 100000 : batteryDeductPct === 50 ? 50000 : 0;
-              const deduction = batteryDeductPct > 0 ? Math.min(Math.round(batteryCostKr * 0.50), maxDeduct) : 0;
-              const netCost = batteryCostKr - deduction;
-              const paybackYears = netCost > 0 && annualSavings > 0 ? netCost / annualSavings : null;
+              const totalInvestment = batteryCostKr + (solarEnabled ? solarPriceKr : 0);
+              const deduction = batteryDeductPct > 0 ? Math.min(Math.round(totalInvestment * 0.50), maxDeduct) : 0;
+              const netCost = totalInvestment - deduction;
+
+              // Total savings = baseline (no sol, no bat) - final cost (with sol+bat)
+              // + solar export revenue
+              const totalSavings = result.costBaseline - result.totalCost
+                + (result.solar?.exportRevenueSek ?? 0);
+              const totalAnnualSavings = period === "year" ? totalSavings : totalSavings * 12;
+              const paybackYears = netCost > 0 && totalAnnualSavings > 0 ? netCost / totalAnnualSavings : null;
               return (
                 <div style={{
                   padding: "10px 12px", marginBottom: 10, borderRadius: 8,
@@ -1082,8 +1091,13 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
                             <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>år</span>
                           </div>
                           <div style={{ fontSize: 8, color: C.dim, marginTop: 2 }}>
-                            {netCost.toLocaleString("sv-SE")} kr{deduction > 0 ? " (efter avdrag)" : ""} / {Math.round(annualSavings).toLocaleString("sv-SE")} kr/år
+                            {netCost.toLocaleString("sv-SE")} kr{deduction > 0 ? " (efter avdrag)" : ""} / {Math.round(totalAnnualSavings).toLocaleString("sv-SE")} kr/år
                           </div>
+                          {solarEnabled && (
+                            <div style={{ fontSize: 7, color: C.dim }}>
+                              Sol + batteri investering
+                            </div>
+                          )}
                         </>
                       ) : (
                         <div style={{ fontSize: 10, color: C.dim }}>Ange batteripris</div>
