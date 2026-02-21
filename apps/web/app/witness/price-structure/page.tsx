@@ -15,7 +15,7 @@ export const metadata = {
 
 export default function PriceStructurePage() {
   return (
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 16px" }}>
+    <main className="witness-main" style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 16px" }}>
 
       {/* Spot Dashboard — full V3 with interactive chart */}
       <SpotDashboard />

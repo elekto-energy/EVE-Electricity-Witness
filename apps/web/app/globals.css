@@ -405,6 +405,74 @@ a:hover { text-decoration: underline; }
     font-size: 0.65rem !important;
   }
 
+  /* ─── Witness page: full width on mobile ─── */
+  .witness-main {
+    max-width: 100% !important;
+    padding: 10px 8px !important;
+  }
+
+  /* ─── CongestionRevenuePanel mobile ─── */
+
+  /* Bar chart: horizontal scroll if needed, reduce height */
+  .congestion-bar-chart {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    min-width: 0 !important;
+    height: 220px !important;
+    gap: 4px !important;
+    padding-bottom: 8px !important;
+  }
+
+  .congestion-bar-item {
+    min-width: 48px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Context labels: smaller, no max-width overflow */
+  .congestion-bar-ctx {
+    font-size: 7px !important;
+    max-width: 56px !important;
+    line-height: 1.15 !important;
+  }
+
+  /* Revenue value above bar */
+  .congestion-bar-item > div:nth-child(2) {
+    font-size: 10px !important;
+  }
+
+  /* Three cards → stack vertically */
+  .congestion-cards {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .congestion-cards > div {
+    flex: none !important;
+    width: 100% !important;
+  }
+
+  /* Usage breakdown table: horizontal scroll */
+  .congestion-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .congestion-table-wrap table {
+    min-width: 500px !important;
+  }
+
+  /* All section panels inside witness page: less padding */
+  .witness-main > section,
+  .witness-main > div > section {
+    padding: 12px 10px !important;
+  }
+
+  /* Sources grid: stack on mobile */
+  .witness-main div[style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+
   /* ─── SpotDashboard mobile ─── */
 
   /* Zone cards: 2x2 grid */

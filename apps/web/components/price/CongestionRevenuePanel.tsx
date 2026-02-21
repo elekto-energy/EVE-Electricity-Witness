@@ -96,12 +96,12 @@ export default function CongestionRevenuePanel() {
           ];
 
           return <>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 280, paddingBottom: 4 }}>
+            <div className="congestion-bar-chart" style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 280, paddingBottom: 4 }}>
               {allItems.map((item) => (
-                <div key={item.year} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end" }}>
+                <div key={item.year} className="congestion-bar-item" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end" }}>
                   {/* Context label */}
                   {item.ctx && (
-                    <div style={{ fontSize: 9, color: item.isCrisis ? "#ef4444" : "var(--text-muted)", textAlign: "center", marginBottom: 4, lineHeight: 1.2, maxWidth: 100 }}>
+                    <div className="congestion-bar-ctx" style={{ fontSize: 9, color: item.isCrisis ? "#ef4444" : "var(--text-muted)", textAlign: "center", marginBottom: 4, lineHeight: 1.2, maxWidth: 100 }}>
                       {item.ctx}
                     </div>
                   )}
@@ -178,7 +178,7 @@ export default function CongestionRevenuePanel() {
         </div>
 
         {/* Three cards */}
-        <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+        <div className="congestion-cards" style={{ display: "flex", gap: 12, marginBottom: 12 }}>
           <div style={{ flex: 1, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: 8, padding: 12, textAlign: "center" }}>
             <div style={{ fontSize: 11, color: "#f59e0b" }}>Ackumulerat saldo</div>
             <div style={{ fontSize: 28, fontWeight: 700, color: "#f59e0b" }}>65,1</div>
@@ -275,7 +275,7 @@ export default function CongestionRevenuePanel() {
       </div>
 
       {/* ════════ USAGE BREAKDOWN TABLE ════════ */}
-      <div style={{ marginBottom: 16 }}>
+      <div className="congestion-table-wrap" style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 4 }}>
           Detaljerad användning per år (mdr SEK)
         </div>
