@@ -77,6 +77,17 @@ interface SimulateResult {
     peakKw: number;
     topHours: number[];
   }>;
+  solar: {
+    kWp: number;
+    orientation: string;
+    totalProductionKwh: number;
+    selfConsumptionKwh: number;
+    gridExportKwh: number;
+    gridImportKwh: number;
+    selfConsumptionRatio: number;
+    exportRevenueSek: number;
+    monthlyProductionKwh: number[];
+  } | null;
   battery: BatteryResult | null;
   meta: {
     zone: string;
@@ -308,6 +319,10 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
           has_ev: false,
           load_profile: loadProfile,
           ...(batteryEnabled && { battery_kwh: batteryKwh, battery_max_kw: batteryMaxKw, battery_efficiency: batteryEff }),
+          ...(solarEnabled && {
+            solar_kwp: (SOLAR_PANELS.find(p => p.id === solarPanelId)?.watt ?? 440) * solarPanelCount / 1000,
+            solar_orientation: solarOrientation,
+          }),
         }),
       });
       if (!res.ok) {
@@ -323,7 +338,7 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
     } finally {
       setLoading(false);
     }
-  }, [zone, period, start, end, annualKwh, fuse, tariffId, loadProfile, batteryEnabled, batteryKwh, batteryMaxKw, batteryEff]);
+  }, [zone, period, start, end, annualKwh, fuse, tariffId, loadProfile, batteryEnabled, batteryKwh, batteryMaxKw, batteryEff, solarEnabled, solarPanelCount, solarPanelId, solarOrientation]);
 
   const isFullPeriod = period === "month" || period === "year";
 
@@ -898,6 +913,56 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
                 </div>
               </div>
             </div>
+
+            {/* ── Solar result ── */}
+            {result.solar && (() => {
+              const s = result.solar!;
+              return (
+                <div style={{
+                  padding: "10px 12px", borderRadius: 8, marginTop: 10,
+                  background: "rgba(251,191,36,0.04)",
+                  border: "1px solid rgba(251,191,36,0.15)",
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#fbbf24" }}>☀️ Solproduktion</span>
+                    <span style={{ fontSize: 9, color: C.muted }}>{s.kWp} kWp · {s.orientation.replace("_", " ")}</span>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                    <div style={{ padding: "6px 8px", borderRadius: 6, background: C.card2 }}>
+                      <div style={{ fontSize: 7, color: C.muted }}>Produktion</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#fbbf24", fontFamily: FONT }}>
+                        {Math.round(s.totalProductionKwh).toLocaleString("sv-SE")}
+                        <span style={{ fontSize: 8, color: C.muted, marginLeft: 2 }}>kWh</span>
+                      </div>
+                    </div>
+                    <div style={{ padding: "6px 8px", borderRadius: 6, background: C.card2 }}>
+                      <div style={{ fontSize: 7, color: C.muted }}>Egenförbrukning</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: C.green, fontFamily: FONT }}>
+                        {Math.round(s.selfConsumptionKwh).toLocaleString("sv-SE")}
+                        <span style={{ fontSize: 8, color: C.muted, marginLeft: 2 }}>kWh</span>
+                      </div>
+                      <div style={{ fontSize: 7, color: C.dim }}>{s.selfConsumptionRatio}% av produktion</div>
+                    </div>
+                    <div style={{ padding: "6px 8px", borderRadius: 6, background: C.card2 }}>
+                      <div style={{ fontSize: 7, color: C.muted }}>Sålt till nät</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: C.blue, fontFamily: FONT }}>
+                        {Math.round(s.gridExportKwh).toLocaleString("sv-SE")}
+                        <span style={{ fontSize: 8, color: C.muted, marginLeft: 2 }}>kWh</span>
+                      </div>
+                      <div style={{ fontSize: 7, color: C.dim }}>
+                        Intäkt: {Math.round(s.exportRevenueSek).toLocaleString("sv-SE")} kr
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: 7, color: C.dim, marginTop: 6 }}>
+                    Nätuttag med sol: {Math.round(s.gridImportKwh).toLocaleString("sv-SE")} kWh
+                    (minskade med {Math.round(s.selfConsumptionKwh).toLocaleString("sv-SE")} kWh)
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* ── Battery result ── */}
             {result.battery && result.battery.status === "optimal" && (() => {

@@ -27,6 +27,7 @@ import { calculateTariff, Period } from "@/lib/simulate/tariff-engine";
 import { nativeResolution, Resolution } from "@/lib/simulate/resolution-utils";
 import { getTariffConfig, listTariffs } from "@/lib/simulate/tariffs";
 import { optimizeBatteryLP } from "@/lib/simulate/battery-engine-lp";
+import { generateSolarProfile, applySolarToLoad, type SolarOrientation } from "@/lib/simulate/solar-engine";
 
 // ─── EUR/SEK ──────────────────────────────────────────────────────────────────
 
@@ -105,6 +106,9 @@ export async function POST(req: NextRequest) {
       battery_kwh = 0,
       battery_max_kw = 5,
       battery_efficiency = 0.90,
+      // Solar
+      solar_kwp = 0,
+      solar_orientation = "south_30",
     } = body;
 
     // ─── Validate ───────────────────────────────────────────────────────
@@ -199,6 +203,47 @@ export async function POST(req: NextRequest) {
       loadProfile: loadProfileParam,
     });
 
+    // ─── 4b. Solar production (if configured) ──────────────────────
+
+    const solarKwp = Number(solar_kwp) || 0;
+    const validOrientations: SolarOrientation[] = ["south_30", "south_45", "east_west", "flat"];
+    const solarOrient: SolarOrientation = validOrientations.includes(solar_orientation as SolarOrientation)
+      ? (solar_orientation as SolarOrientation) : "south_30";
+
+    let loadForTariff = profile.loadKwh; // default: raw load
+    let solarMeta: Record<string, unknown> | null = null;
+
+    if (solarKwp > 0) {
+      const solarProfile = generateSolarProfile({
+        kWp: solarKwp,
+        orientation: solarOrient,
+        timestamps,
+        resolution,
+      });
+
+      const solarNet = applySolarToLoad(profile.loadKwh, solarProfile.productionKwh);
+
+      // Load after self-consumption (before battery)
+      loadForTariff = solarNet.netGridLoad;
+
+      // Revenue from grid export (sell excess at spot price × 95%)
+      const exportRevenueSek = solarNet.gridExport.reduce((sum, exp, i) => {
+        return sum + exp * prices[i] * 0.95; // 5% margin to trader
+      }, 0);
+
+      solarMeta = {
+        kWp: solarKwp,
+        orientation: solarOrient,
+        totalProductionKwh: Math.round(solarProfile.totalKwh * 10) / 10,
+        selfConsumptionKwh: Math.round(solarNet.totalSelfConsumptionKwh * 10) / 10,
+        gridExportKwh: Math.round(solarNet.totalGridExportKwh * 10) / 10,
+        gridImportKwh: Math.round(solarNet.totalGridImportKwh * 10) / 10,
+        selfConsumptionRatio: Math.round(solarNet.selfConsumptionRatio * 1000) / 10, // %
+        exportRevenueSek: Math.round(exportRevenueSek * 100) / 100,
+        monthlyProductionKwh: solarProfile.monthlyKwh.map(v => Math.round(v)),
+      };
+    }
+
     // ─── 5. Battery optimization (if configured) ──────────────────────
 
     const batteryCapacity = Number(battery_kwh) || 0;
@@ -207,14 +252,14 @@ export async function POST(req: NextRequest) {
     const intervalHours = resolution === "PT15M" ? 0.25 : 1.0;
     const n = prices.length;
 
-    let finalLoad = profile.loadKwh;
+    let finalLoad = loadForTariff;
     let batteryMeta: Record<string, unknown> | null = null;
     let costWithoutBattery: number | null = null;
 
     if (batteryCapacity > 0 && (period === "month" || period === "year")) {
-      // First: calculate cost WITHOUT battery for comparison
+      // First: calculate cost WITHOUT battery for comparison (but WITH solar)
       const baseResult = calculateTariff({
-        loadKwh: profile.loadKwh,
+        loadKwh: loadForTariff,
         spotPriceSekPerKwh: prices,
         timestamps,
         resolution,
@@ -305,6 +350,9 @@ export async function POST(req: NextRequest) {
       peakKw: Math.round(result.peakKw * 100) / 100,
       avgCostOrePerKwh: Math.round(result.avgCostOrePerKwh * 10) / 10,
       monthlyPeaks: result.monthlyPeaks,
+
+      // Solar (null if not configured)
+      solar: solarMeta,
 
       // Battery (null if not configured)
       battery: batteryMeta,
