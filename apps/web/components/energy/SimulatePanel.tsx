@@ -870,6 +870,47 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
             </div>
 
             {/* ── Totaler row ── */}
+            {/* ── Total savings summary (when solar or battery active) ── */}
+            {(solarEnabled || batteryEnabled) && result.costBaseline > 0 && result.costBaseline !== result.totalCost && (() => {
+              const totalSaved = result.costBaseline - result.totalCost + (result.solar?.exportRevenueSek ?? 0);
+              const pctSaved = result.costBaseline > 0 ? (totalSaved / result.costBaseline) * 100 : 0;
+              return (
+                <div style={{
+                  display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap",
+                  padding: "12px 14px", borderRadius: 8,
+                  background: "linear-gradient(135deg, rgba(34,197,94,0.08), rgba(251,191,36,0.06))",
+                  border: "1px solid rgba(34,197,94,0.25)",
+                }}>
+                  <div style={{ flex: "1 1 110px" }}>
+                    <div style={{ fontSize: 8, color: C.muted, marginBottom: 3 }}>Utan sol/batteri</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: C.red, fontFamily: FONT, opacity: 0.7, textDecoration: "line-through" }}>
+                      {Math.round(result.costBaseline).toLocaleString("sv-SE")}
+                      <span style={{ fontSize: 9, color: C.muted, marginLeft: 3, textDecoration: "none" }}>kr/{period === "year" ? "år" : "mån"}</span>
+                    </div>
+                  </div>
+                  <div style={{ flex: "0 0 24px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: C.green }}>→</div>
+                  <div style={{ flex: "1 1 110px" }}>
+                    <div style={{ fontSize: 8, color: C.muted, marginBottom: 3 }}>Med {solarEnabled && batteryEnabled ? "sol + batteri" : solarEnabled ? "sol" : "batteri"}</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: C.green, fontFamily: FONT }}>
+                      {Math.round(result.totalCost).toLocaleString("sv-SE")}
+                      <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>kr/{period === "year" ? "år" : "mån"}</span>
+                    </div>
+                  </div>
+                  <div style={{ flex: "1 1 110px" }}>
+                    <div style={{ fontSize: 8, color: C.green, marginBottom: 3 }}>Total besparing</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: C.green, fontFamily: FONT }}>
+                      {Math.round(totalSaved).toLocaleString("sv-SE")}
+                      <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>kr/{period === "year" ? "år" : "mån"}</span>
+                    </div>
+                    <div style={{ fontSize: 8, color: C.dim }}>
+                      {pctSaved.toFixed(1)}% lägre elkostnad
+                      {result.solar?.exportRevenueSek ? ` (inkl ${Math.round(result.solar.exportRevenueSek).toLocaleString("sv-SE")} kr såld el)` : ""}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
               {/* Total cost */}
               <div style={{
