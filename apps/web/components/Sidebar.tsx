@@ -83,7 +83,7 @@ export function Sidebar() {
       <aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
         <div className="sidebar-brand">
           EVE
-          <span>Evidence & Verification Engine</span>
+          <span>Electricity Verified</span>
         </div>
         <nav className="sidebar-nav">
           {NAV_ITEMS.map((item) => {
