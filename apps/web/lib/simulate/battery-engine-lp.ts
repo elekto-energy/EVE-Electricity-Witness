@@ -25,7 +25,7 @@
  */
 
 // glpk.js is a factory function that returns a promise
-import GLPK_FACTORY from "glpk.js";
+import GLPK_FACTORY from "glpk.js/node";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
