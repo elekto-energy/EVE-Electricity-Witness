@@ -142,6 +142,40 @@ const BATTERY_PRESETS: BatteryPreset[] = [
   { id: "elekto_zbox100",   name: "ELEKTO (Zetara ZBox100-HS) · Kommersiell", kwh: 100, maxKw: 50, efficiency: 0.90, priceKr: 247000 },
 ];
 
+// ─── Solar panel presets ───────────────────────────────────────────────────
+
+interface SolarPanel {
+  id: string;
+  name: string;
+  watt: number;
+  efficiency: number;
+  degradationY1: number;
+  degradationAnnual: number;
+}
+
+const SOLAR_PANELS: SolarPanel[] = [
+  { id: "suntech_440", name: "Suntech Ultra V Pro 440W", watt: 440, efficiency: 0.225, degradationY1: 0.01, degradationAnnual: 0.004 },
+  { id: "custom",      name: "Egen panel",              watt: 400, efficiency: 0.20,  degradationY1: 0.02, degradationAnnual: 0.005 },
+];
+
+type SolarOrientation = "south_30" | "east_west" | "flat" | "south_45";
+
+const SOLAR_ORIENTATION_LABELS: Record<SolarOrientation, string> = {
+  south_30: "Söder 30° (optimal)",
+  south_45: "Söder 45°",
+  east_west: "Öst/Väst",
+  flat:      "Platt tak",
+};
+
+// kWh per installed kWp per month — Stockholm (SE3)
+// Source: PVGIS typical values, adjusted for Swedish climate
+const SOLAR_MONTHLY_KWH_PER_KWP: Record<SolarOrientation, number[]> = {
+  south_30:  [15, 35, 75, 110, 135, 140, 135, 110, 70, 35, 15, 8],
+  south_45:  [13, 32, 72, 105, 128, 132, 128, 105, 65, 32, 13, 7],
+  east_west: [11, 28, 62,  95, 120, 125, 120,  95, 58, 28, 11, 6],
+  flat:      [10, 25, 58,  88, 115, 120, 115,  88, 55, 25, 10, 5],
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function SimulatePanel({ zone, period, start, end, spotOreNow, eurSek }: SimulatePanelProps) {
@@ -159,6 +193,13 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
   const [batteryCostKr, setBatteryCostKr] = useState(() => loadStored("batteryCostKr", 80000));
   const [batteryDeductPct, setBatteryDeductPct] = useState(() => loadStored("batteryDeductPct", 50));
   const [batteryPreset, setBatteryPreset] = useState(() => loadStored("batteryPreset", "custom"));
+
+  // Solar panel state
+  const [solarEnabled, setSolarEnabled] = useState(() => loadStored("solarEnabled", false));
+  const [solarPanelCount, setSolarPanelCount] = useState(() => loadStored("solarPanelCount", 20));
+  const [solarPanelId, setSolarPanelId] = useState(() => loadStored("solarPanelId", "suntech_440"));
+  const [solarOrientation, setSolarOrientation] = useState<SolarOrientation>(() => loadStored("solarOrientation", "south_30"));
+  const [solarPriceKr, setSolarPriceKr] = useState(() => loadStored("solarPriceKr", 150000));
 
   // Load profile
   const [loadProfile, setLoadProfile] = useState<"flat" | "standard" | "heatpump">(() => loadStored("loadProfile", "heatpump"));
@@ -194,6 +235,11 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
   useEffect(() => { saveStored("batteryDeductPct", batteryDeductPct); }, [batteryDeductPct]);
   useEffect(() => { saveStored("batteryPreset", batteryPreset); }, [batteryPreset]);
   useEffect(() => { saveStored("loadProfile", loadProfile); }, [loadProfile]);
+  useEffect(() => { saveStored("solarEnabled", solarEnabled); }, [solarEnabled]);
+  useEffect(() => { saveStored("solarPanelCount", solarPanelCount); }, [solarPanelCount]);
+  useEffect(() => { saveStored("solarPanelId", solarPanelId); }, [solarPanelId]);
+  useEffect(() => { saveStored("solarOrientation", solarOrientation); }, [solarOrientation]);
+  useEffect(() => { saveStored("solarPriceKr", solarPriceKr); }, [solarPriceKr]);
 
   const applyPreset = (presetId: string) => {
     setBatteryPreset(presetId);
@@ -490,6 +536,126 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
                 {uploadError}
               </div>
             )}
+          </div>
+
+          {/* ☀️ Solpaneler */}
+          <div style={{
+            padding: "8px 10px", borderRadius: 6,
+            background: solarEnabled ? "rgba(251,191,36,0.06)" : "rgba(107,114,128,0.04)",
+            border: `1px solid ${solarEnabled ? "rgba(251,191,36,0.2)" : C.border}`,
+          }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+              <input type="checkbox" checked={solarEnabled}
+                onChange={e => setSolarEnabled(e.target.checked)}
+                style={{ accentColor: "#fbbf24" }} />
+              <span style={{ fontSize: 10, fontWeight: 600, color: solarEnabled ? "#fbbf24" : C.muted }}>
+                ☀️ Solpaneler
+              </span>
+            </label>
+
+            {solarEnabled && (() => {
+              const panel = SOLAR_PANELS.find(p => p.id === solarPanelId) ?? SOLAR_PANELS[0];
+              const totalKwp = (panel.watt * solarPanelCount) / 1000;
+              const monthlyProfile = SOLAR_MONTHLY_KWH_PER_KWP[solarOrientation];
+              const annualKwh = monthlyProfile.reduce((s, m) => s + m, 0) * totalKwp;
+
+              return (
+                <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+                  {/* Panel model */}
+                  <div>
+                    <div style={{ fontSize: 8, color: C.muted, marginBottom: 2 }}>Panelmodell</div>
+                    <select value={solarPanelId}
+                      onChange={e => setSolarPanelId(e.target.value)}
+                      style={{ width: "100%", padding: "4px 6px", fontSize: 10, fontFamily: FONT,
+                        background: C.card2, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text }}>
+                      {SOLAR_PANELS.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Panel count */}
+                  <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 8, color: C.muted, marginBottom: 2 }}>Antal paneler</div>
+                      <input type="number" value={solarPanelCount} min={1} max={200}
+                        onChange={e => setSolarPanelCount(Math.max(1, +e.target.value || 1))}
+                        style={{ width: "100%", padding: "4px 6px", fontSize: 11, fontFamily: FONT,
+                          background: C.card2, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text }} />
+                    </div>
+                    <div style={{ fontSize: 10, color: "#fbbf24", fontWeight: 700, fontFamily: FONT, paddingBottom: 4 }}>
+                      {totalKwp.toFixed(1)} kWp
+                    </div>
+                  </div>
+
+                  {/* Orientation */}
+                  <div>
+                    <div style={{ fontSize: 8, color: C.muted, marginBottom: 2 }}>Takriktning</div>
+                    <select value={solarOrientation}
+                      onChange={e => setSolarOrientation(e.target.value as SolarOrientation)}
+                      style={{ width: "100%", padding: "4px 6px", fontSize: 10, fontFamily: FONT,
+                        background: C.card2, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text }}>
+                      {(Object.keys(SOLAR_ORIENTATION_LABELS) as SolarOrientation[]).map(k => (
+                        <option key={k} value={k}>{SOLAR_ORIENTATION_LABELS[k]}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Installation cost */}
+                  <div>
+                    <div style={{ fontSize: 8, color: C.muted, marginBottom: 2 }}>Anläggningskostnad (kr, inkl installation)</div>
+                    <input type="number" value={solarPriceKr} min={0} step={10000}
+                      onChange={e => setSolarPriceKr(+e.target.value || 0)}
+                      style={{ width: "100%", padding: "4px 6px", fontSize: 11, fontFamily: FONT,
+                        background: C.card2, border: `1px solid ${C.border}`, borderRadius: 4, color: C.text }} />
+                    {solarPriceKr > 0 && (
+                      <div style={{ fontSize: 7, color: C.dim, marginTop: 2 }}>
+                        Grönt avdrag (50%): {Math.round(solarPriceKr * 0.5).toLocaleString()} kr → Nettokostnad: {Math.round(solarPriceKr * 0.5).toLocaleString()} kr
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Summary */}
+                  <div style={{
+                    padding: "6px 8px", borderRadius: 4,
+                    background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.15)",
+                    marginTop: 2,
+                  }}>
+                    <div style={{ fontSize: 8, color: "#fbbf24", marginBottom: 4 }}>Beräknad årsproduktion</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <span style={{ fontSize: 16, fontWeight: 700, color: "#fbbf24", fontFamily: FONT }}>
+                        {Math.round(annualKwh).toLocaleString()}
+                        <span style={{ fontSize: 9, color: "#fbbf2488", marginLeft: 2 }}>kWh/år</span>
+                      </span>
+                      <span style={{ fontSize: 9, color: C.muted }}>
+                        {(annualKwh / totalKwp).toFixed(0)} kWh/kWp
+                      </span>
+                    </div>
+                    {/* Monthly production mini bar chart */}
+                    <div style={{ marginTop: 4, display: "flex", gap: 1, height: 20, alignItems: "flex-end" }}>
+                      {monthlyProfile.map((m, i) => {
+                        const max = Math.max(...monthlyProfile);
+                        const h = max > 0 ? (m / max) * 18 : 2;
+                        const months = ["J","F","M","A","M","J","J","A","S","O","N","D"];
+                        return (
+                          <div key={i} title={`${months[i]}: ${Math.round(m * totalKwp)} kWh`}
+                            style={{ flex: 1, height: h, background: "#fbbf24", borderRadius: 1, minWidth: 3, opacity: 0.7 }} />
+                        );
+                      })}
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
+                      {["J","F","M","A","M","J","J","A","S","O","N","D"].map((m, i) => (
+                        <span key={i} style={{ flex: 1, fontSize: 6, color: C.dim, textAlign: "center" }}>{m}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: 7, color: C.dim }}>
+                    Schablon baserad på PVGIS · {SOLAR_ORIENTATION_LABELS[solarOrientation]} · Stockholm
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* 🔋 Batteri */}
