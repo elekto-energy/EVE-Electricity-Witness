@@ -14,6 +14,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import SimulatePanel from "./SimulatePanel";
 
 const FONT = "var(--font-mono, 'JetBrains Mono', monospace)";
 
@@ -666,12 +667,32 @@ export default function SpotDashboard() {
           </div>
         </div>
 
-        {/* ── 4 ZONKORT ──────────────────────────────────────────────────── */}
-        <div style={{ display:"flex", gap:8, padding:"12px 20px", flexWrap:"wrap" }}>
-          {SE_ZONES.map(z => (
-            <ZoneCard key={z} zone={z} live={liveData[z] ?? "loading"}
-              selected={zone===z} unit={unit} eurSek={eurSek} onClick={() => setZone(z)} />
-          ))}
+        {/* ── SIMULATE PANEL ─────────────────────────────────────── */}
+        <div style={{ padding: "0 20px" }}>
+          <SimulatePanel
+            zone={zone}
+            period={period}
+            start={(() => {
+              if (period === "day") return histDate;
+              if (period === "week") return histDate;
+              if (period === "month") return histDate.slice(0, 7) + "-01";
+              return histDate.slice(0, 4) + "-01-01";
+            })()}
+            end={(() => {
+              if (period === "day") return histDate;
+              if (period === "week") {
+                const d = new Date(histDate + "T12:00:00Z");
+                d.setUTCDate(d.getUTCDate() + 6);
+                return d.toISOString().slice(0, 10);
+              }
+              if (period === "month") {
+                const [y, m] = histDate.slice(0, 7).split("-").map(Number);
+                const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+                return `${y}-${String(m).padStart(2, "0")}-${last}`;
+              }
+              return histDate.slice(0, 4) + "-12-31";
+            })()}
+          />
         </div>
 
         {/* ── HERO + STATS ────────────────────────────────────────────────── */}
