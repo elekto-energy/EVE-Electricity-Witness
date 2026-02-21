@@ -300,14 +300,22 @@ export async function POST(req: NextRequest) {
       costWithoutBattery = Math.round(baseResult.totalCost * 100) / 100;
 
       try {
+        // Count distinct months in the data for correct effect rate scaling
+        const monthSet = new Set(timestamps.map(ts => {
+          const d = new Date(ts);
+          return `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
+        }));
+        const numMonths = monthSet.size || 1;
+
         const lpResult = await optimizeBatteryLP({
           prices,
-          load: profile.loadKwh,
+          load: loadForTariff,  // Use solar-adjusted net load
           capacityKwh: batteryCapacity,
           maxKw: batteryMaxKw,
           efficiency: batteryEff,
           intervalHours,
           effectRateKrPerKw: tariffConfig.effectRateKrPerKw,
+          numMonths,
         });
 
         if (lpResult.status === "optimal") {

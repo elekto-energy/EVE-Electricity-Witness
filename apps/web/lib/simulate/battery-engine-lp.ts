@@ -44,6 +44,8 @@ export interface BatteryLPInput {
   intervalHours: number;
   /** Effect rate in SEK per kW per month (used in objective) */
   effectRateKrPerKw: number;
+  /** Number of months in the period (for scaling effect rate correctly) */
+  numMonths?: number;
 }
 
 export interface BatteryLPResult {
@@ -76,7 +78,7 @@ export interface BatteryLPResult {
 export async function optimizeBatteryLP(input: BatteryLPInput): Promise<BatteryLPResult> {
   const t0 = Date.now();
 
-  const { prices, load, capacityKwh, maxKw, efficiency, intervalHours, effectRateKrPerKw } = input;
+  const { prices, load, capacityKwh, maxKw, efficiency, intervalHours, effectRateKrPerKw, numMonths = 1 } = input;
   const n = prices.length;
   const η = efficiency;
   const dt = intervalHours;
@@ -123,13 +125,16 @@ export async function optimizeBatteryLP(input: BatteryLPInput): Promise<BatteryL
   for (let t = 0; t < n; t++) {
     objective.vars.push({ name: `grid_${t}`, coef: prices[t] });
   }
-  objective.vars.push({ name: "peak", coef: effectRateKrPerKw });
+  // Scale effect rate by number of months — tariff charges per kW per MONTH,
+  // and with a single global peak variable we need the total annual effect cost
+  objective.vars.push({ name: "peak", coef: effectRateKrPerKw * numMonths });
 
   // ─── Constraints ──────────────────────────────────────────────────────
 
   for (let t = 0; t < n; t++) {
 
-    // Grid balance: grid[t] = load[t] + charge[t] - discharge[t]
+    // Grid balance: grid[t] + discharge[t] = load[t] + charge[t]
+    // → grid[t] = load[t] + charge[t] - discharge[t]
     // Rewritten: grid[t] - charge[t] + discharge[t] = load[t]
     subjectTo.push({
       name: `grid_bal_${t}`,
