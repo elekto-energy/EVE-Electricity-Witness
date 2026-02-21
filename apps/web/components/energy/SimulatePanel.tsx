@@ -404,21 +404,27 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
                       background: C.card2, color: C.text, border: `1px solid ${C.border}`, borderRadius: 4 }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: 8, color: C.muted, display: "block", marginBottom: 2 }}>Skattereduktion (%)</label>
-                  <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                    <select value={batteryDeductPct} onChange={e => setBatteryDeductPct(Number(e.target.value))}
-                      style={{ flex: 1, padding: "4px 6px", fontSize: 11, fontFamily: FONT,
-                        background: C.card2, color: C.text, border: `1px solid ${C.border}`, borderRadius: 4 }}>
-                      <option value={0}>0% (inget avdrag)</option>
-                      <option value={50}>50% (max 50 000 kr)</option>
-                    </select>
-                  </div>
-                  {batteryDeductPct > 0 && (
-                    <div style={{ fontSize: 8, color: C.green, marginTop: 2 }}>
-                      Avdrag: {Math.min(Math.round(batteryCostKr * batteryDeductPct / 100), 50000).toLocaleString("sv-SE")} kr
-                      → Nettokostnad: {(batteryCostKr - Math.min(Math.round(batteryCostKr * batteryDeductPct / 100), 50000)).toLocaleString("sv-SE")} kr
-                    </div>
-                  )}
+                  <label style={{ fontSize: 8, color: C.muted, display: "block", marginBottom: 2 }}>Grönt avdrag (kräver solceller)</label>
+                  <select value={batteryDeductPct} onChange={e => setBatteryDeductPct(Number(e.target.value))}
+                    style={{ width: "100%", padding: "4px 6px", fontSize: 10, fontFamily: FONT,
+                      background: C.card2, color: C.text, border: `1px solid ${C.border}`, borderRadius: 4 }}>
+                    <option value={0}>Inget avdrag</option>
+                    <option value={50}>50% — 1 person (max 50 000 kr)</option>
+                    <option value={100}>50% — 2 personer (max 100 000 kr)</option>
+                  </select>
+                  {batteryDeductPct > 0 && (() => {
+                    const maxDeduct = batteryDeductPct === 100 ? 100000 : 50000;
+                    const deduct = Math.min(Math.round(batteryCostKr * 0.50), maxDeduct);
+                    return (
+                      <div style={{ fontSize: 8, color: C.green, marginTop: 2 }}>
+                        Avdrag: {deduct.toLocaleString("sv-SE")} kr
+                        → Nettokostnad: {(batteryCostKr - deduct).toLocaleString("sv-SE")} kr
+                        <div style={{ fontSize: 7, color: C.dim, marginTop: 1 }}>
+                          Grön teknik 50% på batteri · max {(maxDeduct/1000).toFixed(0)}k kr/år · kräver solceller
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}
@@ -574,7 +580,8 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
               const savings = b.costWithoutBattery - result.totalCost;
               const monthlySavings = period === "year" ? savings / 12 : savings;
               const annualSavings = period === "year" ? savings : savings * 12;
-              const deduction = batteryDeductPct > 0 ? Math.min(Math.round(batteryCostKr * batteryDeductPct / 100), 50000) : 0;
+              const maxDeduct = batteryDeductPct === 100 ? 100000 : batteryDeductPct === 50 ? 50000 : 0;
+              const deduction = batteryDeductPct > 0 ? Math.min(Math.round(batteryCostKr * 0.50), maxDeduct) : 0;
               const netCost = batteryCostKr - deduction;
               const paybackYears = netCost > 0 && annualSavings > 0 ? netCost / annualSavings : null;
               return (
