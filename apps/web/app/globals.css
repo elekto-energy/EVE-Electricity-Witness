@@ -478,10 +478,24 @@ a:hover { text-decoration: underline; }
 
   /* ─── SpotDashboard mobile ─── */
 
-  /* Kill inline 20px side-padding on all inner sections */
-  .card > div[style*="padding"] {
-    padding-left: 8px !important;
-    padding-right: 8px !important;
+  /* Kill ALL inline side-padding inside .card — nuclear */
+  .card div[style],
+  .card > div[style] {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+
+  /* Card itself: zero everything */
+  .card {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Card top/bottom border only for separation */
+  .card {
+    border-top: 1px solid var(--border-color) !important;
   }
 
   /* Zone cards: 2x2 grid */
