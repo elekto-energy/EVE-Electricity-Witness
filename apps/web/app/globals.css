@@ -242,7 +242,7 @@ a:hover { text-decoration: underline; }
 
   /* ── Main content ── */
   .main-content {
-    padding: 10px;
+    padding: 4px 0;
     width: 100%;
     max-width: 100vw;
     overflow-x: hidden;
@@ -250,11 +250,14 @@ a:hover { text-decoration: underline; }
 
   /* ── Cards ── */
   .card {
-    padding: 12px;
-    margin-bottom: 10px;
+    padding: 0;
+    margin-bottom: 4px;
     overflow: hidden;
     width: 100%;
     box-sizing: border-box;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
   }
 
   /* ── Page headers ── */
@@ -408,7 +411,7 @@ a:hover { text-decoration: underline; }
   /* ─── Witness page: full width on mobile ─── */
   .witness-main {
     max-width: 100% !important;
-    padding: 10px 8px !important;
+    padding: 4px 0 !important;
   }
 
   /* ─── CongestionRevenuePanel mobile ─── */
