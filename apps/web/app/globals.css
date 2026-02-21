@@ -475,6 +475,12 @@ a:hover { text-decoration: underline; }
 
   /* ─── SpotDashboard mobile ─── */
 
+  /* Kill inline 20px side-padding on all inner sections */
+  .card > div[style*="padding"] {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
   /* Zone cards: 2x2 grid */
   .zone-card {
     flex: 1 1 calc(50% - 4px) !important;
