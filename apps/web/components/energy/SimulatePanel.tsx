@@ -52,6 +52,12 @@ interface BatteryResult {
   solveTimeMs: number;
   numVars: number;
   numConstraints: number;
+  costWithoutBattery: number;
+  soc: number[];
+  charge: number[];
+  discharge: number[];
+  timestamps: string[];
+  sampleStep: number;
   error?: string;
 }
 
@@ -127,6 +133,7 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
   const [batteryKwh, setBatteryKwh] = useState(() => loadStored("batteryKwh", 10));
   const [batteryMaxKw, setBatteryMaxKw] = useState(() => loadStored("batteryMaxKw", 5));
   const [batteryEff, setBatteryEff] = useState(() => loadStored("batteryEff", 0.90));
+  const [batteryCostKr, setBatteryCostKr] = useState(() => loadStored("batteryCostKr", 80000));
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -142,6 +149,7 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
   useEffect(() => { saveStored("batteryKwh", batteryKwh); }, [batteryKwh]);
   useEffect(() => { saveStored("batteryMaxKw", batteryMaxKw); }, [batteryMaxKw]);
   useEffect(() => { saveStored("batteryEff", batteryEff); }, [batteryEff]);
+  useEffect(() => { saveStored("batteryCostKr", batteryCostKr); }, [batteryCostKr]);
 
   const tariffCfg = getClientTariff(tariffId, fuse);
   const currentTariff = tariffs.find(t => t.id === tariffId);
@@ -335,6 +343,13 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
                     </select>
                   </div>
                 </div>
+                <div>
+                  <label style={{ fontSize: 8, color: C.muted, display: "block", marginBottom: 2 }}>Batteripris (kr, inkl installation)</label>
+                  <input type="number" value={batteryCostKr} onChange={e => setBatteryCostKr(Number(e.target.value) || 0)}
+                    min={5000} max={1000000} step={5000}
+                    style={{ width: "100%", padding: "4px 6px", fontSize: 11, fontFamily: FONT, fontWeight: 600,
+                      background: C.card2, color: C.text, border: `1px solid ${C.border}`, borderRadius: 4 }} />
+                </div>
               </div>
             )}
           </div>
@@ -484,65 +499,161 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
             </div>
 
             {/* ── Battery result ── */}
-            {result.battery && result.battery.status === "optimal" && (
-              <div style={{
-                padding: "10px 12px", marginBottom: 10, borderRadius: 8,
-                background: "rgba(34,197,94,0.06)",
-                border: "1px solid rgba(34,197,94,0.2)",
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: C.green }}>🔋 Batterioptimering</span>
-                  <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3,
-                    background: "rgba(34,197,94,0.15)", color: C.green, fontWeight: 600 }}>
-                    LP · {result.battery.solveTimeMs}ms
-                  </span>
-                </div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {/* Peak before → after */}
-                  <div style={{ flex: "1 1 100px", padding: "8px 10px", background: C.card2,
-                    border: `1px solid ${C.border}`, borderRadius: 6 }}>
-                    <div style={{ fontSize: 8, color: C.muted, marginBottom: 3 }}>Effekttopp</div>
-                    <div style={{ fontFamily: FONT, fontSize: 14, fontWeight: 700 }}>
-                      <span style={{ color: C.red, textDecoration: "line-through", opacity: 0.6 }}>
-                        {result.battery.peakBefore.toFixed(1)}
-                      </span>
-                      <span style={{ color: C.muted, margin: "0 4px" }}>→</span>
-                      <span style={{ color: C.green }}>
-                        {result.battery.peakAfter.toFixed(1)}
-                      </span>
-                      <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>kW</span>
+            {result.battery && result.battery.status === "optimal" && (() => {
+              const b = result.battery!;
+              const savings = b.costWithoutBattery - result.totalCost;
+              const monthlySavings = period === "year" ? savings / 12 : savings;
+              const annualSavings = period === "year" ? savings : savings * 12;
+              const paybackYears = batteryCostKr > 0 && annualSavings > 0 ? batteryCostKr / annualSavings : null;
+              return (
+                <div style={{
+                  padding: "10px 12px", marginBottom: 10, borderRadius: 8,
+                  background: "rgba(34,197,94,0.06)",
+                  border: "1px solid rgba(34,197,94,0.2)",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: C.green }}>🔋 Batterioptimering</span>
+                    <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3,
+                      background: "rgba(34,197,94,0.15)", color: C.green, fontWeight: 600 }}>
+                      LP · {b.solveTimeMs}ms
+                    </span>
+                  </div>
+
+                  {/* ── Comparison: without vs with ── */}
+                  <div style={{
+                    display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap",
+                    padding: "8px 10px", background: C.card2,
+                    border: `1px solid ${C.border}`, borderRadius: 6,
+                  }}>
+                    <div style={{ flex: "1 1 90px" }}>
+                      <div style={{ fontSize: 8, color: C.muted, marginBottom: 2 }}>Utan batteri</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: C.red, fontFamily: FONT, opacity: 0.7 }}>
+                        {Math.round(b.costWithoutBattery).toLocaleString("sv-SE")}
+                        <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>kr</span>
+                      </div>
                     </div>
-                    <div style={{ fontSize: 8, color: C.green, fontWeight: 600, marginTop: 2 }}>
-                      ↓ {result.battery.peakReductionKw.toFixed(1)} kW ({((result.battery.peakReductionKw / result.battery.peakBefore) * 100).toFixed(0)}%)
+                    <div style={{ flex: "0 0 20px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: C.muted }}>→</div>
+                    <div style={{ flex: "1 1 90px" }}>
+                      <div style={{ fontSize: 8, color: C.muted, marginBottom: 2 }}>Med batteri</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: C.green, fontFamily: FONT }}>
+                        {Math.round(result.totalCost).toLocaleString("sv-SE")}
+                        <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>kr</span>
+                      </div>
+                    </div>
+                    <div style={{ flex: "1 1 90px" }}>
+                      <div style={{ fontSize: 8, color: C.green, marginBottom: 2 }}>Besparing</div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: C.green, fontFamily: FONT }}>
+                        {Math.round(savings).toLocaleString("sv-SE")}
+                        <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>kr</span>
+                      </div>
+                      <div style={{ fontSize: 8, color: C.dim }}>
+                        {((savings / b.costWithoutBattery) * 100).toFixed(1)}% av totalkostnad
+                      </div>
                     </div>
                   </div>
-                  {/* Effektavgift-besparing */}
-                  {tariffCfg && (
+
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+                    {/* Peak before → after */}
                     <div style={{ flex: "1 1 100px", padding: "8px 10px", background: C.card2,
                       border: `1px solid ${C.border}`, borderRadius: 6 }}>
-                      <div style={{ fontSize: 8, color: C.muted, marginBottom: 3 }}>Effektavgift-besparing</div>
-                      <div style={{ fontFamily: FONT, fontSize: 14, fontWeight: 700, color: C.green }}>
-                        {Math.round(result.battery.peakReductionKw * (tariffCfg.effectRateKrPerKw ?? 0))}
-                        <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>kr/mån</span>
+                      <div style={{ fontSize: 8, color: C.muted, marginBottom: 3 }}>Effekttopp</div>
+                      <div style={{ fontFamily: FONT, fontSize: 14, fontWeight: 700 }}>
+                        <span style={{ color: C.red, textDecoration: "line-through", opacity: 0.6 }}>
+                          {b.peakBefore.toFixed(1)}
+                        </span>
+                        <span style={{ color: C.muted, margin: "0 4px" }}>→</span>
+                        <span style={{ color: C.green }}>
+                          {b.peakAfter.toFixed(1)}
+                        </span>
+                        <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>kW</span>
                       </div>
-                      <div style={{ fontSize: 8, color: C.dim, marginTop: 2 }}>
-                        {(tariffCfg.effectRateKrPerKw ?? 0)} kr/kW × {result.battery.peakReductionKw.toFixed(1)} kW
+                      <div style={{ fontSize: 8, color: C.green, fontWeight: 600, marginTop: 2 }}>
+                        ↓ {b.peakReductionKw.toFixed(1)} kW ({((b.peakReductionKw / b.peakBefore) * 100).toFixed(0)}%)
                       </div>
                     </div>
-                  )}
-                  {/* LP stats */}
-                  <div style={{ flex: "1 1 80px", padding: "8px 10px", background: C.card2,
-                    border: `1px solid ${C.border}`, borderRadius: 6 }}>
-                    <div style={{ fontSize: 8, color: C.muted, marginBottom: 3 }}>LP-modell</div>
-                    <div style={{ fontSize: 10, fontFamily: FONT, color: C.text, lineHeight: 1.5 }}>
-                      {result.battery.numVars.toLocaleString()} variabler<br />
-                      {result.battery.numConstraints.toLocaleString()} constraints<br />
-                      {result.battery.capacityKwh} kWh / {result.battery.maxKw} kW
+                    {/* ROI */}
+                    <div style={{ flex: "1 1 100px", padding: "8px 10px", background: C.card2,
+                      border: `1px solid ${C.border}`, borderRadius: 6 }}>
+                      <div style={{ fontSize: 8, color: C.muted, marginBottom: 3 }}>Återbetalningstid (ROI)</div>
+                      {paybackYears != null ? (
+                        <>
+                          <div style={{ fontFamily: FONT, fontSize: 14, fontWeight: 700,
+                            color: paybackYears < 10 ? C.green : paybackYears < 15 ? C.spot : C.red }}>
+                            {paybackYears.toFixed(1)}
+                            <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>år</span>
+                          </div>
+                          <div style={{ fontSize: 8, color: C.dim, marginTop: 2 }}>
+                            {batteryCostKr.toLocaleString("sv-SE")} kr / {Math.round(annualSavings).toLocaleString("sv-SE")} kr/år
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ fontSize: 10, color: C.dim }}>Ange batteripris</div>
+                      )}
+                    </div>
+                    {/* LP stats */}
+                    <div style={{ flex: "1 1 80px", padding: "8px 10px", background: C.card2,
+                      border: `1px solid ${C.border}`, borderRadius: 6 }}>
+                      <div style={{ fontSize: 8, color: C.muted, marginBottom: 3 }}>LP-modell</div>
+                      <div style={{ fontSize: 10, fontFamily: FONT, color: C.text, lineHeight: 1.5 }}>
+                        {b.numVars.toLocaleString()} vars<br />
+                        {b.numConstraints.toLocaleString()} constraints<br />
+                        {b.capacityKwh} kWh / {b.maxKw} kW
+                      </div>
                     </div>
                   </div>
+
+                  {/* ── SoC Chart ── */}
+                  {b.soc && b.soc.length > 2 && (() => {
+                    const W = 600, H = 100;
+                    const P = { t: 8, r: 8, b: 16, l: 32 };
+                    const pw = W - P.l - P.r, ph = H - P.t - P.b;
+                    const len = b.soc.length;
+                    const cap = b.capacityKwh;
+                    const xp = (i: number) => P.l + (i / Math.max(len - 1, 1)) * pw;
+                    const yp = (v: number) => P.t + ph - (v / (cap || 1)) * ph;
+
+                    const socPath = b.soc.map((v, i) => `${i === 0 ? "M" : "L"} ${xp(i).toFixed(1)} ${yp(v).toFixed(1)}`).join(" ");
+
+                    // Charge/discharge bars
+                    const maxCD = Math.max(...b.charge, ...b.discharge, 0.01);
+                    const barH = 20;
+
+                    return (
+                      <div>
+                        <div style={{ fontSize: 8, color: C.muted, marginBottom: 4 }}>Batteristatus (SoC) — grön=laddning, röd=urladdning</div>
+                        <svg viewBox={`0 0 ${W} ${H + barH + 4}`} style={{ width: "100%", height: "auto", display: "block" }}>
+                          {/* SoC area */}
+                          <path d={socPath + ` L ${xp(len-1).toFixed(1)} ${P.t+ph} L ${P.l} ${P.t+ph} Z`}
+                            fill="rgba(34,197,94,0.15)" />
+                          <path d={socPath} fill="none" stroke={C.green} strokeWidth={1.5} />
+                          {/* Y axis labels */}
+                          <text x={P.l-3} y={P.t+4} textAnchor="end" fontSize={7} fill={C.dim} fontFamily={FONT}>{cap}</text>
+                          <text x={P.l-3} y={P.t+ph+3} textAnchor="end" fontSize={7} fill={C.dim} fontFamily={FONT}>0</text>
+                          <text x={P.l-3} y={P.t+ph/2+3} textAnchor="end" fontSize={7} fill={C.dim} fontFamily={FONT}>{(cap/2).toFixed(0)}</text>
+                          <line x1={P.l} x2={W-P.r} y1={P.t+ph} y2={P.t+ph} stroke={C.border} strokeWidth={0.5} />
+                          {/* Charge/discharge bars */}
+                          {b.charge.map((c, i) => {
+                            const d = b.discharge[i] ?? 0;
+                            if (c < 0.001 && d < 0.001) return null;
+                            const bx = xp(i);
+                            const bw = Math.max(pw / len, 1);
+                            if (c > 0.001) return <rect key={`c${i}`} x={bx} y={H+2} width={bw} height={(c/maxCD)*barH} fill="rgba(34,197,94,0.5)" />;
+                            return <rect key={`d${i}`} x={bx} y={H+2} width={bw} height={(d/maxCD)*barH} fill="rgba(239,68,68,0.5)" />;
+                          })}
+                          {/* X labels */}
+                          {b.timestamps && [0, Math.floor(len/4), Math.floor(len/2), Math.floor(3*len/4), len-1].map(i => {
+                            if (i >= b.timestamps.length) return null;
+                            const d = new Date(b.timestamps[i]);
+                            const lbl = `${d.getUTCDate()}/${d.getUTCMonth()+1}`;
+                            return <text key={i} x={xp(i)} y={H+barH+12} textAnchor="middle" fontSize={7} fill={C.dim} fontFamily={FONT}>{lbl}</text>;
+                          })}
+                        </svg>
+                      </div>
+                    );
+                  })()}
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Battery error */}
             {result.battery && result.battery.status !== "optimal" && (

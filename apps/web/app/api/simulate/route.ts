@@ -197,11 +197,24 @@ export async function POST(req: NextRequest) {
     const batteryMaxKw = Number(battery_max_kw) || 5;
     const batteryEff = Math.min(Math.max(Number(battery_efficiency) || 0.90, 0.5), 1.0);
     const intervalHours = resolution === "PT15M" ? 0.25 : 1.0;
+    const n = prices.length;
 
     let finalLoad = profile.loadKwh;
     let batteryMeta: Record<string, unknown> | null = null;
+    let costWithoutBattery: number | null = null;
 
     if (batteryCapacity > 0 && (period === "month" || period === "year")) {
+      // First: calculate cost WITHOUT battery for comparison
+      const baseResult = calculateTariff({
+        loadKwh: profile.loadKwh,
+        spotPriceSekPerKwh: prices,
+        timestamps,
+        resolution,
+        period: period as Period,
+        tariff: tariffConfig,
+      });
+      costWithoutBattery = Math.round(baseResult.totalCost * 100) / 100;
+
       try {
         const lpResult = await optimizeBatteryLP({
           prices,
@@ -215,6 +228,21 @@ export async function POST(req: NextRequest) {
 
         if (lpResult.status === "optimal") {
           finalLoad = lpResult.adjustedLoad;
+
+          // Downsample SoC/charge/discharge for large datasets
+          // For month (744h): send all. For year (8760h): sample every 6h
+          const step = n > 2000 ? 6 : 1;
+          const socSampled: number[] = [];
+          const chargeSampled: number[] = [];
+          const dischargeSampled: number[] = [];
+          const tsSampled: string[] = [];
+          for (let i = 0; i < n; i += step) {
+            socSampled.push(Math.round(lpResult.soc[i] * 100) / 100);
+            chargeSampled.push(Math.round(lpResult.charge[i] * 1000) / 1000);
+            dischargeSampled.push(Math.round(lpResult.discharge[i] * 1000) / 1000);
+            tsSampled.push(timestamps[i]);
+          }
+
           batteryMeta = {
             status: lpResult.status,
             capacityKwh: batteryCapacity,
@@ -227,6 +255,13 @@ export async function POST(req: NextRequest) {
             solveTimeMs: lpResult.solveTimeMs,
             numVars: lpResult.numVars,
             numConstraints: lpResult.numConstraints,
+            costWithoutBattery,
+            // Time-series for SoC chart
+            soc: socSampled,
+            charge: chargeSampled,
+            discharge: dischargeSampled,
+            timestamps: tsSampled,
+            sampleStep: step,
           };
         } else {
           batteryMeta = { status: lpResult.status, error: "LP solver did not find optimal" };

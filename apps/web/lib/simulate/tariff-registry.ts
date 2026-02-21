@@ -32,46 +32,22 @@ export interface ClientTariffProfile {
   fuses: Record<string, ClientTariffConfig>;
 }
 
+function f(energy: number, effect: number, fixed: number): Record<string, ClientTariffConfig> {
+  const base = { taxOrePerKwh: 36, vatMultiplier: 1.25, verified: false, energyRateOrePerKwh: energy, effectRateKrPerKw: effect };
+  return {
+    "16A": { ...base, fixedMonthlyKr: fixed },
+    "20A": { ...base, fixedMonthlyKr: Math.round(fixed * 1.16) },
+    "25A": { ...base, fixedMonthlyKr: Math.round(fixed * 1.38) },
+    "35A": { ...base, fixedMonthlyKr: Math.round(fixed * 1.73) },
+  };
+}
+
 const PROFILES: ClientTariffProfile[] = [
-  {
-    id: "vattenfall_stockholm",
-    name: "Vattenfall Stockholm",
-    region: "SE3",
-    fuses: {
-      "16A": {
-        energyRateOrePerKwh: 28,
-        taxOrePerKwh: 36,
-        vatMultiplier: 1.25,
-        effectRateKrPerKw: 75,
-        fixedMonthlyKr: 450,
-        verified: false,
-      },
-      "20A": {
-        energyRateOrePerKwh: 28,
-        taxOrePerKwh: 36,
-        vatMultiplier: 1.25,
-        effectRateKrPerKw: 75,
-        fixedMonthlyKr: 520,
-        verified: false,
-      },
-      "25A": {
-        energyRateOrePerKwh: 28,
-        taxOrePerKwh: 36,
-        vatMultiplier: 1.25,
-        effectRateKrPerKw: 75,
-        fixedMonthlyKr: 620,
-        verified: false,
-      },
-      "35A": {
-        energyRateOrePerKwh: 28,
-        taxOrePerKwh: 36,
-        vatMultiplier: 1.25,
-        effectRateKrPerKw: 75,
-        fixedMonthlyKr: 780,
-        verified: false,
-      },
-    },
-  },
+  { id: "vattenfall_stockholm", name: "Vattenfall Stockholm", region: "SE3", fuses: f(28, 75, 450) },
+  { id: "ellevio_stockholm",    name: "Ellevio Stockholm",    region: "SE3", fuses: f(25, 68, 430) },
+  { id: "eon_malmo",            name: "E.ON Malmö",           region: "SE4", fuses: f(24, 72, 420) },
+  { id: "goteborg_energi",      name: "Göteborg Energi",      region: "SE3", fuses: f(26, 70, 440) },
+  { id: "jamtkraft",            name: "Jämtkraft",             region: "SE2", fuses: f(22, 65, 380) },
 ];
 
 /**
