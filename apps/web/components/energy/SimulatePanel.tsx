@@ -40,6 +40,21 @@ const C = {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+interface BatteryResult {
+  status: string;
+  capacityKwh: number;
+  maxKw: number;
+  efficiency: number;
+  peakBefore: number;
+  peakAfter: number;
+  peakReductionKw: number;
+  totalGridKwh: number;
+  solveTimeMs: number;
+  numVars: number;
+  numConstraints: number;
+  error?: string;
+}
+
 interface SimulateResult {
   totalCost: number;
   spotCost: number;
@@ -56,6 +71,7 @@ interface SimulateResult {
     peakKw: number;
     topHours: number[];
   }>;
+  battery: BatteryResult | null;
   meta: {
     zone: string;
     period: string;
@@ -106,6 +122,12 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
   const [fuse, setFuse] = useState(() => loadStored("fuse", "20A"));
   const [tariffId, setTariffId] = useState(() => loadStored("tariff", tariffs[0]?.id ?? "vattenfall_stockholm"));
 
+  // Battery state
+  const [batteryEnabled, setBatteryEnabled] = useState(() => loadStored("batteryEnabled", false));
+  const [batteryKwh, setBatteryKwh] = useState(() => loadStored("batteryKwh", 10));
+  const [batteryMaxKw, setBatteryMaxKw] = useState(() => loadStored("batteryMaxKw", 5));
+  const [batteryEff, setBatteryEff] = useState(() => loadStored("batteryEff", 0.90));
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SimulateResult | null>(null);
@@ -116,6 +138,10 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
   useEffect(() => { saveStored("annualKwh", annualKwh); }, [annualKwh]);
   useEffect(() => { saveStored("fuse", fuse); }, [fuse]);
   useEffect(() => { saveStored("tariff", tariffId); }, [tariffId]);
+  useEffect(() => { saveStored("batteryEnabled", batteryEnabled); }, [batteryEnabled]);
+  useEffect(() => { saveStored("batteryKwh", batteryKwh); }, [batteryKwh]);
+  useEffect(() => { saveStored("batteryMaxKw", batteryMaxKw); }, [batteryMaxKw]);
+  useEffect(() => { saveStored("batteryEff", batteryEff); }, [batteryEff]);
 
   const tariffCfg = getClientTariff(tariffId, fuse);
   const currentTariff = tariffs.find(t => t.id === tariffId);
@@ -132,6 +158,7 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
           zone, period, start, end,
           annual_kwh: annualKwh, fuse, tariff: tariffId,
           has_heat_pump: true, has_ev: false,
+          ...(batteryEnabled && { battery_kwh: batteryKwh, battery_max_kw: batteryMaxKw, battery_efficiency: batteryEff }),
         }),
       });
       if (!res.ok) {
@@ -147,7 +174,7 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
     } finally {
       setLoading(false);
     }
-  }, [zone, period, start, end, annualKwh, fuse, tariffId]);
+  }, [zone, period, start, end, annualKwh, fuse, tariffId, batteryEnabled, batteryKwh, batteryMaxKw, batteryEff]);
 
   const isFullPeriod = period === "month" || period === "year";
 
@@ -260,19 +287,56 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
             </select>
           </div>
 
-          {/* 🔋 Batteri placeholder */}
+          {/* 🔋 Batteri */}
           <div style={{
             padding: "8px 10px", borderRadius: 6,
-            background: "rgba(107,114,128,0.06)",
-            border: `1px dashed ${C.border}`,
-            opacity: 0.5,
+            background: batteryEnabled ? "rgba(34,197,94,0.06)" : "rgba(107,114,128,0.04)",
+            border: `1px solid ${batteryEnabled ? "rgba(34,197,94,0.2)" : C.border}`,
           }}>
-            <div style={{ fontSize: 10, color: C.dim, fontWeight: 600 }}>
-              🔋 Batteri
-            </div>
-            <div style={{ fontSize: 8, color: C.dim, marginTop: 2 }}>
-              Kommer snart — peak shaving & arbitrage
-            </div>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", marginBottom: batteryEnabled ? 8 : 0 }}>
+              <input
+                type="checkbox"
+                checked={batteryEnabled}
+                onChange={e => setBatteryEnabled(e.target.checked)}
+                style={{ accentColor: C.green }}
+              />
+              <span style={{ fontSize: 10, color: batteryEnabled ? C.green : C.muted, fontWeight: 600 }}>
+                🔋 Batteri
+              </span>
+              {!isFullPeriod && batteryEnabled && (
+                <span style={{ fontSize: 7, color: C.spot }}>Kräver Månad/År</span>
+              )}
+            </label>
+            {batteryEnabled && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div>
+                  <label style={{ fontSize: 8, color: C.muted, display: "block", marginBottom: 2 }}>Kapacitet (kWh)</label>
+                  <input type="number" value={batteryKwh} onChange={e => setBatteryKwh(Number(e.target.value) || 0)}
+                    min={1} max={200} step={1}
+                    style={{ width: "100%", padding: "4px 6px", fontSize: 11, fontFamily: FONT, fontWeight: 600,
+                      background: C.card2, color: C.text, border: `1px solid ${C.border}`, borderRadius: 4 }} />
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 8, color: C.muted, display: "block", marginBottom: 2 }}>Max effekt (kW)</label>
+                    <input type="number" value={batteryMaxKw} onChange={e => setBatteryMaxKw(Number(e.target.value) || 0)}
+                      min={0.5} max={50} step={0.5}
+                      style={{ width: "100%", padding: "4px 6px", fontSize: 11, fontFamily: FONT, fontWeight: 600,
+                        background: C.card2, color: C.text, border: `1px solid ${C.border}`, borderRadius: 4 }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 8, color: C.muted, display: "block", marginBottom: 2 }}>Effektivitet</label>
+                    <select value={batteryEff} onChange={e => setBatteryEff(Number(e.target.value))}
+                      style={{ width: "100%", padding: "4px 6px", fontSize: 11, fontFamily: FONT,
+                        background: C.card2, color: C.text, border: `1px solid ${C.border}`, borderRadius: 4 }}>
+                      <option value={0.85}>85%</option>
+                      <option value={0.90}>90%</option>
+                      <option value={0.95}>95%</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Run button */}
@@ -418,6 +482,78 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
                 </div>
               </div>
             </div>
+
+            {/* ── Battery result ── */}
+            {result.battery && result.battery.status === "optimal" && (
+              <div style={{
+                padding: "10px 12px", marginBottom: 10, borderRadius: 8,
+                background: "rgba(34,197,94,0.06)",
+                border: "1px solid rgba(34,197,94,0.2)",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: C.green }}>🔋 Batterioptimering</span>
+                  <span style={{ fontSize: 8, padding: "1px 5px", borderRadius: 3,
+                    background: "rgba(34,197,94,0.15)", color: C.green, fontWeight: 600 }}>
+                    LP · {result.battery.solveTimeMs}ms
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {/* Peak before → after */}
+                  <div style={{ flex: "1 1 100px", padding: "8px 10px", background: C.card2,
+                    border: `1px solid ${C.border}`, borderRadius: 6 }}>
+                    <div style={{ fontSize: 8, color: C.muted, marginBottom: 3 }}>Effekttopp</div>
+                    <div style={{ fontFamily: FONT, fontSize: 14, fontWeight: 700 }}>
+                      <span style={{ color: C.red, textDecoration: "line-through", opacity: 0.6 }}>
+                        {result.battery.peakBefore.toFixed(1)}
+                      </span>
+                      <span style={{ color: C.muted, margin: "0 4px" }}>→</span>
+                      <span style={{ color: C.green }}>
+                        {result.battery.peakAfter.toFixed(1)}
+                      </span>
+                      <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>kW</span>
+                    </div>
+                    <div style={{ fontSize: 8, color: C.green, fontWeight: 600, marginTop: 2 }}>
+                      ↓ {result.battery.peakReductionKw.toFixed(1)} kW ({((result.battery.peakReductionKw / result.battery.peakBefore) * 100).toFixed(0)}%)
+                    </div>
+                  </div>
+                  {/* Effektavgift-besparing */}
+                  {tariffCfg && (
+                    <div style={{ flex: "1 1 100px", padding: "8px 10px", background: C.card2,
+                      border: `1px solid ${C.border}`, borderRadius: 6 }}>
+                      <div style={{ fontSize: 8, color: C.muted, marginBottom: 3 }}>Effektavgift-besparing</div>
+                      <div style={{ fontFamily: FONT, fontSize: 14, fontWeight: 700, color: C.green }}>
+                        {Math.round(result.battery.peakReductionKw * (tariffCfg.effectRateKrPerKw ?? 0))}
+                        <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>kr/mån</span>
+                      </div>
+                      <div style={{ fontSize: 8, color: C.dim, marginTop: 2 }}>
+                        {(tariffCfg.effectRateKrPerKw ?? 0)} kr/kW × {result.battery.peakReductionKw.toFixed(1)} kW
+                      </div>
+                    </div>
+                  )}
+                  {/* LP stats */}
+                  <div style={{ flex: "1 1 80px", padding: "8px 10px", background: C.card2,
+                    border: `1px solid ${C.border}`, borderRadius: 6 }}>
+                    <div style={{ fontSize: 8, color: C.muted, marginBottom: 3 }}>LP-modell</div>
+                    <div style={{ fontSize: 10, fontFamily: FONT, color: C.text, lineHeight: 1.5 }}>
+                      {result.battery.numVars.toLocaleString()} variabler<br />
+                      {result.battery.numConstraints.toLocaleString()} constraints<br />
+                      {result.battery.capacityKwh} kWh / {result.battery.maxKw} kW
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Battery error */}
+            {result.battery && result.battery.status !== "optimal" && (
+              <div style={{
+                padding: "8px 12px", marginBottom: 10, borderRadius: 6,
+                background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)",
+                fontSize: 10, color: C.red,
+              }}>
+                🔋 Batterioptimering: {result.battery.status} {result.battery.error && `— ${result.battery.error}`}
+              </div>
+            )}
 
             {/* ── Breakdown ── */}
             <div style={{
