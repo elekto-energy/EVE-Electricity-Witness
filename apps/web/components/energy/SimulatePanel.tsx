@@ -139,7 +139,7 @@ const BATTERY_PRESETS: BatteryPreset[] = [
   { id: "byd_hvs10",        name: "BYD HVS 10.2",          kwh: 10.2, maxKw: 10.2, efficiency: 0.90, priceKr: 85000 },
   { id: "growatt_apx12",    name: "Growatt APX 12kWh",      kwh: 12,   maxKw: 6,    efficiency: 0.90, priceKr: 70000 },
   { id: "pixii_10",         name: "Pixii Home 10kWh",       kwh: 10,   maxKw: 6,    efficiency: 0.90, priceKr: 90000 },
-  { id: "elekto_zbox100",   name: "ELEKTO (Zetara ZBox100-HS) · Kommersiell", kwh: 100, maxKw: 50, efficiency: 0.90, priceKr: 347000 },
+  { id: "elekto_zbox100",   name: "ELEKTO (Zetara ZBox100-HS) · Kommersiell", kwh: 100, maxKw: 50, efficiency: 0.90, priceKr: 247000 },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
