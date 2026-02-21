@@ -207,7 +207,7 @@ export async function optimizeBatteryLP(input: BatteryLPInput): Promise<BatteryL
 
   let result;
   try {
-    result = glpk.solve(lp, { msgLevel: glpk.GLP_MSG_OFF });
+    result = await glpk.solve(lp, { msglev: glpk.GLP_MSG_OFF });
   } catch (e: any) {
     return {
       adjustedLoad: [...load],
