@@ -34,6 +34,7 @@ export interface LoadInput {
   hasEV?: boolean;             // Elbil → kvällsladdning
   loadProfile?: LoadProfileType; // Säsongsprofil: "flat" | "standard" | "heatpump"
   tempCelsius?: number[];      // Temperatur per intervall (optional, future)
+  customMonthWeights?: number[];  // 12 element (Jan=0..Dec=11), summa ~1.0. Från uppladdad data.
 }
 
 // ─── Seasonal factors ─────────────────────────────────────────────────────────
@@ -129,13 +130,25 @@ export function generateLoadProfile(input: LoadInput): LoadProfile {
     hasHeatPump = true,
     hasEV = false,
     loadProfile,
+    customMonthWeights,
   } = input;
 
   // loadProfile takes precedence over hasHeatPump legacy flag
   const profileType: LoadProfileType = loadProfile
     ? loadProfile
     : (hasHeatPump ? "heatpump" : "standard");
-  const monthWeights = PROFILE_WEIGHTS[profileType];
+
+  // Custom month weights from uploaded data take highest precedence
+  let monthWeights: Record<number, number>;
+  if (customMonthWeights && customMonthWeights.length === 12) {
+    monthWeights = {};
+    for (let i = 0; i < 12; i++) {
+      monthWeights[i] = customMonthWeights[i];
+    }
+  } else {
+    monthWeights = PROFILE_WEIGHTS[profileType];
+  }
+
   const hourShape = hasEV ? HOUR_SHAPE_EV : HOUR_SHAPE;
 
   // Normalisera hourShape

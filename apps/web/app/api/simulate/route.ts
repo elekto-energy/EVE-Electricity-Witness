@@ -109,6 +109,8 @@ export async function POST(req: NextRequest) {
       // Solar
       solar_kwp = 0,
       solar_orientation = "south_30",
+      // Uploaded consumption data
+      uploaded_monthly,  // Array<{ month: string, kWh: number }> from parsed file
     } = body;
 
     // ─── Validate ───────────────────────────────────────────────────────
@@ -194,6 +196,34 @@ export async function POST(req: NextRequest) {
       ? load_profile as "flat" | "standard" | "heatpump"
       : undefined;
 
+    // Build custom month weights from uploaded data
+    let customMonthWeights: number[] | undefined;
+    if (Array.isArray(uploaded_monthly) && uploaded_monthly.length > 0) {
+      const monthKwh = new Array(12).fill(0);
+      let total = 0;
+      for (const entry of uploaded_monthly) {
+        if (entry.month && entry.kWh > 0) {
+          const m = parseInt(entry.month.split("-")[1]) - 1;
+          if (m >= 0 && m < 12) {
+            monthKwh[m] = entry.kWh;
+            total += entry.kWh;
+          }
+        }
+      }
+      if (total > 0) {
+        customMonthWeights = monthKwh.map(v => v / total);
+        const missingCount = customMonthWeights.filter(w => w === 0).length;
+        if (missingCount > 0 && missingCount < 12) {
+          const filledTotal = customMonthWeights.reduce((s, v) => s + v, 0);
+          const missingShare = missingCount / 12;
+          const scale = (1 - missingShare) / filledTotal;
+          customMonthWeights = customMonthWeights.map(w =>
+            w > 0 ? w * scale : missingShare / missingCount
+          );
+        }
+      }
+    }
+
     const profile = generateLoadProfile({
       annualKwh,
       timestamps,
@@ -201,6 +231,7 @@ export async function POST(req: NextRequest) {
       hasHeatPump: has_heat_pump,
       hasEV: has_ev,
       loadProfile: loadProfileParam,
+      customMonthWeights,
     });
 
     // ─── 4b. Solar production (if configured) ──────────────────────
