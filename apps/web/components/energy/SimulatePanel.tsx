@@ -323,6 +323,9 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
             solar_kwp: (SOLAR_PANELS.find(p => p.id === solarPanelId)?.watt ?? 440) * solarPanelCount / 1000,
             solar_orientation: solarOrientation,
           }),
+          ...(uploadedLoad?.monthly && uploadedLoad.monthly.length > 0 && {
+            uploaded_monthly: uploadedLoad.monthly,
+          }),
         }),
       });
       if (!res.ok) {
@@ -338,7 +341,7 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
     } finally {
       setLoading(false);
     }
-  }, [zone, period, start, end, annualKwh, fuse, tariffId, loadProfile, batteryEnabled, batteryKwh, batteryMaxKw, batteryEff, solarEnabled, solarPanelCount, solarPanelId, solarOrientation]);
+  }, [zone, period, start, end, annualKwh, fuse, tariffId, loadProfile, batteryEnabled, batteryKwh, batteryMaxKw, batteryEff, solarEnabled, solarPanelCount, solarPanelId, solarOrientation, uploadedLoad]);
 
   const isFullPeriod = period === "month" || period === "year";
 
