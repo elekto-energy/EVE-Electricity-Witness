@@ -264,13 +264,42 @@ export async function parseExcel(buffer: Buffer, filename?: string): Promise<Par
 
     // Try first sheet
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows: string[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false }) as string[][];
+    const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true }) as any[][];
 
     if (rows.length < 2) {
       return { ok: false, error: "Excel-arket innehåller för lite data" };
     }
 
-    // Convert to CSV-like format and reuse CSV parser
+    // ── Detect Vattenfall Eldistribution format ──────────────────────────
+    // Header rows with metadata, then date|kWh pairs starting from row ~11
+    // Signature: "Avläst elanvändning" in sheet name or first cell,
+    //            or rows with ["2026-01-01", 169.504] pattern
+    const isVattenfall = workbook.SheetNames[0]?.includes("Avläst") ||
+      String(rows[0]?.[0] ?? "").includes("Avläst") ||
+      String(rows[1]?.[0] ?? "").includes("nätägare");
+
+    if (isVattenfall) {
+      return parseVattenfallExcel(rows, filename);
+    }
+
+    // ── Generic: skip metadata rows, find first data row ────────────────
+    // Look for first row that has a date-like value in col A and number in col B
+    let dataStartIdx = -1;
+    for (let i = 0; i < Math.min(rows.length, 20); i++) {
+      const a = String(rows[i]?.[0] ?? "");
+      const b = rows[i]?.[1];
+      if (/^\d{4}-\d{2}-\d{2}/.test(a) && typeof b === "number") {
+        dataStartIdx = i;
+        break;
+      }
+    }
+
+    if (dataStartIdx >= 0) {
+      // Date + value pairs without proper header — treat as daily/hourly
+      return parseVattenfallExcel(rows, filename, dataStartIdx);
+    }
+
+    // Fallback: Convert to CSV-like format and reuse CSV parser
     const sep = ";";
     const csvLines = rows.map(row => row.map(cell => String(cell ?? "")).join(sep));
 
@@ -278,6 +307,78 @@ export async function parseExcel(buffer: Buffer, filename?: string): Promise<Par
   } catch (e: any) {
     return { ok: false, error: `Kunde inte läsa Excel-filen: ${e.message}` };
   }
+}
+
+/**
+ * Parse Vattenfall Eldistribution "Avläst elanvändning per dag" Excel format.
+ * Rows: metadata headers, then date | kWh (daily consumption).
+ */
+function parseVattenfallExcel(
+  rows: any[][], filename: string | undefined, startFromIdx?: number
+): ParseResult {
+  const warnings: string[] = [];
+  const hourly: HourlyLoadPoint[] = [];
+
+  // Find first data row (date + number)
+  let startIdx = startFromIdx ?? 0;
+  if (startFromIdx === undefined) {
+    for (let i = 0; i < Math.min(rows.length, 20); i++) {
+      const a = String(rows[i]?.[0] ?? "");
+      const b = rows[i]?.[1];
+      if (/^\d{4}-\d{2}-\d{2}/.test(a) && typeof b === "number") {
+        startIdx = i;
+        break;
+      }
+    }
+  }
+
+  for (let i = startIdx; i < rows.length; i++) {
+    const dateVal = rows[i]?.[0];
+    const kwhVal = rows[i]?.[1];
+
+    if (dateVal == null || kwhVal == null) continue;
+
+    const dateStr = String(dateVal);
+    const date = parseSwedishDate(dateStr);
+    if (!date) continue;
+
+    const kwh = typeof kwhVal === "number" ? kwhVal : parseSwedishNumber(String(kwhVal));
+    if (kwh === null || kwh < 0) continue;
+
+    // Daily data — assign to midnight as a single daily point
+    const ts = new Date(Date.UTC(date.y, date.m - 1, date.d));
+    hourly.push({ ts: ts.toISOString(), kWh: kwh });
+  }
+
+  if (hourly.length === 0) {
+    return { ok: false, error: "Kunde inte hitta förbrukningsdata i Excel-filen" };
+  }
+
+  hourly.sort((a, b) => a.ts.localeCompare(b.ts));
+  const totalKwh = hourly.reduce((s, p) => s + p.kWh, 0);
+  const monthly = aggregateToMonthly(hourly);
+
+  // Determine granularity — if ~24h between points it's daily, not hourly
+  const isDailyData = hourly.length >= 2 &&
+    (new Date(hourly[1].ts).getTime() - new Date(hourly[0].ts).getTime()) >= 20 * 3600_000;
+
+  return {
+    ok: true,
+    data: {
+      granularity: isDailyData ? "monthly" : "hourly",  // daily treated as monthly-level
+      source: "vattenfall_excel",
+      hourly: isDailyData ? undefined : hourly,
+      monthly,
+      totalKwh,
+      startDate: hourly[0].ts,
+      endDate: hourly[hourly.length - 1].ts,
+      warnings: [
+        ...warnings,
+        ...(isDailyData ? [`Dagsförbrukning (${hourly.length} dagar) — ej timupplösning`] : []),
+      ],
+      raw_filename: filename,
+    },
+  };
 }
 
 // ─── PDF Parser ───────────────────────────────────────────────────────────────
