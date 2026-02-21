@@ -119,6 +119,29 @@ function saveStored(key: string, value: unknown) {
   try { localStorage.setItem(`eve-sim-${key}`, JSON.stringify(value)); } catch {}
 }
 
+// ─── Battery presets ──────────────────────────────────────────────────────────
+
+interface BatteryPreset {
+  id: string;
+  name: string;
+  kwh: number;
+  maxKw: number;
+  efficiency: number;
+  priceKr: number;
+}
+
+const BATTERY_PRESETS: BatteryPreset[] = [
+  { id: "custom",           name: "Egen konfiguration",     kwh: 10,   maxKw: 5,    efficiency: 0.90, priceKr: 80000 },
+  { id: "huawei_5",         name: "Huawei LUNA 2000 5kWh",  kwh: 5,    maxKw: 2.5,  efficiency: 0.90, priceKr: 45000 },
+  { id: "huawei_10",        name: "Huawei LUNA 2000 10kWh", kwh: 10,   maxKw: 5,    efficiency: 0.90, priceKr: 75000 },
+  { id: "huawei_15",        name: "Huawei LUNA 2000 15kWh", kwh: 15,   maxKw: 5,    efficiency: 0.90, priceKr: 105000 },
+  { id: "tesla_pw3",        name: "Tesla Powerwall 3",      kwh: 13.5, maxKw: 11.5, efficiency: 0.90, priceKr: 120000 },
+  { id: "byd_hvs10",        name: "BYD HVS 10.2",          kwh: 10.2, maxKw: 10.2, efficiency: 0.90, priceKr: 85000 },
+  { id: "growatt_apx12",    name: "Growatt APX 12kWh",      kwh: 12,   maxKw: 6,    efficiency: 0.90, priceKr: 70000 },
+  { id: "pixii_10",         name: "Pixii Home 10kWh",       kwh: 10,   maxKw: 6,    efficiency: 0.90, priceKr: 90000 },
+  { id: "elekto_zbox100",   name: "ELEKTO (Zetara ZBox100-HS) · Kommersiell", kwh: 100, maxKw: 50, efficiency: 0.90, priceKr: 347000 },
+];
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function SimulatePanel({ zone, period, start, end, spotOreNow, eurSek }: SimulatePanelProps) {
@@ -134,6 +157,8 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
   const [batteryMaxKw, setBatteryMaxKw] = useState(() => loadStored("batteryMaxKw", 5));
   const [batteryEff, setBatteryEff] = useState(() => loadStored("batteryEff", 0.90));
   const [batteryCostKr, setBatteryCostKr] = useState(() => loadStored("batteryCostKr", 80000));
+  const [batteryDeductPct, setBatteryDeductPct] = useState(() => loadStored("batteryDeductPct", 50));
+  const [batteryPreset, setBatteryPreset] = useState(() => loadStored("batteryPreset", "custom"));
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -150,6 +175,19 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
   useEffect(() => { saveStored("batteryMaxKw", batteryMaxKw); }, [batteryMaxKw]);
   useEffect(() => { saveStored("batteryEff", batteryEff); }, [batteryEff]);
   useEffect(() => { saveStored("batteryCostKr", batteryCostKr); }, [batteryCostKr]);
+  useEffect(() => { saveStored("batteryDeductPct", batteryDeductPct); }, [batteryDeductPct]);
+  useEffect(() => { saveStored("batteryPreset", batteryPreset); }, [batteryPreset]);
+
+  const applyPreset = (presetId: string) => {
+    setBatteryPreset(presetId);
+    const p = BATTERY_PRESETS.find(x => x.id === presetId);
+    if (p && presetId !== "custom") {
+      setBatteryKwh(p.kwh);
+      setBatteryMaxKw(p.maxKw);
+      setBatteryEff(p.efficiency);
+      setBatteryCostKr(p.priceKr);
+    }
+  };
 
   const tariffCfg = getClientTariff(tariffId, fuse);
   const currentTariff = tariffs.find(t => t.id === tariffId);
@@ -317,9 +355,23 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
             </label>
             {batteryEnabled && (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {/* Preset dropdown */}
+                <div>
+                  <label style={{ fontSize: 8, color: C.muted, display: "block", marginBottom: 2 }}>Batterimodell</label>
+                  <select value={batteryPreset} onChange={e => applyPreset(e.target.value)}
+                    style={{ width: "100%", padding: "4px 6px", fontSize: 10, fontFamily: FONT,
+                      background: C.card2, color: C.text, border: `1px solid ${C.border}`, borderRadius: 4 }}>
+                    {BATTERY_PRESETS.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}{p.id !== "custom" ? ` (${p.kwh} kWh)` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div>
                   <label style={{ fontSize: 8, color: C.muted, display: "block", marginBottom: 2 }}>Kapacitet (kWh)</label>
-                  <input type="number" value={batteryKwh} onChange={e => setBatteryKwh(Number(e.target.value) || 0)}
+                  <input type="number" value={batteryKwh}
+                    onChange={e => { setBatteryKwh(Number(e.target.value) || 0); setBatteryPreset("custom"); }}
                     min={1} max={200} step={1}
                     style={{ width: "100%", padding: "4px 6px", fontSize: 11, fontFamily: FONT, fontWeight: 600,
                       background: C.card2, color: C.text, border: `1px solid ${C.border}`, borderRadius: 4 }} />
@@ -327,7 +379,8 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
                 <div style={{ display: "flex", gap: 6 }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: 8, color: C.muted, display: "block", marginBottom: 2 }}>Max effekt (kW)</label>
-                    <input type="number" value={batteryMaxKw} onChange={e => setBatteryMaxKw(Number(e.target.value) || 0)}
+                    <input type="number" value={batteryMaxKw}
+                      onChange={e => { setBatteryMaxKw(Number(e.target.value) || 0); setBatteryPreset("custom"); }}
                       min={0.5} max={50} step={0.5}
                       style={{ width: "100%", padding: "4px 6px", fontSize: 11, fontFamily: FONT, fontWeight: 600,
                         background: C.card2, color: C.text, border: `1px solid ${C.border}`, borderRadius: 4 }} />
@@ -349,6 +402,23 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
                     min={5000} max={1000000} step={5000}
                     style={{ width: "100%", padding: "4px 6px", fontSize: 11, fontFamily: FONT, fontWeight: 600,
                       background: C.card2, color: C.text, border: `1px solid ${C.border}`, borderRadius: 4 }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 8, color: C.muted, display: "block", marginBottom: 2 }}>Skattereduktion (%)</label>
+                  <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                    <select value={batteryDeductPct} onChange={e => setBatteryDeductPct(Number(e.target.value))}
+                      style={{ flex: 1, padding: "4px 6px", fontSize: 11, fontFamily: FONT,
+                        background: C.card2, color: C.text, border: `1px solid ${C.border}`, borderRadius: 4 }}>
+                      <option value={0}>0% (inget avdrag)</option>
+                      <option value={50}>50% (max 50 000 kr)</option>
+                    </select>
+                  </div>
+                  {batteryDeductPct > 0 && (
+                    <div style={{ fontSize: 8, color: C.green, marginTop: 2 }}>
+                      Avdrag: {Math.min(Math.round(batteryCostKr * batteryDeductPct / 100), 50000).toLocaleString("sv-SE")} kr
+                      → Nettokostnad: {(batteryCostKr - Math.min(Math.round(batteryCostKr * batteryDeductPct / 100), 50000)).toLocaleString("sv-SE")} kr
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -504,7 +574,9 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
               const savings = b.costWithoutBattery - result.totalCost;
               const monthlySavings = period === "year" ? savings / 12 : savings;
               const annualSavings = period === "year" ? savings : savings * 12;
-              const paybackYears = batteryCostKr > 0 && annualSavings > 0 ? batteryCostKr / annualSavings : null;
+              const deduction = batteryDeductPct > 0 ? Math.min(Math.round(batteryCostKr * batteryDeductPct / 100), 50000) : 0;
+              const netCost = batteryCostKr - deduction;
+              const paybackYears = netCost > 0 && annualSavings > 0 ? netCost / annualSavings : null;
               return (
                 <div style={{
                   padding: "10px 12px", marginBottom: 10, borderRadius: 8,
@@ -583,7 +655,7 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
                             <span style={{ fontSize: 9, color: C.muted, marginLeft: 3 }}>år</span>
                           </div>
                           <div style={{ fontSize: 8, color: C.dim, marginTop: 2 }}>
-                            {batteryCostKr.toLocaleString("sv-SE")} kr / {Math.round(annualSavings).toLocaleString("sv-SE")} kr/år
+                            {netCost.toLocaleString("sv-SE")} kr{deduction > 0 ? " (efter avdrag)" : ""} / {Math.round(annualSavings).toLocaleString("sv-SE")} kr/år
                           </div>
                         </>
                       ) : (
