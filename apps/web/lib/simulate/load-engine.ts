@@ -30,17 +30,36 @@ export interface LoadInput {
   timestamps: string[];        // Ska matcha spot-arrayens timestamps exakt
   resolution: Resolution;
   fuseAmps?: number;           // Säkring, default 20A (3-fas)
-  hasHeatPump?: boolean;       // Värmepump → mer vinterlast
+  hasHeatPump?: boolean;       // Värmepump → mer vinterlast (legacy, överskrids av loadProfile)
   hasEV?: boolean;             // Elbil → kvällsladdning
+  loadProfile?: LoadProfileType; // Säsongsprofil: "flat" | "standard" | "heatpump"
   tempCelsius?: number[];      // Temperatur per intervall (optional, future)
 }
 
 // ─── Seasonal factors ─────────────────────────────────────────────────────────
 
 /**
- * Månadsfördelning av årsförbrukning.
- * Källa: typisk svensk villa med värmepump.
- * Jan=toppförbrukning, Jul=lägst.
+ * Load profiles:
+ *   "flat"      — Jämn fördelning (1/12 per månad). Baslinje, ingen säsongsvariation.
+ *   "standard"  — Lätt säsongsvariation. Typisk lägenhet/hus utan eluppvärmning.
+ *   "heatpump"  — Kraftig vintertopp. Villa med luft/berg-värmepump.
+ *
+ * Alla är UPPSKATTADE. Verklig profil beror på isolering, beteende, klimatzon.
+ * Framtida: HAN/P1-import för faktisk data.
+ */
+export type LoadProfileType = "flat" | "standard" | "heatpump";
+
+/** Platt — exakt lika fördelning alla månader */
+const MONTH_WEIGHT_FLAT: Record<number, number> = {
+  0: 1/12, 1: 1/12, 2: 1/12, 3: 1/12,
+  4: 1/12, 5: 1/12, 6: 1/12, 7: 1/12,
+  8: 1/12, 9: 1/12, 10: 1/12, 11: 1/12,
+};
+
+/**
+ * Värmepump-profil.
+ * Källa: uppskattning baserad på typisk svensk villa med VP.
+ * Jan=toppförbrukning (~13.5%), Jul=lägst (~3.5%).
  */
 const MONTH_WEIGHT_HEATPUMP: Record<number, number> = {
   0: 0.135,  // jan
@@ -57,11 +76,17 @@ const MONTH_WEIGHT_HEATPUMP: Record<number, number> = {
   11: 0.110, // dec
 };
 
-/** Utan värmepump — jämnare fördelning */
+/** Standard — lätt säsongsvariation, ej eluppvärmning */
 const MONTH_WEIGHT_STANDARD: Record<number, number> = {
   0: 0.095,  1: 0.090, 2: 0.088, 3: 0.082,
   4: 0.078,  5: 0.072, 6: 0.068, 7: 0.068,
   8: 0.075,  9: 0.085, 10: 0.092, 11: 0.095,
+};
+
+const PROFILE_WEIGHTS: Record<LoadProfileType, Record<number, number>> = {
+  flat: MONTH_WEIGHT_FLAT,
+  standard: MONTH_WEIGHT_STANDARD,
+  heatpump: MONTH_WEIGHT_HEATPUMP,
 };
 
 // ─── Hourly profile ───────────────────────────────────────────────────────────
@@ -103,9 +128,14 @@ export function generateLoadProfile(input: LoadInput): LoadProfile {
     resolution,
     hasHeatPump = true,
     hasEV = false,
+    loadProfile,
   } = input;
 
-  const monthWeights = hasHeatPump ? MONTH_WEIGHT_HEATPUMP : MONTH_WEIGHT_STANDARD;
+  // loadProfile takes precedence over hasHeatPump legacy flag
+  const profileType: LoadProfileType = loadProfile
+    ? loadProfile
+    : (hasHeatPump ? "heatpump" : "standard");
+  const monthWeights = PROFILE_WEIGHTS[profileType];
   const hourShape = hasEV ? HOUR_SHAPE_EV : HOUR_SHAPE;
 
   // Normalisera hourShape

@@ -101,6 +101,7 @@ export async function POST(req: NextRequest) {
       tariff = "vattenfall_stockholm",
       has_heat_pump = true,
       has_ev = false,
+      load_profile,  // "flat" | "standard" | "heatpump" (optional, overrides has_heat_pump)
       battery_kwh = 0,
       battery_max_kw = 5,
       battery_efficiency = 0.90,
@@ -183,12 +184,19 @@ export async function POST(req: NextRequest) {
 
     // ─── 4. Generate load profile ───────────────────────────────────────
 
+    // Validate load_profile if provided
+    const validProfiles = ["flat", "standard", "heatpump"];
+    const loadProfileParam = load_profile && validProfiles.includes(load_profile)
+      ? load_profile as "flat" | "standard" | "heatpump"
+      : undefined;
+
     const profile = generateLoadProfile({
       annualKwh,
       timestamps,
       resolution,
       hasHeatPump: has_heat_pump,
       hasEV: has_ev,
+      loadProfile: loadProfileParam,
     });
 
     // ─── 5. Battery optimization (if configured) ──────────────────────
@@ -313,6 +321,7 @@ export async function POST(req: NextRequest) {
         resolution,
         spotPoints: prices.length,
         eurSek,
+        loadProfile: loadProfileParam ?? (has_heat_pump ? "heatpump" : "standard"),
         tariffVerified: false,  // TODO: read from TariffProfile
       },
     });

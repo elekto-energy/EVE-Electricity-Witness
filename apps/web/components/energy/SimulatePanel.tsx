@@ -160,6 +160,9 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
   const [batteryDeductPct, setBatteryDeductPct] = useState(() => loadStored("batteryDeductPct", 50));
   const [batteryPreset, setBatteryPreset] = useState(() => loadStored("batteryPreset", "custom"));
 
+  // Load profile
+  const [loadProfile, setLoadProfile] = useState<"flat" | "standard" | "heatpump">(() => loadStored("loadProfile", "heatpump"));
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SimulateResult | null>(null);
@@ -177,6 +180,7 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
   useEffect(() => { saveStored("batteryCostKr", batteryCostKr); }, [batteryCostKr]);
   useEffect(() => { saveStored("batteryDeductPct", batteryDeductPct); }, [batteryDeductPct]);
   useEffect(() => { saveStored("batteryPreset", batteryPreset); }, [batteryPreset]);
+  useEffect(() => { saveStored("loadProfile", loadProfile); }, [loadProfile]);
 
   const applyPreset = (presetId: string) => {
     setBatteryPreset(presetId);
@@ -203,7 +207,9 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
         body: JSON.stringify({
           zone, period, start, end,
           annual_kwh: annualKwh, fuse, tariff: tariffId,
-          has_heat_pump: true, has_ev: false,
+          has_heat_pump: loadProfile === "heatpump",
+          has_ev: false,
+          load_profile: loadProfile,
           ...(batteryEnabled && { battery_kwh: batteryKwh, battery_max_kw: batteryMaxKw, battery_efficiency: batteryEff }),
         }),
       });
@@ -220,7 +226,7 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
     } finally {
       setLoading(false);
     }
-  }, [zone, period, start, end, annualKwh, fuse, tariffId, batteryEnabled, batteryKwh, batteryMaxKw, batteryEff]);
+  }, [zone, period, start, end, annualKwh, fuse, tariffId, loadProfile, batteryEnabled, batteryKwh, batteryMaxKw, batteryEff]);
 
   const isFullPeriod = period === "month" || period === "year";
 
@@ -331,6 +337,32 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>
+          </div>
+
+          {/* Förbrukningsprofil */}
+          <div>
+            <label style={{ fontSize: 9, color: C.muted, display: "block", marginBottom: 3 }}>
+              Förbrukningsprofil
+            </label>
+            <select
+              value={loadProfile}
+              onChange={e => setLoadProfile(e.target.value as "flat" | "standard" | "heatpump")}
+              style={{
+                width: "100%", padding: "6px 8px", fontSize: 12,
+                fontFamily: FONT,
+                background: C.card2, color: C.text,
+                border: `1px solid ${C.border}`, borderRadius: 5,
+              }}
+            >
+              <option value="flat">Jämn (lika alla månader)</option>
+              <option value="standard">Lägenhet / ej eluppvärmning</option>
+              <option value="heatpump">Villa med värmepump ⚡</option>
+            </select>
+            {loadProfile !== "flat" && (
+              <div style={{ fontSize: 7, color: C.spot, marginTop: 2 }}>
+                ⚠ Uppskattad säsongsfördelning — ej faktisk mätdata
+              </div>
+            )}
           </div>
 
           {/* 🔋 Batteri */}
