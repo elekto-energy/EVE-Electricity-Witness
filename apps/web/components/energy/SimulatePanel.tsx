@@ -163,6 +163,19 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
   // Load profile
   const [loadProfile, setLoadProfile] = useState<"flat" | "standard" | "heatpump">(() => loadStored("loadProfile", "heatpump"));
 
+  // Uploaded load data
+  const [uploadedLoad, setUploadedLoad] = useState<{
+    filename: string;
+    granularity: string;
+    totalKwh: number;
+    source: string;
+    monthly?: Array<{ month: string; kWh: number }>;
+    hourlyCount?: number;
+    warnings: string[];
+  } | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SimulateResult | null>(null);
@@ -190,6 +203,44 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
       setBatteryMaxKw(p.maxKw);
       setBatteryEff(p.efficiency);
       setBatteryCostKr(p.priceKr);
+    }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/load/upload", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!json.ok) {
+        setUploadError(json.error || "Okänt fel vid uppladdning");
+        setUploadedLoad(null);
+        return;
+      }
+      const d = json.data;
+      setUploadedLoad({
+        filename: d.raw_filename || file.name,
+        granularity: d.granularity,
+        totalKwh: d.totalKwh,
+        source: d.source,
+        monthly: d.monthly,
+        hourlyCount: d.hourly?.length,
+        warnings: d.warnings || [],
+      });
+      // Auto-update annualKwh if we got a reasonable value
+      if (d.totalKwh > 500) {
+        // If data covers < 12 months, extrapolate
+        const months = d.monthly?.length || 12;
+        const annual = months < 12 ? Math.round(d.totalKwh * 12 / months) : Math.round(d.totalKwh);
+        setAnnualKwh(annual);
+      }
+      setUploadError(null);
+    } catch (e: any) {
+      setUploadError(e.message || "Uppladdning misslyckades");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -358,9 +409,85 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
               <option value="standard">Lägenhet / ej eluppvärmning</option>
               <option value="heatpump">Villa med värmepump ⚡</option>
             </select>
-            {loadProfile !== "flat" && (
+            {loadProfile !== "flat" && !uploadedLoad && (
               <div style={{ fontSize: 7, color: C.spot, marginTop: 2 }}>
                 ⚠ Uppskattad säsongsfördelning — ej faktisk mätdata
+              </div>
+            )}
+          </div>
+
+          {/* 📄 Upload förbrukningsdata */}
+          <div style={{
+            padding: "8px 10px", borderRadius: 6,
+            background: uploadedLoad ? "rgba(59,130,246,0.06)" : "rgba(107,114,128,0.04)",
+            border: `1px solid ${uploadedLoad ? "rgba(59,130,246,0.2)" : C.border}`,
+          }}>
+            <div style={{ fontSize: 9, color: uploadedLoad ? C.blue : C.muted, fontWeight: 600, marginBottom: 6 }}>
+              📄 Egen förbrukningsdata
+            </div>
+            {!uploadedLoad ? (
+              <>
+                <label style={{
+                  display: "block", padding: "6px 10px", borderRadius: 4,
+                  background: C.card2, border: `1px dashed ${C.border}`,
+                  textAlign: "center", cursor: "pointer",
+                  fontSize: 9, color: C.muted,
+                }}>
+                  {uploading ? "Laddar upp…" : "Ladda upp CSV, Excel eller PDF"}
+                  <input
+                    type="file"
+                    accept=".csv,.xlsx,.xls,.pdf,.tsv"
+                    style={{ display: "none" }}
+                    disabled={uploading}
+                    onChange={e => {
+                      const f = e.target.files?.[0];
+                      if (f) handleFileUpload(f);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                <div style={{ fontSize: 7, color: C.dim, marginTop: 3 }}>
+                  Ellevio, Vattenfall Nät, E.ON — timdata eller elräkning
+                </div>
+              </>
+            ) : (
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4 }}>
+                  <span style={{ fontSize: 9, color: C.blue, fontWeight: 600 }}>✓</span>
+                  <span style={{ fontSize: 9, color: C.text, fontWeight: 600 }}>{uploadedLoad.filename}</span>
+                </div>
+                <div style={{ fontSize: 8, color: C.muted }}>
+                  {uploadedLoad.granularity === "hourly"
+                    ? `${(uploadedLoad.hourlyCount ?? 0).toLocaleString()} timvärden`
+                    : `${uploadedLoad.monthly?.length ?? 0} månader`
+                  } · {Math.round(uploadedLoad.totalKwh).toLocaleString()} kWh totalt
+                </div>
+                {uploadedLoad.monthly && uploadedLoad.monthly.length > 0 && (
+                  <div style={{ marginTop: 4, display: "flex", gap: 1, height: 24, alignItems: "flex-end" }}>
+                    {uploadedLoad.monthly.map((m, i) => {
+                      const max = Math.max(...uploadedLoad.monthly!.map(x => x.kWh));
+                      const h = max > 0 ? (m.kWh / max) * 20 : 2;
+                      return (
+                        <div key={i} title={`${m.month}: ${Math.round(m.kWh)} kWh`}
+                          style={{ flex: 1, height: h, background: C.blue, borderRadius: 1, minWidth: 3, opacity: 0.7 }} />
+                      );
+                    })}
+                  </div>
+                )}
+                {uploadedLoad.warnings.length > 0 && (
+                  <div style={{ fontSize: 7, color: C.spot, marginTop: 3 }}>
+                    {uploadedLoad.warnings[0]}
+                  </div>
+                )}
+                <button onClick={() => { setUploadedLoad(null); setUploadError(null); }}
+                  style={{ marginTop: 4, fontSize: 8, color: C.muted, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
+                  Ta bort
+                </button>
+              </div>
+            )}
+            {uploadError && (
+              <div style={{ fontSize: 8, color: C.red, marginTop: 4 }}>
+                {uploadError}
               </div>
             )}
           </div>
