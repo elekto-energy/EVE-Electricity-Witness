@@ -343,6 +343,14 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
     }
   }, [zone, period, start, end, annualKwh, fuse, tariffId, loadProfile, batteryEnabled, batteryKwh, batteryMaxKw, batteryEff, solarEnabled, solarPanelCount, solarPanelId, solarOrientation, uploadedLoad]);
 
+  // Auto-run simulation when upload data changes
+  useEffect(() => {
+    if (uploadedLoad && (period === "month" || period === "year")) {
+      runSimulation();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploadedLoad]);
+
   const isFullPeriod = period === "month" || period === "year";
 
   // ─── A/B/C values ──────────────────────────────────────────────────────────
