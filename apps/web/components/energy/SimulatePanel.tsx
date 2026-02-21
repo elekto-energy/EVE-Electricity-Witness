@@ -345,9 +345,11 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
   }, [zone, period, start, end, annualKwh, fuse, tariffId, loadProfile, batteryEnabled, batteryKwh, batteryMaxKw, batteryEff, solarEnabled, solarPanelCount, solarPanelId, solarOrientation, uploadedLoad]);
 
   // Auto-run simulation when upload data changes
+  // Use a small delay to ensure state has propagated
   useEffect(() => {
-    if (uploadedLoad && (period === "month" || period === "year")) {
-      runSimulation();
+    if (uploadedLoad) {
+      const timer = setTimeout(() => runSimulation(), 300);
+      return () => clearTimeout(timer);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uploadedLoad]);
@@ -871,7 +873,7 @@ export default function SimulatePanel({ zone, period, start, end, spotOreNow, eu
 
             {/* ── Totaler row ── */}
             {/* ── Total savings summary (when solar or battery active) ── */}
-            {(solarEnabled || batteryEnabled) && result.costBaseline > 0 && result.costBaseline !== result.totalCost && (() => {
+            {(solarEnabled || batteryEnabled) && (result.costBaseline ?? 0) > 0 && Math.abs((result.costBaseline ?? 0) - result.totalCost) > 10 && (() => {
               const totalSaved = result.costBaseline - result.totalCost + (result.solar?.exportRevenueSek ?? 0);
               const pctSaved = result.costBaseline > 0 ? (totalSaved / result.costBaseline) * 100 : 0;
               return (
