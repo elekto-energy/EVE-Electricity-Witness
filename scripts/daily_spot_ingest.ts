@@ -116,13 +116,13 @@ async function fetchZoneDay(
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 60000);
+      const timer = setTimeout(() => controller.abort(), 120000);
       const res = await fetch(url, { signal: controller.signal });
       clearTimeout(timer);
 
       if (!res.ok) {
         console.error(`  ${zone} attempt ${attempt}: HTTP ${res.status}`);
-        if (attempt < retries) { await sleep(2000 * attempt); continue; }
+        if (attempt < retries) { await sleep(5000 * attempt); continue; }
         return [];
       }
 
@@ -131,7 +131,7 @@ async function fetchZoneDay(
       if (xml.includes("Acknowledgement_MarketDocument")) {
         const errText = xml.match(/<text>([^<]*)<\/text>/)?.[1] ?? "unknown";
         console.error(`  ${zone} attempt ${attempt}: API error — ${errText}`);
-        if (attempt < retries) { await sleep(2000 * attempt); continue; }
+        if (attempt < retries) { await sleep(5000 * attempt); continue; }
         return [];
       }
 
@@ -186,7 +186,7 @@ async function fetchZoneDay(
       return records;
     } catch (err: any) {
       console.error(`  ${zone} attempt ${attempt}: ${err.message}`);
-      if (attempt < retries) { await sleep(2000 * attempt); continue; }
+      if (attempt < retries) { await sleep(5000 * attempt); continue; }
       return [];
     }
   }
@@ -280,8 +280,8 @@ async function main() {
     } else {
       console.log(`  ❌ ${zone}: no data`);
     }
-    // Rate limit between zones
-    if (i < zones.length - 1) await sleep(1000);
+    // Rate limit between zones — ENTSO-E needs breathing room
+    if (i < zones.length - 1) await sleep(3000);
   }
 
   if (allRecords.length === 0) {
