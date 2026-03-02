@@ -104,14 +104,33 @@ export async function POST(request: Request) {
         }
       }
 
-      // Verify event_hash — reconstruct payload from entry's own fields
-      // Must match exactly what report_vault.ts wrote: all fields except
-      // event_hash and chain_hash, sorted by key.
-      const eventPayload: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(entry)) {
-        if (k === "event_hash" || k === "chain_hash") continue;
-        eventPayload[k] = v;
-      }
+      // Verify event_hash — reconstruct payload exactly as report_vault.ts wrote it.
+      // Two schema versions exist in the chain:
+      //   V1 (entries 1-6): no FX fields
+      //   V2 (entries 7+):  includes fx_rate, fx_period, fx_source, fx_file_hash
+      // Detection: presence of "fx_rate" key in the stored JSON object.
+      const hasFx = "fx_rate" in entry;
+      const eventPayload: Record<string, unknown> = {
+        report_index: entry.report_index,
+        report_hash: entry.report_hash,
+        dataset_eve_id: entry.dataset_eve_id,
+        root_hash: entry.root_hash,
+        query_hash: entry.query_hash,
+        zone: entry.zone,
+        period_start: entry.period_start,
+        period_end: entry.period_end,
+        language: entry.language,
+        template_version: entry.template_version,
+        query_command: entry.query_command,
+        ...(hasFx ? {
+          fx_rate: entry.fx_rate ?? null,
+          fx_period: entry.fx_period ?? null,
+          fx_source: (entry as any).fx_source ?? null,
+          fx_file_hash: (entry as any).fx_file_hash ?? null,
+        } : {}),
+        created_at_utc: entry.created_at_utc,
+        prev_hash: entry.prev_hash,
+      };
 
       const expectedEventHash = createHash("sha256")
         .update(stableStringify(eventPayload))
