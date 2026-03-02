@@ -87,8 +87,8 @@ export default function VerifyPage() {
           Verifiera EVE-rapport
         </h1>
         <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
-          Ladda upp en PDF-rapport för att verifiera dess äkthet mot EVE:s kryptografiska kedja.
-          Filen lämnar aldrig din webbläsare — bara SHA-256-hashen skickas.
+          Verifiera en EVE-rapport mot den kryptografiska kedjan.
+          Dra och släpp valfri PDF — hashen beräknas lokalt i din webbläsare, bara SHA-256 skickas till servern.
         </p>
         <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
           {[
@@ -247,15 +247,58 @@ export default function VerifyPage() {
 
       {/* How it works */}
       <div className="card" style={{ marginTop: 24, padding: 16 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
-          Hur verifieringen fungerar
+        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
+          Hela dokumentet är verifierbart
         </div>
-        <div style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.8 }}>
-          1. Din webbläsare beräknar SHA-256 av PDF-filen lokalt — filen lämnar aldrig din dator.<br/>
-          2. Hashen skickas till EVE:s server och matchas mot rapport-valvet (report_vault.jsonl).<br/>
-          3. Om en matchning hittas verifieras den kryptografiska kedjan: prev_hash → event_hash → chain_hash.<br/>
-          4. Dataset-valvet (X-Vault) korsrefereras för att bekräfta att underliggande data är intakt.<br/>
-          5. Resultatet visar full provenance: zon, period, dataset-ID, och reproduktionskommando.
+        <div style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.8, marginBottom: 16 }}>
+          Ändras en enda bokstav, siffra eller pixel i rapporten blir det kryptografiska
+          fingeravtrycket (SHA-256) helt annorlunda — och verifieringen misslyckas.
+          Det går inte att ändra innehållet utan att det syns.
+          Samma teknik används i bankernas säkerhetssystem och digitala signaturer.
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
+          Så fungerar det steg för steg
+        </div>
+        <div style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.8, marginBottom: 16 }}>
+          1. Din webbläsare beräknar ett kryptografiskt fingeravtryck (SHA-256) av PDF-filen — själva filen skickas aldrig till servern.<br/>
+          2. Fingeravtrycket matchas mot EVE:s rapport-valv, en append-only kedja där varje rapport länkas till föregående.<br/>
+          3. Kedjans integritet verifieras — om en enda post har ändrats bryts hela kedjan.<br/>
+          4. Dataset-valvet (X-Vault) korsrefereras för att bekräfta att underliggande ENTSO-E-data är intakt.<br/>
+          5. Resultatet visar full spårbarhet: zon, period, datakälla, och ett kommando för att återskapa rapporten från rådata.
+        </div>
+
+        <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", marginBottom: 8 }}>
+            Varför detta är viktigt
+          </div>
+          <div style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+            Elpriser påverkar miljoner hushåll och företag. Trots det finns det idag inget oberoende system
+            som gör det möjligt att verifiera de siffror som cirkulerar i media, politik och debatt.
+            EVE Electricity Witness fyller det tomrummet.
+          </div>
+          <div style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+            Varje rapport som genereras av EVE är deterministisk — samma fråga ger alltid samma svar.
+            Rapporten hashas kryptografiskt och förseglas i en kedja som inte kan ändras i efterhand.
+            Om någon modifierar en enda byte i PDF:en misslyckas verifieringen.
+          </div>
+          <div style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.8, marginBottom: 12 }}>
+            Det innebär att en journalist, myndighet, forskare eller privatperson kan ta emot en EVE-rapport,
+            dra och släppa den här, och omedelbart veta: är denna rapport äkta? Har datan ändrats?
+            Kan jag reproducera resultatet själv?
+          </div>
+          <div style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.8 }}>
+            Svaret är alltid ja. Varje rapport innehåller ett reproduktionskommando.
+            Vem som helst med tillgång till öppna data från ENTSO-E, EEA och ECB kan
+            köra samma beräkning och få exakt samma resultat — siffra för siffra.
+          </div>
+        </div>
+
+        <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: 12, marginTop: 12 }}>
+          <div style={{ fontSize: 10, color: "var(--text-muted)", lineHeight: 1.6, fontStyle: "italic" }}>
+            EVE Electricity Witness är ett fristående verifieringssystem utvecklat av Organiq Sweden AB.
+            Det är inte anslutet till eller godkänt av någon systemoperatör, tillsynsmyndighet eller annan myndighet.
+            All data härstammar från publika källor: ENTSO-E Transparency Platform, EEA och ECB.
+          </div>
         </div>
       </div>
     </div>
