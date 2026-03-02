@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ThemeToggle } from "./ThemeToggle";
 
 /**
  * Status badges reflect actual data freshness, not aspiration.
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   // { href: "/opinion",     label: "Opinion",       icon: "🗳", status: "static" },      // Hidden — not public yet
   { href: "/methodology", label: "Methodology",   icon: "📐", status: "static" },
   { href: "/ask-eve",     label: "Rapport",       icon: "📊", status: "live" },
+  { href: "/ask-eve/verify", label: "Verifiera",  icon: "🔒", status: "live" },
 ] as const;
 
 export function Sidebar() {
@@ -104,6 +106,9 @@ export function Sidebar() {
             );
           })}
         </nav>
+        <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border-color)", marginTop: "auto" }}>
+          <ThemeToggle />
+        </div>
       </aside>
     </>
   );
