@@ -35,9 +35,12 @@ export async function POST(request: Request) {
     const language = lang ?? "en";
     const root = getProjectRoot();
     const tmpFile = resolve(tmpdir(), `eve_${randomBytes(8).toString("hex")}.pdf`);
+    const isMultiSE = zone === "SE";
 
     // Shell out to the CLI — guaranteed to work, same as manual CLI usage
-    const script = resolve(root, "packages/evidence/src/ask-eve/generate_pdf.ts");
+    const script = isMultiSE
+      ? resolve(root, "packages/evidence/src/ask-eve/generate_pdf_multi.ts")
+      : resolve(root, "packages/evidence/src/ask-eve/generate_pdf.ts");
     if (!existsSync(script)) {
       return NextResponse.json(
         { error: `PDF generator not found: ${script}` },
@@ -45,12 +48,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const cmd = `npx tsx "${script}" --zone ${zone} --from ${start} --to ${end} --lang ${language} --output "${tmpFile}"`;
+    const cmd = isMultiSE
+      ? `npx tsx "${script}" --from ${start} --to ${end} --lang ${language} --output "${tmpFile}"`
+      : `npx tsx "${script}" --zone ${zone} --from ${start} --to ${end} --lang ${language} --output "${tmpFile}"`;
 
     try {
       const output = execSync(cmd, {
         cwd: root,
-        timeout: 30_000,
+        timeout: isMultiSE ? 60_000 : 30_000,
         encoding: "utf-8",
         env: { ...process.env, NODE_ENV: "production" },
       });
@@ -62,7 +67,7 @@ export async function POST(request: Request) {
       };
 
       const pdfHash = parseField("pdf_hash:");
-      const queryHash = parseField("query_hash:");
+      const queryHash = parseField("query_hash:") || parseField("composite_hash:");
       const templateVersion = parseField("template:");
       const reportIndex = parseField("report_index:");
       const chainHash = parseField("chain_hash:");
