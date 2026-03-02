@@ -104,26 +104,14 @@ export async function POST(request: Request) {
         }
       }
 
-      // Verify event_hash
-      const eventPayload: Record<string, unknown> = {
-        report_index: entry.report_index,
-        report_hash: entry.report_hash,
-        dataset_eve_id: entry.dataset_eve_id,
-        root_hash: entry.root_hash,
-        query_hash: entry.query_hash,
-        zone: entry.zone,
-        period_start: entry.period_start,
-        period_end: entry.period_end,
-        language: entry.language,
-        template_version: entry.template_version,
-        query_command: entry.query_command,
-        fx_rate: entry.fx_rate ?? null,
-        fx_period: entry.fx_period ?? null,
-        fx_source: (entry as any).fx_source ?? null,
-        fx_file_hash: (entry as any).fx_file_hash ?? null,
-        created_at_utc: entry.created_at_utc,
-        prev_hash: entry.prev_hash,
-      };
+      // Verify event_hash — reconstruct payload from entry's own fields
+      // Must match exactly what report_vault.ts wrote: all fields except
+      // event_hash and chain_hash, sorted by key.
+      const eventPayload: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(entry)) {
+        if (k === "event_hash" || k === "chain_hash") continue;
+        eventPayload[k] = v;
+      }
 
       const expectedEventHash = createHash("sha256")
         .update(stableStringify(eventPayload))
@@ -146,18 +134,20 @@ export async function POST(request: Request) {
     }
 
     // Cross-reference dataset vault
+    // Multi-zone reports use pipe-separated dataset_eve_ids
     let datasetVerified = false;
     const datasetVaultPath = resolve(root, "data", "xvault", "elekto_v2_worm.jsonl");
     if (existsSync(datasetVaultPath)) {
       try {
         const dsLines = readFileSync(datasetVaultPath, "utf-8").trim().split("\n").filter(Boolean);
+        const dsIds = new Set<string>();
         for (const line of dsLines) {
           const ds = JSON.parse(line);
-          if (ds.event?.dataset_eve_id === match.dataset_eve_id) {
-            datasetVerified = true;
-            break;
-          }
+          if (ds.event?.dataset_eve_id) dsIds.add(ds.event.dataset_eve_id);
         }
+        // Check all IDs (pipe-separated for multi-zone)
+        const targetIds = match.dataset_eve_id.split("|");
+        datasetVerified = targetIds.every(id => dsIds.has(id));
       } catch {}
     }
 

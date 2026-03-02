@@ -240,7 +240,7 @@ export async function generateMultiPdf(
 
     doc.fontSize(FONT_SIZES.mono).font("Courier").fillColor("#1a1a1a");
     const vLines = [
-      `composite_query_hash:    ${compositeHash.slice(0, 32)}...`,
+      `composite_query_hash:    ${compositeHash}`,
       `zones:                   SE1, SE2, SE3, SE4`,
       `period:                  ${result.period.from} → ${result.period.to}`,
       `methodology:             ${result.methodology_version}`,
@@ -249,7 +249,7 @@ export async function generateMultiPdf(
       ``,
       ...(fx ? [
         `fx_rate:                 ${fx.fx_rate} SEK/EUR (ECB ${fx.fx_period})`,
-        `fx_file_hash:            ${fx.fx_file_hash.slice(0, 32)}...`,
+        `fx_file_hash:            ${fx.fx_file_hash}`,
       ] : []),
       ``,
       `dataset_eve_ids:`,
