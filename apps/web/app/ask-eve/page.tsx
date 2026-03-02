@@ -3,6 +3,7 @@
 import { useState } from "react";
 import QueryPanel from "./components/QueryPanel";
 import ResultPanel from "./components/ResultPanel";
+import MultiResultPanel from "./components/MultiResultPanel";
 import EvidencePanel from "./components/EvidencePanel";
 import IdentityStack from "./components/IdentityStack";
 
@@ -185,7 +186,10 @@ export default function AskEvePage() {
       {/* ═══ RESULTS (conditional) ═══ */}
       {result && (
         <>
-          <ResultPanel result={result} lang={lang} fx={fx} />
+          {result.type === "multi_zone"
+            ? <MultiResultPanel result={result} lang={lang} fx={fx} />
+            : <ResultPanel result={result} lang={lang} fx={fx} />
+          }
           <EvidencePanel result={result} pdfResult={pdfResult} />
 
           {/* PDF Action */}

@@ -65,14 +65,17 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: "Missing required fields",
-          required: { zone: "string (e.g. SE3)", start: "YYYY-MM-DD", end: "YYYY-MM-DD" },
+          required: { zone: "string (e.g. SE3 or SE for all Swedish zones)", start: "YYYY-MM-DD", end: "YYYY-MM-DD" },
         },
         { status: 400 },
       );
     }
 
     const root = getProjectRoot();
-    const script = resolve(root, "packages/evidence/src/ask-eve/query_v2.ts");
+    const isMultiSE = zone === "SE";
+    const script = isMultiSE
+      ? resolve(root, "packages/evidence/src/ask-eve/query_multi_se.ts")
+      : resolve(root, "packages/evidence/src/ask-eve/query_v2.ts");
 
     if (!existsSync(script)) {
       return NextResponse.json(
@@ -81,12 +84,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // Shell out to query_v2 CLI and capture JSON output
-    const cmd = `npx tsx "${script}" --zone ${zone} --from ${start} --to ${end} --json`;
+    // Shell out to query CLI and capture JSON output
+    const cmd = isMultiSE
+      ? `npx tsx "${script}" --from ${start} --to ${end} --json`
+      : `npx tsx "${script}" --zone ${zone} --from ${start} --to ${end} --json`;
 
     const output = execSync(cmd, {
       cwd: root,
-      timeout: 30_000,
+      timeout: isMultiSE ? 60_000 : 30_000,
       encoding: "utf-8",
       env: { ...process.env, NODE_ENV: "production" },
     });

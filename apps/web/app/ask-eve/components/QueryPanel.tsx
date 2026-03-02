@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 const ZONES = [
+  "SE",
   "SE1", "SE2", "SE3", "SE4",
   "NO1", "NO2",
   "FI", "DE_LU", "PL",
@@ -10,6 +11,7 @@ const ZONES = [
 ];
 
 const ZONE_NAMES: Record<string, string> = {
+  SE: "Sverige",
   SE1: "Luleå", SE2: "Sundsvall", SE3: "Stockholm", SE4: "Malmö",
   NO1: "Oslo", NO2: "Kristiansand", FI: "Finland", DE_LU: "Tyskland",
   PL: "Polen", EE: "Estland", LV: "Lettland", LT: "Litauen", FR: "Frankrike", NL: "Nederländerna",
