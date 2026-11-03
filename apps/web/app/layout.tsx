@@ -1,14 +1,14 @@
 import "./globals.css";
-import { Sidebar } from "@/components/Sidebar";
-import { Topbar } from "@/components/Topbar";
+import "./site.css";
+import { SiteHeader, SiteMain } from "@/components/site/SiteHeader";
 import { StructuredData } from "@/components/StructuredData";
 
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: {
-    default: "Spotpris el idag — Elpris realtid per timme SE1–SE4 | EVE Electricity Witness",
-    template: "%s | EVE Electricity Witness",
+    default: "Elmonitor – elpriset idag i SE1–SE4 (förhandsversion)",
+    template: "%s | Elmonitor",
   },
   description:
     "Se dagens spotpris på el i realtid för SE1, SE2, SE3 och SE4. " +
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   authors: [{ name: "EVE — Evidence & Verification Engine", url: "https://elmonitor.se" }],
   creator: "Organiq Sweden AB",
   publisher: "EVE Electricity Witness",
-  robots: { index: true, follow: true },
+  robots: { index: false, follow: false }, // Step B preview: never indexed
   openGraph: {
     type: "website",
     locale: "sv_SE",
@@ -63,14 +63,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `(function(){try{var t=localStorage.getItem('eve-theme')||'light';document.documentElement.setAttribute('data-theme',t)}catch(e){document.documentElement.setAttribute('data-theme','light')}})()`,
           }}
         />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" />
         <StructuredData />
       </head>
-      <body>
-        <div className="app-layout">
-          <Sidebar />
-          <Topbar />
-          <main className="main-content">{children}</main>
-        </div>
+      <body className="s-body">
+        <SiteHeader />
+        <SiteMain>{children}</SiteMain>
       </body>
     </html>
   );
