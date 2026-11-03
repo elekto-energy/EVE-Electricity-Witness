@@ -3,8 +3,10 @@ import {
   snapshot, SE_ZONES, NEIGHBOUR_ZONES, ZONE_LABEL, addDays, priceDay, weekdayLabel, toOre, rateFor, PRICE_UNIT,
 } from "@/lib/preview/snapshot";
 import { DataFreshness } from "@/components/preview/Badges";
-import { ZoneStrip, type DayView } from "@/components/site/ZoneStrip";
+import { type DayView } from "@/components/site/ZoneStrip";
 import { PowerMap, type MapDay } from "@/components/site/PowerMap";
+import { PriceCards } from "@/components/site/PriceCards";
+import { HourlyChart } from "@/components/preview/HourlyChart";
 
 export const metadata = { title: "Elpriset idag" };
 
@@ -57,31 +59,49 @@ export default function HomePage() {
   const tomorrow = addDays(today, 1);
   const unit = PRICE_UNIT;
   const fxToday = rateFor(today);
+  const vToday = view("today", "Idag", today);
+  const vTomorrow = view("tomorrow", "Imorgon", tomorrow);
 
   return (
     <>
       <section>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "8px 18px" }}>
-          <h1 className="s-h1" style={{ marginBottom: 6 }}>Elpriset just nu</h1>
+          <h1 className="s-h1" style={{ marginBottom: 6 }}>Elpriset idag</h1>
           <DataFreshness publishedAtUtc={snapshot.source.published_at_utc} snapshotToday={today} />
         </div>
-        <p className="s-lede">
-          Mycket el produceras i norr men används i söder. När ledningarna däremellan inte räcker till blir priset högre
-          söderut. Dra i tidslinjen för att se priset kvart för kvart, och hur elen flödar mellan områdena.
+        <p className="s-lede">Dygnsmedel per elområde {weekdayLabel(today)}, före skatt, moms och nätavgift.</p>
+        <PriceCards tomorrowLabel="Imorgon" zones={vToday.zones.map((z, i) => ({
+          zone: z.zone, city: z.city,
+          today: { status: z.status, mean: z.mean, hourly: z.hourly, selectionVerified: z.selectionVerified, missing: z.missing },
+          tomorrow: { status: vTomorrow.zones[i].status, mean: vTomorrow.zones[i].mean, hourly: vTomorrow.zones[i].hourly, selectionVerified: vTomorrow.zones[i].selectionVerified, missing: vTomorrow.zones[i].missing },
+        }))} />
+      </section>
+
+      <section className="s-section" id="karta">
+        <h2 className="s-h2">Kartan kvart för kvart</h2>
+        <p className="s-note" style={{ marginBottom: 4 }}>
+          Mycket el produceras i norr men används i söder. När ledningarna däremellan inte räcker till blir priset högre söderut.
+          Dra i tidslinjen för att se priset kvart för kvart och hur elen flödar mellan områdena.
         </p>
         <PowerMap days={[mapDay("today", "Idag", today), mapDay("tomorrow", "Imorgon", tomorrow)]} snapshotToday={today} />
       </section>
 
       <section className="s-section">
-        <h2 className="s-h2" style={{ marginBottom: 6 }}>Sveriges elområden</h2>
-        <div className="s-hero">
-          <div>
-            <p className="s-note">
-              Dygnsmedel per elområde, från norr till söder. Vid varje pris står om dygnet är komplett. Saknas något visas det, det gissas aldrig.
-            </p>
-          </div>
-          <ZoneStrip views={[view("today", "Idag", today), view("tomorrow", "Imorgon", tomorrow)]} unit={unit} />
+        <div className="s-section-head">
+          <h2 className="s-h2">Timme för timme</h2>
+          <span style={{ display: "flex", gap: 12, fontSize: "0.85rem", fontWeight: 600 }}>
+            {SE_ZONES.map(z => <span key={z} style={{ color: `var(--s-${z.toLowerCase()})` }}>{z}</span>)}
+          </span>
         </div>
+        {[vToday, vTomorrow].map(v => (
+          <div key={v.key} style={{ marginBottom: 16 }}>
+            <div className="s-note" style={{ marginBottom: 6 }}>{v.label}, {v.dateLabel}, {unit}</div>
+            <div className="s-panel s-chart">
+              <HourlyChart unit={unit} height={v.key === "today" ? 260 : 200}
+                series={v.zones.map(z => ({ key: z.zone, label: z.zone, color: `var(--s-${z.zone.toLowerCase()})`, points: z.hourly }))} />
+            </div>
+          </div>
+        ))}
       </section>
 
       <section className="s-section">
@@ -107,7 +127,7 @@ export default function HomePage() {
       </section>
 
       <footer className="s-footer">
-        Källa: ENTSO-E (dagen-före-priser och fysiska flöden), ECB (valutakurs). Karta: Natural Earth (public domain). Detta är en förhandsversion och inte elmonitor.se.
+        Källa: ENTSO-E (dagen-före-priser och fysiska flöden), ECB (valutakurs). Karta: Natural Earth (public domain). Detta är en förhandsversion.
         Full spårbarhet finns under <Link href="/data">Datakvalitet</Link>.
       </footer>
     </>

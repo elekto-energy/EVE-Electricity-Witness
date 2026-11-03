@@ -205,3 +205,58 @@ body.s-body {
 .s-gen-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 8px; font-size: 0.9rem; }
 .s-gen-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .s-gen-legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+/* Map side panel: spot prices for the selected quarter */
+.s-map-panel { margin: 16px; padding: 16px; background: var(--s-surface); border: 1px solid var(--s-line); border-radius: 12px; align-self: start; }
+.s-panel-head { display: flex; justify-content: space-between; align-items: baseline; color: var(--s-muted); font-size: 0.9rem; margin-bottom: 8px; }
+.s-panel-head b { color: var(--s-ink); font-size: 1.1rem; }
+.s-plist { list-style: none; margin: 0; padding: 0; }
+.s-prow {
+  width: 100%; display: grid; grid-template-columns: 14px 1fr auto; grid-template-areas: "dot name val" ". mean mean";
+  gap: 2px 10px; align-items: center; text-align: left; font: inherit; color: inherit; background: none; border: 0;
+  border-top: 1px solid var(--s-line); padding: 12px 4px; cursor: pointer; border-radius: 6px;
+}
+.s-plist li:first-child .s-prow { border-top: 0; }
+.s-prow:hover, .s-prow.on { background: color-mix(in srgb, var(--s-line) 35%, transparent); }
+.s-prow:focus-visible { outline: 2px solid var(--s-se1); outline-offset: 1px; }
+.s-pdot { grid-area: dot; width: 12px; height: 12px; border-radius: 50%; }
+.s-pname { grid-area: name; color: var(--s-muted); }
+.s-pname b { color: var(--s-ink); margin-right: 4px; }
+.s-pval { grid-area: val; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.02em; }
+.s-pval small { font-size: 0.72rem; font-weight: 500; color: var(--s-muted); letter-spacing: 0; }
+.s-pmean { grid-area: mean; font-size: 0.8rem; color: var(--s-muted); }
+.s-pextra { border-top: 1px solid var(--s-line); margin-top: 8px; padding-top: 10px; }
+.s-pflow { border-top: 1px solid var(--s-line); margin-top: 10px; padding-top: 10px; font-size: 0.88rem; color: var(--s-muted); }
+.s-pflow b { color: var(--s-ink); }
+.s-map-panel .s-tip-hint { margin-top: 10px; font-size: 0.78rem; }
+@media (max-width: 720px) {
+  .s-map-panel { order: -1; margin: 0; border: 0; border-bottom: 1px solid var(--s-line); border-radius: 0; }
+}
+
+/* Price cards (start page) */
+.s-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+@media (max-width: 720px) { .s-cards { grid-template-columns: 1fr; gap: 10px; } }
+.s-card {
+  display: grid; grid-template-columns: 104px 1fr; min-height: 132px; color: inherit; text-decoration: none;
+  background: var(--s-surface); border: 1px solid var(--s-line); border-radius: 14px; overflow: hidden;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+.s-card:hover { text-decoration: none; border-color: var(--zc); }
+.s-card:focus-visible { outline: 2px solid var(--zc); outline-offset: 2px; }
+.s-card-code {
+  display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 2.1rem; letter-spacing: -0.02em;
+  font-variation-settings: "wdth" 112; color: var(--zc); background: color-mix(in srgb, var(--zc) 13%, var(--s-surface));
+}
+.s-card-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.s-card-city { color: var(--s-muted); font-size: 0.92rem; }
+.s-card-price { font-weight: 800; font-size: 1.85rem; letter-spacing: -0.02em; line-height: 1.15; }
+.s-card-price span { font-weight: 500; font-size: 0.95rem; color: var(--s-muted); letter-spacing: 0; }
+.s-card-tomorrow { font-size: 0.95rem; color: var(--s-muted); }
+.s-card-tomorrow b { color: var(--s-ink); }
+.s-card-tomorrow b.up { color: var(--s-bad); }
+.s-card-tomorrow b.down { color: var(--s-ok); }
+.s-card-na { font-style: normal; }
+.s-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 6px; }
+.s-card-spark { width: 120px; height: 34px; }
+@media (max-width: 420px) { .s-card { grid-template-columns: 76px 1fr; } .s-card-code { font-size: 1.6rem; } }
+.s-main a.s-card, .s-main a.s-card:hover { color: var(--s-ink); }

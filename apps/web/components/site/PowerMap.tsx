@@ -85,6 +85,7 @@ export function PowerMap({ days, snapshotToday }: { days: MapDay[]; snapshotToda
     return prev ? { ...f, mw: prev[1], at: prev[0], stale: true } : { ...f, mw: null as number | null, at: null as string | null, stale: false };
   });
   const hasFlows = flowsNow.some(f => f.mw !== null);
+  const topFlow = [...flowsNow].filter(f => f.mw !== null).sort((a, b) => Math.abs(b.mw as number) - Math.abs(a.mw as number))[0] ?? null;
   const staleAt = flowsNow.filter(f => f.stale && f.at).map(f => f.at as string).sort().pop() ?? null;
   const sel = hover ?? pinned;
   const hz = sel ? zoneBy.get(sel) ?? null : null;
@@ -157,20 +158,53 @@ export function PowerMap({ days, snapshotToday }: { days: MapDay[]; snapshotToda
           })}
         </svg>
 
-        <div className={`s-map-tip ${hz ? "on" : ""}`} aria-live="polite">
-          {hz ? (
-            <>
+        <aside className="s-map-panel" aria-live="polite">
+          <div className="s-panel-head">
+            <span>Spotpris</span>
+            <b className="s-num">{t ? `${clock(t)}–${tEnd ? clock(tEnd) : ""}` : "–"}</b>
+          </div>
+          <ul className="s-plist">
+            {day.zones.filter(z => SE.has(z.zone)).map(z => {
+              const v = priceAt(z);
+              const on = sel === z.zone;
+              return (
+                <li key={z.zone}>
+                  <button type="button" className={on ? "s-prow on" : "s-prow"} aria-pressed={on}
+                    onClick={() => setPinned(p => (p === z.zone ? null : z.zone))}
+                    onMouseEnter={() => setHover(z.zone)} onMouseLeave={() => setHover(h => (h === z.zone ? null : h))}>
+                    <span className="s-pdot" style={{ background: priceColor(v) }} />
+                    <span className="s-pname"><b>{z.zone}</b> {z.name.replace(/^SE\d\s*/, "")}</span>
+                    <span className="s-pval s-num">{fmt(v)}<small> öre/kWh</small></span>
+                    <span className="s-pmean s-num">
+                      {z.status === "COMPLETE" || z.status === "PARTIAL" ? `dygnsmedel ${fmt(z.mean)}` : z.status === "NOT_PUBLISHED_YET" ? "ej publicerat ännu" : "saknas"}
+                      {z.status === "PARTIAL" ? ", delvis" : ""}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          {hz && !SE.has(hz.zone) && (
+            <div className="s-pextra">
               <div className="s-tip-name">{hz.name}</div>
               <div className="s-tip-price s-num">{fmt(priceAt(hz))} <span>öre/kWh</span></div>
-              {priceAt(hz) !== null && day.fx && <div className="s-tip-meta s-num">{fmt(((priceAt(hz) as number) * 10) / day.fx.rate)} EUR/MWh</div>}
-              <div className="s-tip-meta s-num">{t ? `kvarten ${clock(t)}–${tEnd ? clock(tEnd) : ""}` : ""}</div>
               <div className="s-tip-meta s-num">dygnsmedel {fmt(hz.status === "COMPLETE" || hz.status === "PARTIAL" ? hz.mean : null)}</div>
-              {hz.status !== "COMPLETE" && <div className="s-tip-warn">{hz.status === "PARTIAL" ? "Delvis: vissa kvart saknas hos källan" : "Pris saknas för dygnet"}</div>}
-            </>
-          ) : (
-            <div className="s-tip-hint">Peka eller tryck på ett område för kvartspriset.</div>
+            </div>
           )}
-        </div>
+          {hz && priceAt(hz) !== null && day.fx && (
+            <div className="s-tip-meta s-num" style={{ marginTop: 8 }}>
+              {hz.zone.replace("_LU", "")}: {fmt(((priceAt(hz) as number) * 10) / day.fx.rate)} EUR/MWh på börsen
+            </div>
+          )}
+          {topFlow && (
+            <div className="s-pflow">
+              Störst flöde just då: <b className="s-num">{Math.round(Math.abs(topFlow.mw as number)).toLocaleString("sv-SE")} MW</b>{" "}
+              från {(topFlow.mw as number) >= 0 ? topFlow.from : topFlow.to} till {(topFlow.mw as number) >= 0 ? topFlow.to : topFlow.from}
+              {topFlow.stale && topFlow.at ? ` (uppmätt ${clock(topFlow.at)})` : ""}
+            </div>
+          )}
+          <p className="s-tip-hint">Peka eller tryck på ett område eller en rad.</p>
+        </aside>
       </div>
 
       <div className="s-map-legend">
