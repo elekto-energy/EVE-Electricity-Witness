@@ -7,11 +7,10 @@ const NAV = [
   { href: "/", label: "Elpriset" },
   { href: "/omraden", label: "Grannländer och flöden" },
   { href: "/data", label: "Datakvalitet" },
-  { href: "/karta", label: "Kartan", soon: true },
   { href: "/methodology", label: "Metod" },
 ];
 
-const NEW_ROUTES = new Set(["/", "/omraden", "/data", "/karta"]);
+const NEW_ROUTES = new Set(["/", "/omraden", "/data"]);
 
 export function SiteHeader() {
   const path = usePathname() ?? "/";
@@ -24,7 +23,7 @@ export function SiteHeader() {
         </Link>
         <nav className="s-nav" aria-label="Huvudmeny">
           {NAV.map(n => (
-            <Link key={n.href} href={n.href} aria-current={active(n.href) ? "page" : undefined} className={n.soon ? "s-soon" : undefined}>
+            <Link key={n.href} href={n.href} aria-current={active(n.href) ? "page" : undefined}>
               {n.label}
             </Link>
           ))}

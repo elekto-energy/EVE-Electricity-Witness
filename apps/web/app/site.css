@@ -148,3 +148,60 @@ body.s-body {
 .s-gap { display: none; }
 .s-chart { overflow-x: auto; }
 @media (max-width: 720px) { .s-chart svg { min-width: 680px; } }
+
+/* Map (start page) */
+:root { --s-water: #d9e4e8; --s-land: #e9eff1; --s-se-land: #ffffff; }
+@media (prefers-color-scheme: dark) { :root { --s-water: #0b141a; --s-land: #1a2731; --s-se-land: #22323e; } }
+.s-map { margin-top: 8px; }
+.s-map-controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin-bottom: 12px; }
+.s-time { display: flex; flex-direction: column; gap: 4px; flex: 1 1 260px; font-size: 0.9rem; color: var(--s-muted); }
+.s-time b { color: var(--s-ink); font-size: 1.05rem; }
+.s-time input[type="range"] { width: 100%; accent-color: var(--s-ink); }
+.s-map-stage {
+  position: relative; border: 1px solid var(--s-line); border-radius: 12px; overflow: hidden; background: var(--s-water);
+  display: grid; grid-template-columns: minmax(0, 640px) minmax(220px, 1fr); align-items: start;
+}
+.s-map-svg { display: block; width: 100%; height: auto; max-height: 78vh; touch-action: manipulation; }
+.s-map-water { fill: var(--s-water); }
+.s-map-land { fill: var(--s-land); stroke: color-mix(in srgb, var(--s-muted) 35%, transparent); stroke-width: 0.6; }
+.s-map-se { fill: var(--s-se-land); stroke: color-mix(in srgb, var(--s-muted) 55%, transparent); stroke-width: 0.8; }
+.s-zmark { cursor: pointer; outline: none; }
+.s-zdot { stroke: #fff; stroke-width: 2.5; transition: r 120ms ease; }
+.s-zdot-on { stroke: var(--s-ink); stroke-width: 3; }
+.s-zmark:focus-visible .s-zdot { stroke: var(--s-ink); stroke-width: 3.5; }
+.s-zval { fill: #fff; font-family: var(--s-font); font-weight: 800; font-size: 15px; pointer-events: none; }
+.s-zval-sm { font-size: 11px; font-weight: 700; }
+.s-zcode { fill: var(--s-ink); font-family: var(--s-font); font-weight: 800; font-size: 13px; pointer-events: none; paint-order: stroke; stroke: var(--s-water); stroke-width: 3px; }
+.s-zcode-sm { font-size: 10px; font-weight: 700; fill: var(--s-muted); }
+.s-flow-base { fill: none; stroke: color-mix(in srgb, var(--s-ink) 22%, transparent); stroke-linecap: round; }
+.s-flow-dash { fill: none; stroke: var(--s-ink); stroke-linecap: round; stroke-dasharray: 2 14; animation: s-flow 1.4s linear infinite; }
+@keyframes s-flow { to { stroke-dashoffset: -16; } }
+@media (prefers-reduced-motion: reduce) { .s-flow-dash { animation: none; stroke-dasharray: none; opacity: 0.55; } }
+.s-flow-pill { fill: var(--s-surface); stroke: var(--s-line); }
+.s-flow-text { fill: var(--s-ink); font-family: var(--s-font); font-size: 10.5px; font-weight: 700; }
+.s-map-tip {
+  margin: 16px; padding: 14px 16px; align-self: start;
+  background: var(--s-surface); border: 1px solid var(--s-line); border-radius: 10px; box-shadow: 0 6px 20px rgba(19,33,46,0.10);
+}
+.s-tip-name { font-weight: 700; }
+.s-tip-price { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; margin-top: 2px; }
+.s-tip-price span { font-size: 0.75rem; font-weight: 500; color: var(--s-muted); }
+.s-tip-meta { font-size: 0.82rem; color: var(--s-muted); }
+.s-tip-warn { font-size: 0.82rem; color: var(--s-warn); margin-top: 4px; }
+.s-tip-hint { font-size: 0.85rem; color: var(--s-muted); }
+.s-map-legend { display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: flex-start; margin-top: 12px; }
+.s-scale { flex: 0 0 280px; }
+.s-scale > span { display: block; height: 10px; border-radius: 5px; }
+.s-scale-ticks { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--s-muted); margin-top: 3px; }
+.s-scale-ticks i { font-style: normal; }
+.s-map-legend .s-note { flex: 1 1 300px; margin: 0; }
+@media (max-width: 720px) {
+  .s-map-stage { grid-template-columns: 1fr; }
+  .s-map-tip { margin: 0; border: 0; border-top: 1px solid var(--s-line); border-radius: 0; box-shadow: none; }
+  .s-map-svg { max-height: none; }
+}
+
+/* Generation mix */
+.s-gen-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 8px; font-size: 0.9rem; }
+.s-gen-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.s-gen-legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }

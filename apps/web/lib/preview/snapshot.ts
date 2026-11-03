@@ -16,6 +16,7 @@ export interface PriceDay {
   selection_verified?: boolean | null;
   missing_intervals?: number;
   hourly?: [string, number][];
+  quarters?: [string, number][];
   mean?: number | null;
   min?: number | null;
   max?: number | null;
@@ -58,6 +59,7 @@ export interface Snapshot {
   selection_note: string;
   prices: Record<string, { coverage: Coverage | null; days: PriceDay[] }>;
   flows: Record<string, { from: string; to: string; coverage: Record<string, Coverage | null>; days: FlowDay[] }>;
+  fx: { source: string; unit: string; raw_sha256: string; rule: string; rates: Record<string, number> } | null;
 }
 
 export const snapshot = raw as unknown as Snapshot;
@@ -96,3 +98,20 @@ export function hourLabel(isoUtc: string): string {
 export function weekdayLabel(day: string): string {
   return new Intl.DateTimeFormat("sv-SE", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" }).format(new Date(day + "T12:00:00Z"));
 }
+
+/** ECB EUR/SEK reference rate for a price day: that day's rate, or the latest published before it. */
+export function rateFor(day: string): { rate: number; date: string } | null {
+  const r = snapshot.fx?.rates;
+  if (!r) return null;
+  const d = Object.keys(r).filter(x => x <= day).sort().pop();
+  return d ? { rate: r[d], date: d } : null;
+}
+
+/** EUR/MWh -> ore/kWh (1 EUR/MWh = rate/10 ore/kWh). Returns null when no rate is available. */
+export function toOre(eurMwh: number | null | undefined, day: string): number | null {
+  const fx = rateFor(day);
+  if (eurMwh === null || eurMwh === undefined || !fx) return null;
+  return Math.round(((eurMwh * fx.rate) / 10) * 100) / 100;
+}
+
+export const PRICE_UNIT = "öre/kWh";

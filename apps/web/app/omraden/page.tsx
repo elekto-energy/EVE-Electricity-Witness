@@ -1,5 +1,5 @@
 import {
-  snapshot, NEIGHBOUR_ZONES, ZONE_LABEL, priceDay, fmt, weekdayLabel,
+  snapshot, NEIGHBOUR_ZONES, ZONE_LABEL, priceDay, fmt, weekdayLabel, toOre, PRICE_UNIT,
 } from "@/lib/preview/snapshot";
 import { StatusBadge, DataFreshness } from "@/components/preview/Badges";
 import { SourceFooter } from "@/components/preview/SourceFooter";
@@ -8,7 +8,7 @@ export const metadata = { title: "Grannländer och flöden" };
 
 export default function AreasPage() {
   const today = snapshot.today;
-  const unit = snapshot.units.price;
+  const unit = PRICE_UNIT;
   const flowRows = Object.entries(snapshot.flows).map(([border, f]) => {
     const done = [...f.days].reverse().find(d => d.status_ab === "COMPLETE" && d.status_ba === "COMPLETE" && d.net_mean_mw !== null);
     return { border, f, done };
@@ -33,9 +33,9 @@ export default function AreasPage() {
                 return (
                   <tr key={z}>
                     <td>{ZONE_LABEL[z] ?? z}</td>
-                    <td className="s-r s-num">{show ? fmt(d?.mean) : "–"}</td>
-                    <td className="s-r s-num">{show ? fmt(d?.min) : "–"}</td>
-                    <td className="s-r s-num">{show ? fmt(d?.max) : "–"}</td>
+                    <td className="s-r s-num">{show ? fmt(toOre(d?.mean, today)) : "–"}</td>
+                    <td className="s-r s-num">{show ? fmt(toOre(d?.min, today)) : "–"}</td>
+                    <td className="s-r s-num">{show ? fmt(toOre(d?.max, today)) : "–"}</td>
                     <td><StatusBadge status={d?.status ?? "NO_RECORD"} selectionVerified={d?.selection_verified} missing={d?.missing_intervals} /></td>
                   </tr>
                 );

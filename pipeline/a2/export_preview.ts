@@ -7,6 +7,8 @@
  *
  * Usage:
  *   npx tsx pipeline/a2/export_preview.ts --store local:<dir> --out <file> [--days 14] [--only SE3,SE4,SE3-SE4]
+ *     [--eur-sek <file>]   ECB SDW jsondata response for EXR/D.SEK.EUR.SP00.A (saved raw); adds EUR/SEK reference
+ *                          rates so the site can show ore/kWh. Prices themselves stay in EUR/MWh in the snapshot.
  */
 
 import { createHash } from "crypto";
@@ -117,6 +119,9 @@ function main() {
           selection_verified: unverified.has(day) ? false : null,
           missing_intervals: d.missing_starts_utc.length,
           hourly: d.hourly.map((h: [string, number]) => [h[0], round(h[1])]),
+          // Native quarter values (selected series) for today and tomorrow only; origin marker dropped.
+          quarters: (day === today || day === addDays(today, 1)) && d.resolution === "PT15M"
+            ? (d.values as [string, number, string][]).map(v => [v[0], round(v[1])]) : undefined,
           mean: vals.length ? round(vals.reduce((a, b) => a + b, 0) / vals.length) : null,
           min: vals.length ? round(Math.min(...vals)) : null,
           max: vals.length ? round(Math.max(...vals)) : null,
@@ -148,6 +153,24 @@ function main() {
     };
   }
 
+  // Optional EUR/SEK reference rates (ECB), read from a saved raw response; never fetched here.
+  let fx: Json = null;
+  const fxFile = arg("--eur-sek", "");
+  if (fxFile) {
+    const rawFx = readFileSync(fxFile);
+    const j = JSON.parse(rawFx.toString("utf-8"));
+    const obs = (Object.values(j.dataSets[0].series)[0] as Json).observations as Record<string, [number]>;
+    const dates = j.structure.dimensions.observation[0].values as { id: string }[];
+    const rates: Record<string, number> = {};
+    for (const [i, v] of Object.entries(obs)) rates[dates[Number(i)].id] = v[0];
+    fx = {
+      source: "ECB Statistical Data Warehouse, series EXR/D.SEK.EUR.SP00.A (euro foreign exchange reference rate)",
+      unit: "SEK per EUR", raw_sha256: sha256(rawFx), raw_bytes: rawFx.length,
+      rule: "ore/kWh = EUR/MWh x rate / 10, rate = ECB reference rate of the price day, or the latest published before it",
+      rates,
+    };
+  }
+
   const snapshot = {
     schema: SCHEMA,
     source: {
@@ -160,7 +183,7 @@ function main() {
     market_tz: TZ, today, window: { first, last }, units: { price: "EUR/MWh", flow: "MW" },
     hourly_method: meta.hourly_method, history_start: meta.history_start,
     status_meaning: meta.status_meaning, selection_note: meta.selection_note,
-    prices, flows,
+    prices, flows, fx,
   };
   const body = Buffer.from(stableJson(snapshot) + "\n", "utf-8");
   mkdirSync(dirname(out), { recursive: true });
