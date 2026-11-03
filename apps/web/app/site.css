@@ -260,3 +260,28 @@ body.s-body {
 .s-card-spark { width: 120px; height: 34px; }
 @media (max-width: 420px) { .s-card { grid-template-columns: 76px 1fr; } .s-card-code { font-size: 1.6rem; } }
 .s-main a.s-card, .s-main a.s-card:hover { color: var(--s-ink); }
+
+/* Mobile: every menu item visible (wraps instead of scrolling), also with larger system text */
+.s-short { display: none; }
+@media (max-width: 720px) {
+  .s-long { display: none; }
+  .s-short { display: inline; }
+  .s-nav { flex-wrap: wrap; overflow: visible; margin-left: -10px; width: auto; gap: 0 2px; }
+  .s-nav a { padding: 8px 10px; font-size: 0.95rem; }
+  /* Compact 2x2 price cards so the map comes into view sooner */
+  .s-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .s-card { grid-template-columns: 1fr; min-height: 0; }
+  .s-card-code { justify-content: flex-start; padding: 8px 12px; font-size: 1.15rem; }
+  .s-card-body { padding: 8px 12px 12px; }
+  .s-card-price { font-size: 1.4rem; }
+  .s-card-price span { display: block; font-size: 0.78rem; }
+  .s-card-tomorrow { font-size: 0.82rem; }
+  .s-card-spark { display: none; }
+  .s-card-foot:empty { display: none; }
+}
+
+/* Border flow arrows (/omraden) */
+.s-flowarrow{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.s-flowarrow b{font-weight:600;font-size:.9rem}
+.s-flowarrow svg line{stroke:var(--s-ink)}
+.s-flowarrow svg path{fill:var(--s-ink)}

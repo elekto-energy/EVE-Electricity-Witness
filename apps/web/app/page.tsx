@@ -118,7 +118,7 @@ export default function HomePage() {
         <h2 className="s-h2">Vad betyder siffrorna?</h2>
         <p className="s-note" style={{ marginTop: 6 }}>
           Priset är spotpriset på elbörsen, före elskatt, moms och nätavgift. Börsen sätter priset i euro per megawattimme; här är det
-          omräknat till öre per kilowattimme med Europeiska centralbankens referenskurs{fxToday ? ` (${fxToday.rate.toLocaleString("sv-SE")} kr/EUR, ${fxToday.date})` : ""}.
+          omräknat till öre per kilowattimme med Europeiska centralbankens referenskurs{fxToday ? ` (${fxToday.rate.toLocaleString("sv-SE", { maximumFractionDigits: 6 })} kr/EUR, ${fxToday.date})` : ""}.
           Elbolagens egna omräkningar kan skilja sig något. Priset för imorgon publiceras runt klockan 13 dagen före.
         </p>
         <p className="s-note" style={{ marginTop: 10 }}>

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const NAV = [
   { href: "/", label: "Elpriset" },
-  { href: "/omraden", label: "Grannländer och flöden" },
+  { href: "/omraden", label: "Grannländer och flöden", short: "Grannländer" },
   { href: "/data", label: "Datakvalitet" },
   { href: "/methodology", label: "Metod" },
 ];
@@ -19,12 +19,12 @@ export function SiteHeader() {
     <header className="s-header">
       <div className="s-header-inner">
         <Link href="/" className="s-wordmark">
-          elmonitor<span className="s-tag" title="Testversion för granskning, inte elmonitor.se">förhandsversion</span>
+          elmonitor<span className="s-tag" title="Testversion för granskning">förhandsversion</span>
         </Link>
         <nav className="s-nav" aria-label="Huvudmeny">
           {NAV.map(n => (
             <Link key={n.href} href={n.href} aria-current={active(n.href) ? "page" : undefined}>
-              {n.label}
+              {"short" in n && n.short ? <><span className="s-long">{n.label}</span><span className="s-short">{n.short}</span></> : n.label}
             </Link>
           ))}
         </nav>

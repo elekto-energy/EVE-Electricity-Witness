@@ -6,6 +6,24 @@ import { SourceFooter } from "@/components/preview/SourceFooter";
 
 export const metadata = { title: "Grannländer och flöden" };
 
+const MONTHS = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
+const shortDate = (iso: string) => `${Number(iso.slice(8, 10))} ${MONTHS[Number(iso.slice(5, 7)) - 1]}`;
+
+/** Direction arrow for one border; length scales with net MW relative to the largest border shown. */
+function FlowArrow({ from, to, share }: { from: string; to: string; share: number }) {
+  const len = 14 + Math.round(Math.min(1, Math.max(0, share)) * 66);
+  return (
+    <span className="s-flowarrow" aria-label={`${from} till ${to}`}>
+      <b>{from}</b>
+      <svg width={len + 8} height="12" viewBox={`0 0 ${len + 8} 12`} aria-hidden="true">
+        <line x1="1" y1="6" x2={len} y2="6" strokeWidth="2.5" strokeLinecap="round" />
+        <path d={`M${len - 1},1.5 L${len + 7},6 L${len - 1},10.5 Z`} />
+      </svg>
+      <b>{to}</b>
+    </span>
+  );
+}
+
 export default function AreasPage() {
   const today = snapshot.today;
   const unit = PRICE_UNIT;
@@ -13,6 +31,7 @@ export default function AreasPage() {
     const done = [...f.days].reverse().find(d => d.status_ab === "COMPLETE" && d.status_ba === "COMPLETE" && d.net_mean_mw !== null);
     return { border, f, done };
   });
+  const maxMw = Math.max(1, ...flowRows.map(r => (r.done ? Math.abs(r.done.net_mean_mw!) : 0)));
   return (
     <>
       <h1 className="s-h1">Grannländer och flöden</h1>
@@ -52,14 +71,13 @@ export default function AreasPage() {
         </div>
         <div className="s-scroll">
           <table className="s-table">
-            <thead><tr><th>Gräns</th><th>Riktning</th><th className="s-r">Nettoflöde</th><th>Dygn</th></tr></thead>
+            <thead><tr><th>Riktning</th><th className="s-r">Nettoflöde</th><th className="s-r">Dygn</th></tr></thead>
             <tbody>
               {flowRows.map(({ border, f, done }) => (
                 <tr key={border}>
-                  <td>{f.from} och {f.to}</td>
-                  <td>{done ? (done.net_mean_mw! >= 0 ? `${f.from} till ${f.to}` : `${f.to} till ${f.from}`) : "–"}</td>
+                  <td>{done ? <FlowArrow from={done.net_mean_mw! >= 0 ? f.from : f.to} to={done.net_mean_mw! >= 0 ? f.to : f.from} share={Math.abs(done.net_mean_mw!) / maxMw} /> : `${f.from} och ${f.to}`}</td>
                   <td className="s-r s-num">{done ? `${fmt(Math.abs(done.net_mean_mw!), 0)} MW` : <StatusBadge status="MISSING" />}</td>
-                  <td className="s-num">{done ? done.day : "–"}</td>
+                  <td className="s-r s-num" style={{ whiteSpace: "nowrap" }}>{done ? shortDate(done.day) : "–"}</td>
                 </tr>
               ))}
             </tbody>
@@ -67,7 +85,7 @@ export default function AreasPage() {
         </div>
         <p className="s-note" style={{ marginTop: 10 }}>
           Fysiska flöden enligt ENTSO-E. Nettot är flödet i ena riktningen minus den andra, räknat på timmar där båda finns.
-          Kartan med flöden och flaskhalsar kommer i nästa steg.
+          Pilens längd visar nettoflödet i förhållande till den största gränsen. Flödet timme för timme visas på kartan på startsidan.
         </p>
       </section>
 

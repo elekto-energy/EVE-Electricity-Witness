@@ -217,7 +217,7 @@ export function PowerMap({ days, snapshotToday }: { days: MapDay[]; snapshotToda
             ? `Pilarna visar uppmätt nettoflöde över gränsen i MW${staleAt ? `, senast uppmätta timme ${clock(staleAt)}` : " under timmen"}. Tjockare pil betyder mer el.`
             : "Uppmätta flöden finns bara för timmar som har passerat."}
           {" "}Punkterna markerar ungefär var elområdet ligger; områdenas gränser ritas inte.
-          {day.fx ? ` Priser i öre/kWh före skatt, moms och nätavgift, omräknade med ECB:s kurs ${day.fx.rate.toLocaleString("sv-SE")} kr/EUR (${day.fx.date}).` : " Valutakurs saknas, så priset kan inte visas i öre/kWh."}
+          {day.fx ? ` Priser i öre/kWh före skatt, moms och nätavgift, omräknade med ECB:s kurs ${day.fx.rate.toLocaleString("sv-SE", { maximumFractionDigits: 6 })} kr/EUR (${day.fx.date}).` : " Valutakurs saknas, så priset kan inte visas i öre/kWh."}
         </p>
       </div>
     </div>
