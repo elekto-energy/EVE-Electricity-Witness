@@ -12,8 +12,17 @@ const NAV = [
 
 const NEW_ROUTES = new Set(["/", "/omraden", "/data"]);
 
+/**
+ * usePathname() can return "/index" for the root page when Next.js regenerates it on the server
+ * (ISR after revalidatePath("/") from the data cron). Treat it as "/" so the start page keeps its frame.
+ */
+function usePath(): string {
+  const p = usePathname() ?? "/";
+  return p === "/index" ? "/" : p;
+}
+
 export function SiteHeader() {
-  const path = usePathname() ?? "/";
+  const path = usePath();
   const active = (href: string) => (href === "/" ? path === "/" : path === href || path.startsWith(href + "/"));
   return (
     <header className="s-header">
@@ -41,7 +50,7 @@ const LEGACY_WORKING = new Set(["/methodology"]);
  * old data services show a notice instead of empty or misleading views (owner decision 2026-11-03).
  */
 export function SiteMain({ children }: { children: React.ReactNode }) {
-  const path = usePathname() ?? "/";
+  const path = usePath();
   if (NEW_ROUTES.has(path)) return <main className="s-main">{children}</main>;
   if (LEGACY_WORKING.has(path)) return <main className="s-legacy">{children}</main>;
   return (
