@@ -18,6 +18,7 @@ import { createHash } from "crypto";
 import { readFileSync, writeFileSync, mkdirSync } from "fs";
 import { dirname } from "path";
 import { openStore, StorageAdapter } from "./store";
+import { PSR_TYPES } from "../../packages/evidence/src/entsoe_generation_client";
 
 const SCHEMA = "ELMONITOR_PREVIEW_SNAPSHOT_v1";
 const TZ = "Europe/Stockholm";
@@ -174,6 +175,33 @@ export async function exportSnapshot(store: StorageAdapter, opt: ExportOptions =
     };
   }
 
+  // Generation (A75) per production type, today and yesterday only; present only when the version has the dataset.
+  let generation: Record<string, Json> | undefined;
+  let psrNames: Record<string, string> | undefined;
+  if (Array.isArray(meta.generation_zones)) {
+    generation = {};
+    const codes = new Set<string>();
+    for (const zone of (meta.generation_zones as string[]).filter(keep)) {
+      generation[zone] = {
+        coverage: cov(sumOf("generation", zone)),
+        days: [addDays(today, -1), today].map(day => {
+          const d = dayData("generation", zone, day);
+          if (!d) return { day, status: "NO_RECORD" };
+          const byType: Record<string, [string, number][]> = {};
+          const totals: Record<string, number> = {};
+          for (const [psr, hs] of Object.entries((d.by_type ?? {}) as Record<string, [string, number][]>)) {
+            codes.add(psr);
+            byType[psr] = hs.map(h => [h[0], round(h[1], 1)]);
+            totals[psr] = round(hs.reduce((s, h) => s + h[1], 0), 0); // MWh over the measured hours (1 h each)
+          }
+          return { day, status: d.status, resolution: d.resolution, missing_hours: d.missing_starts_utc, hourly_by_type: byType, totals_mwh_by_type: totals };
+        }),
+      };
+    }
+    psrNames = {};
+    for (const c of [...codes].sort()) if ((PSR_TYPES as Record<string, string>)[c]) psrNames[c] = (PSR_TYPES as Record<string, string>)[c];
+  }
+
   // Optional EUR/SEK reference rates (ECB), read from a saved raw response; never fetched here.
   let fx: Json = null;
   if (opt.fxRaw) {
@@ -199,11 +227,12 @@ export async function exportSnapshot(store: StorageAdapter, opt: ExportOptions =
       manifest_sha256: current.manifest_sha256, content_sha256: current.content_sha256,
       values_hash_method: manifest.values_hash_method ?? meta.values_hash_method ?? "A2_VALUES_SHA256_V1_INCL_ORIGIN (legacy, unlabelled)",
     },
-    provider: "ENTSO-E Transparency Platform (A44 day-ahead prices, A11 physical flows)",
-    market_tz: TZ, today, window: { first, last }, units: { price: "EUR/MWh", flow: "MW" },
+    provider: generation ? "ENTSO-E Transparency Platform (A44 day-ahead prices, A11 physical flows, A75 actual generation per production type)"
+      : "ENTSO-E Transparency Platform (A44 day-ahead prices, A11 physical flows)",
+    market_tz: TZ, today, window: { first, last }, units: generation ? { price: "EUR/MWh", flow: "MW", generation: "MW" } : { price: "EUR/MWh", flow: "MW" },
     hourly_method: meta.hourly_method, history_start: meta.history_start,
     status_meaning: meta.status_meaning, selection_note: meta.selection_note,
-    prices, flows, fx,
+    prices, flows, fx, generation, psr_names: psrNames,
   };
   const body = Buffer.from(stableJson(snapshot) + "\n", "utf-8");
   return { body, version_id: current.version_id, today, first, last };

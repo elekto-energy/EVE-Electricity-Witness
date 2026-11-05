@@ -10,11 +10,12 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { fetchDayAheadPrices, isSpotPriceError } from "../../packages/evidence/src/entsoe_client";
-import { fetchCrossBorderFlows, isFlowError } from "../../packages/evidence/src/entsoe_generation_client";
+import { fetchCrossBorderFlows, fetchGenerationPerType, isFlowError, isGenerationError } from "../../packages/evidence/src/entsoe_generation_client";
 import {
   addDays, applySelection, computeCoverageV3, expandIntervalsV3, hourlySeriesV3, isNoDataAck, localDayStartUtc,
   parseA11, parseA44, redact, ruleFor,
 } from "../../spike/a_local_ingest/lib_v3";
+import { interpretGeneration } from "./generation";
 import { DayData, FreshDay, PlanGroup, seriesSlug } from "./model";
 import { sha256 } from "./store";
 
@@ -35,9 +36,11 @@ export interface GroupResult {
  * "uu-gateway-router/connectTimeout" body, an HTML error page) is a source fetch error: retried with the same
  * bounded delays, never checkpointed as PUBLICATION. (Fix after A2 local run 1, 2026-11-03.)
  */
-export function isPublicationBody(body: string): boolean {
+export function isPublicationBody(body: string, dataset: string = "prices"): boolean {
   const t = body.replace(/^\uFEFF/, "").trimStart();
-  return t.startsWith("<") && /<([A-Za-z0-9_]+:)?Publication_MarketDocument[\s>]/.test(t);
+  // A75 (generation) answers with GL_MarketDocument; A44/A11 with Publication_MarketDocument. Each only for its dataset.
+  const root = dataset === "generation" ? "GL_MarketDocument" : "Publication_MarketDocument";
+  return t.startsWith("<") && new RegExp(`<([A-Za-z0-9_]+:)?${root}[\\s>]`).test(t);
 }
 export const INVALID_BODY_CODE = "SOURCE_INVALID_BODY";
 const bodyExcerpt = (body: string) => body.replace(/\s+/g, " ").trim().slice(0, 200);
@@ -75,11 +78,12 @@ export async function acquire(groups: PlanGroup[], o: AcquireOptions): Promise<{
     let res: GroupResult | null = null;
     for (let attempt = 1; ; attempt++) {
       const t0 = Date.now();
-      const r: any = g.series.dataset === "prices"
-        ? await fetchDayAheadPrices({ securityToken: o.token, timeoutMs: 30000 }, g.series.zone!, periodStart, periodEnd)
-        : await fetchCrossBorderFlows({ securityToken: o.token, timeoutMs: 30000 }, g.series.in_zone!, g.series.out_zone!, periodStart, periodEnd);
+      const cfg = { securityToken: o.token, timeoutMs: 30000 };
+      const r: any = g.series.dataset === "prices" ? await fetchDayAheadPrices(cfg, g.series.zone!, periodStart, periodEnd)
+        : g.series.dataset === "generation" ? await fetchGenerationPerType(cfg, g.series.zone!, periodStart, periodEnd)
+        : await fetchCrossBorderFlows(cfg, g.series.in_zone!, g.series.out_zone!, periodStart, periodEnd);
       const ms = Date.now() - t0;
-      const isErr = g.series.dataset === "prices" ? isSpotPriceError(r) : isFlowError(r);
+      const isErr = g.series.dataset === "prices" ? isSpotPriceError(r) : g.series.dataset === "generation" ? isGenerationError(r) : isFlowError(r);
       const base = { key, dataset: g.series.dataset, series: g.series.label, first: g.first, last: g.last, attempts };
       if (isErr) {
         const text = redact(String(r.error_text ?? ""), o.token);
@@ -94,7 +98,7 @@ export async function acquire(groups: PlanGroup[], o: AcquireOptions): Promise<{
         break;
       }
       const body = String(r.raw_xml ?? "");
-      if (!isPublicationBody(body)) {
+      if (!isPublicationBody(body, g.series.dataset)) {
         const text = redact(`not an ENTSO-E publication document (${Buffer.byteLength(body, "utf-8")} bytes): ${bodyExcerpt(body)}`, o.token);
         attempts.push({ attempt, outcome: "ERROR", error_code: INVALID_BODY_CODE, error_text: text, duration_ms: ms });
         if (attempt <= RETRY_DELAYS_MS.length) { await sleep(RETRY_DELAYS_MS[attempt - 1]); continue; }
@@ -130,11 +134,14 @@ export function loadRaw(workRunDir: string, rawSha: string): Buffer {
 export function interpret(g: PlanGroup, r: GroupResult, raw: Buffer | null, today: string, runId: string): { days: FreshDay[]; error: { code: string; text: string } | null } {
   const dataset = g.series.dataset;
   const days = g.days;
+  for (let i = 0, d = g.first; i < days.length; i++, d = addDays(d, 1)) if (days[i] !== d) throw new Error(`plan group ${g.first}..${g.last} is not contiguous`);
+  if (days[days.length - 1] !== g.last) throw new Error(`plan group ${g.first}..${g.last} does not end at its last day`);
+  if (dataset === "generation") return interpretGeneration(g, r, raw, today, runId);
   let values: ReturnType<typeof expandIntervalsV3>["values"] = [];
   let issues: string[] = [];
   if (r.outcome === "PUBLICATION") {
     const xml = raw!.toString("utf-8");
-    const doc = dataset === "prices" ? parseA44(xml) : parseA11(xml);
+    const doc = dataset === "prices" ? parseA44(xml) : parseA11(xml); // generation handled above
     if (doc.kind !== "PUBLICATION") return { days: [], error: { code: `SOURCE_${doc.kind}`, text: `${doc.ack_code ?? ""} ${doc.ack_text ?? ""}`.trim() || "not a publication document" } };
     const ex = expandIntervalsV3(doc, `raw/${r.raw_sha256}.xml`);
     values = ex.values;
@@ -147,7 +154,7 @@ export function interpret(g: PlanGroup, r: GroupResult, raw: Buffer | null, toda
   for (let i = 0, d = g.first; i < days.length; i++, d = addDays(d, 1)) if (days[i] !== d) throw new Error(`plan group ${g.first}..${g.last} is not contiguous`);
   if (days[days.length - 1] !== g.last) throw new Error(`plan group ${g.first}..${g.last} does not end at its last day`);
   const inScope = values.filter(v => { const t = Date.parse(v.start_utc); return t >= lo && t < hi; });
-  const rule = ruleFor(dataset, g.series.label);
+  const rule = ruleFor(dataset as "prices" | "flows", g.series.label);
   const sel = applySelection(inScope, rule);
   const { coverage, selected } = computeCoverageV3(g.series.label, days, sel.selected, {
     publishedThrough: today, inProgressFrom: dataset === "flows" ? today : null, rule,

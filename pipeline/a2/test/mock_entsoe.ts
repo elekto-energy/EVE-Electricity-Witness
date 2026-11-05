@@ -1,6 +1,6 @@
 /**
  * TEST ONLY - offline ENTSO-E mock installed as globalThis.fetch (no network).
- * Produces A44 (prices) and A11 (flows) documents per local day with controllable gaps,
+ * Produces A44 (prices), A11 (flows) and A75 (generation, GL_MarketDocument) documents per local day with controllable gaps,
  * duplicates/sequences, publication cut-offs, revisions and failures.
  */
 
@@ -25,6 +25,14 @@ export class MockEntsoe {
   /** value overrides: `${series}|${startIso}` -> value (simulates a source revision). */
   overrides = new Map<string, number>();
   failures: { series: string; mode: FailMode; times: number }[] = [];
+  /** A75: production types per zone (default B12 + B19); zones served with PT60M (default PT15M). */
+  genTypes: Record<string, string[]> = {};
+  genPt60 = new Set<string>();
+  /** A75: zones that also get a pumped-storage consumption series (outBiddingZone, B10). */
+  genConsumption = new Set<string>();
+  /** A75 published only before this instant; omitted intervals `${zone}|${psr}|${startIso}` (expressed as Period breaks). */
+  genUntilMs = Number.MAX_SAFE_INTEGER;
+  genGaps = new Set<string>();
 
   install(): void { (globalThis as any).fetch = (url: string) => this.handle(url); }
 
@@ -41,7 +49,7 @@ export class MockEntsoe {
     const doc = u.searchParams.get("documentType")!;
     const inZ = EIC_TO_ZONE[u.searchParams.get("in_Domain")!];
     const outZ = EIC_TO_ZONE[u.searchParams.get("out_Domain")!];
-    const series = doc === "A44" ? inZ : `${outZ}>${inZ}`;
+    const series = doc === "A44" ? inZ : doc === "A75" ? `gen:${inZ}` : `${outZ}>${inZ}`;
     this.calls++;
     this.callLog.push(`${doc} ${series} ${u.searchParams.get("periodStart")}`);
     const f = this.failures.find(x => x.series === series && x.times > 0);
@@ -54,6 +62,7 @@ export class MockEntsoe {
       return { text: async () => `<html><body>Bad gateway</body></html>` };
     }
     const a = Date.parse(fmt(u.searchParams.get("periodStart")!)), b = Date.parse(fmt(u.searchParams.get("periodEnd")!));
+    if (doc === "A75") return this.a75(inZ, u.searchParams.get("in_Domain")!, a, b);
     let ts = "";
     for (let d = localDayOf(a); localDayStartUtc(d) < b; d = addDays(d, 1)) {
       const s = localDayStartUtc(d), e = localDayStartUtc(addDays(d, 1));
@@ -89,5 +98,50 @@ export class MockEntsoe {
     }
     if (!ts) return { text: async () => `<Acknowledgement_MarketDocument><Reason><code>999</code><text>No matching data found for Data item</text></Reason></Acknowledgement_MarketDocument>` };
     return { text: async () => `<?xml version="1.0"?><Publication_MarketDocument>${ts}</Publication_MarketDocument>` };
+  }
+
+  /** MW of one generation interval (deterministic, positive). */
+  genValue(zone: string, psr: string, ms: number): number {
+    const k = `${zone}|${psr}|${new Date(ms).toISOString()}`;
+    if (this.overrides.has(k)) return this.overrides.get(k)!;
+    return Math.round(this.value(`${zone}${psr}`, ms) * 10) / 10;
+  }
+
+  /** A75 GL_MarketDocument like the real responses: A03, one TimeSeries per type, gaps as Period breaks. */
+  private a75(zone: string, eic: string, a: number, b: number): { text: () => Promise<string> } {
+    const types = this.genTypes[zone] ?? ["B12", "B19"];
+    const res = this.genPt60.has(zone) ? "PT60M" : "PT15M";
+    const step = res === "PT60M" ? 3600000 : 900000;
+    const end = Math.min(b, this.genUntilMs - (this.genUntilMs % step));
+    const series = (psr: string, dir: "in" | "out", off: number) => {
+      // runs of present intervals -> one Period each (A03 compression inside a Period)
+      const runs: [number, number][] = [];
+      let runStart: number | null = null;
+      for (let t = a; t < end; t += step) {
+        const gap = this.genGaps.has(`${zone}|${psr}|${new Date(t).toISOString()}`);
+        if (!gap && runStart === null) runStart = t;
+        if (gap && runStart !== null) { runs.push([runStart, t]); runStart = null; }
+      }
+      if (runStart !== null && runStart < end) runs.push([runStart, end]);
+      if (!runs.length) return "";
+      let periods = "";
+      for (const [s, e] of runs) {
+        let p = "", prev: number | null = null;
+        for (let i = 1, t = s; t < e; i++, t += step) {
+          const v = Math.round((this.genValue(zone, psr, t) + off) * 10) / 10;
+          if (v !== prev) p += `<Point><position>${i}</position><quantity>${v}</quantity></Point>`;
+          prev = v;
+        }
+        periods += `<Period><timeInterval><start>${iso16(s)}</start><end>${iso16(e)}</end></timeInterval><resolution>${res}</resolution>${p}</Period>`;
+      }
+      const dom = dir === "in" ? `<inBiddingZone_Domain.mRID codingScheme="A01">${eic}</inBiddingZone_Domain.mRID>`
+        : `<outBiddingZone_Domain.mRID codingScheme="A01">${eic}</outBiddingZone_Domain.mRID>`;
+      return `<TimeSeries><mRID>1</mRID><businessType>A01</businessType><objectAggregation>A08</objectAggregation>${dom}` +
+        `<quantity_Measure_Unit.name>MAW</quantity_Measure_Unit.name><curveType>A03</curveType><MktPSRType><psrType>${psr}</psrType></MktPSRType>${periods}</TimeSeries>`;
+    };
+    let ts = types.map(psr => series(psr, "in", 0)).join("");
+    if (this.genConsumption.has(zone)) ts += series("B10", "out", 1000);
+    if (!ts) return { text: async () => `<Acknowledgement_MarketDocument><Reason><code>999</code><text>No matching data found for Data item</text></Reason></Acknowledgement_MarketDocument>` };
+    return { text: async () => `<?xml version="1.0" encoding="utf-8"?><GL_MarketDocument xmlns="urn:iec62325.351:tc57wg16:451-6:generationloaddocument:3:0"><type>A75</type><process.processType>A16</process.processType>${ts}</GL_MarketDocument>` };
   }
 }

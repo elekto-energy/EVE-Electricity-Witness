@@ -4,7 +4,7 @@
  */
 
 import { addDays, groupContiguous, DayStatusV3 } from "../../spike/a_local_ingest/lib_v3";
-import { Dataset, MAX_DAYS_PER_REQUEST, SeriesSpec, VALUES_HASH_METHOD, VALUES_HASH_METHOD_V1_LEGACY } from "./config";
+import { Dataset, GENERATION_HISTORY_START, MAX_DAYS_PER_REQUEST, SeriesSpec, VALUES_HASH_METHOD, VALUES_HASH_METHOD_V1_LEGACY } from "./config";
 import { sha256, stableJson } from "./store";
 
 export type ValueTuple = [start_utc: string, value: number, origin: "E" | "R"]; // E = explicit point, R = A03 repeat
@@ -16,12 +16,14 @@ export interface DayData {
   resolution: string | null;
   values: ValueTuple[];
   hourly: HourTuple[];            // A5: native PT60M or mean of four selected PT15M quarters
-  missing_starts_utc: string[];   // every expected interval without a selected value
+  missing_starts_utc: string[];   // every expected interval without a selected value (generation: missing hour starts)
+  /** generation only: hourly MW per psrType (A5 rule per type); values/hourly stay empty for generation */
+  by_type?: Record<string, HourTuple[]>;
 }
 
 export interface SourceRef {
   provider: "ENTSO-E Transparency Platform";
-  document_type: "A44" | "A11";
+  document_type: "A44" | "A11" | "A75";
   request_first_day: string;
   request_last_day: string;
   raw_sha256: string;
@@ -74,7 +76,8 @@ export const seriesSlug = (s: string) => s.replace(">", "_to_");
 /** Semantic values hash. V2 (current) excludes the request-window-dependent R/E origin marker. */
 export function valuesSha(d: DayData, method: string = VALUES_HASH_METHOD): string {
   if (method === VALUES_HASH_METHOD) {
-    return sha256(stableJson({ method, resolution: d.resolution, values: d.values.map(v => [v[0], v[1]]), hourly: d.hourly, missing: d.missing_starts_utc }));
+    // by_type only for generation, so prices/flows hashes are unchanged from a2.1
+    return sha256(stableJson({ method, resolution: d.resolution, values: d.values.map(v => [v[0], v[1]]), hourly: d.hourly, missing: d.missing_starts_utc, ...(d.by_type ? { by_type: d.by_type } : {}) }));
   }
   if (method === VALUES_HASH_METHOD_V1_LEGACY) {
     return sha256(stableJson({ resolution: d.resolution, values: d.values, hourly: d.hourly, missing: d.missing_starts_utc }));
@@ -167,15 +170,18 @@ export interface PlanGroup { series: SeriesSpec; first: string; last: string; da
  *   - every day from historyStart to the last relevant day without a COMPLETE register entry (NEW / INCOMPLETE);
  *   - COMPLETE days within the revision window (today - revisionWindowDays .. today) are re-checked (REVISION_CHECK);
  *   - older COMPLETE days are not fetched.
- * Last relevant day: prices = today + 1 (day-ahead), flows = today.
+ * Last relevant day: prices = today + 1 (day-ahead), flows and generation = today.
+ * First day: historyStart; generation starts at the later of historyStart and generationHistoryStart.
  */
-export function plan(series: SeriesSpec[], register: Map<string, RegisterEntry>, today: string, historyStart: string, revisionWindowDays: number): PlanGroup[] {
+export function plan(series: SeriesSpec[], register: Map<string, RegisterEntry>, today: string, historyStart: string, revisionWindowDays: number,
+  generationHistoryStart: string = GENERATION_HISTORY_START): PlanGroup[] {
   const groups: PlanGroup[] = [];
   const revFrom = addDays(today, -revisionWindowDays);
   for (const s of series) {
     const lastDay = s.dataset === "prices" ? addDays(today, 1) : today;
+    const start = s.dataset === "generation" && generationHistoryStart > historyStart ? generationHistoryStart : historyStart;
     const reason: PlanGroup["reason"] = {};
-    for (let d = historyStart; d <= lastDay; d = addDays(d, 1)) {
+    for (let d = start; d <= lastDay; d = addDays(d, 1)) {
       const e = register.get(regKey(s.dataset, s.label, d));
       if (!e) reason[d] = "NEW";
       else if (e.status !== "COMPLETE") reason[d] = "INCOMPLETE";

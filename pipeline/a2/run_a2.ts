@@ -22,7 +22,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
 import { localDayOf, redact } from "../../spike/a_local_ingest/lib_v3";
 import { acquire, AcquireOptions, GroupResult, interpret, loadRaw } from "./acquire";
-import { A2_ID, A2_VERSION, allSeries, HISTORY_START, REVISION_WINDOW_DAYS, VALUES_HASH_METHOD } from "./config";
+import { A2_ID, A2_VERSION, allSeries, HISTORY_START, REVISION_WINDOW_DAYS, SeriesSpec, VALUES_HASH_METHOD } from "./config";
 import { EMPTY_DAY_DATA, markFetchError, mergeDay, MergeOutcome, plan, regKey } from "./model";
 import { openStore, stableJson, StorageAdapter } from "./store";
 import { buildFiles, loadState, MigrationReport, publish, PublishError, PublishHooks, putDay } from "./version";
@@ -55,6 +55,8 @@ export interface RunOptions {
   recentFirst?: boolean;
   /** Instrument hashes measured elsewhere (e.g. at site build time, where the sources are on disk). */
   instrument?: Record<string, string>;
+  /** Test hook: plan only these series (default allSeries()). */
+  series?: SeriesSpec[];
 }
 
 export interface RunReport {
@@ -90,7 +92,7 @@ export async function runA2(o: RunOptions): Promise<{ report: RunReport; exitCod
     if (saved.previous_version_id !== (previous?.version_id ?? null)) throw new Error("resume: published version changed since the interrupted run; start a new run");
     planned = saved.groups;
   } else {
-    planned = plan(allSeries(), state.register, today, HISTORY_START, REVISION_WINDOW_DAYS);
+    planned = plan(o.series ?? allSeries(), state.register, today, HISTORY_START, REVISION_WINDOW_DAYS);
     if (o.recentFirst) {
       planned = [...planned].sort((a: any, b: any) =>
         a.last !== b.last ? (a.last < b.last ? 1 : -1) : a.first !== b.first ? (a.first < b.first ? 1 : -1)

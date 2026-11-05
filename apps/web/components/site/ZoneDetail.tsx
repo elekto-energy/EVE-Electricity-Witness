@@ -8,6 +8,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { MapDay } from "@/components/site/PowerMap";
+import { generationMix, type Snapshot } from "@/lib/preview/snapshot";
+import { GenerationBar } from "@/components/site/GenerationBar";
 
 const fmt = (x: number, d = 2) => x.toLocaleString("sv-SE", { minimumFractionDigits: d, maximumFractionDigits: d });
 const clock = (iso: string) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Stockholm", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
@@ -70,7 +72,11 @@ function Chart({ points, color, sel, setSel, nowIso }: {
   );
 }
 
-export function ZoneDetail({ zone, city, days, onClose }: { zone: string; city: string; days: MapDay[]; onClose: () => void }) {
+export type GenerationData = Snapshot["generation"];
+
+export function ZoneDetail({ zone, city, days, onClose, gen, today }: {
+  zone: string; city: string; days: MapDay[]; onClose: () => void; gen?: GenerationData; today: string;
+}) {
   const dlg = useRef<HTMLDialogElement>(null);
   const avail = days.filter(d => (d.zones.find(z => z.zone === zone)?.quarters.length ?? 0) > 0);
   const [k, setK] = useState<MapDay["key"]>(avail[0]?.key ?? "today");
@@ -103,6 +109,11 @@ export function ZoneDetail({ zone, city, days, onClose }: { zone: string; city: 
     return { other, mw: intoZone };
   }).filter((r): r is { other: string; mw: number } => r !== null).sort((a, b) => Math.abs(b.mw) - Math.abs(a.mw)) : [];
   const net = rows.reduce((a, r) => a + r.mw, 0);
+
+  // Measured generation (A75) for the selected hour of today, else the latest measured hour (labelled).
+  const genSnap = { generation: gen } as unknown as Snapshot;
+  const mix = gen ? generationMix(genSnap, zone, today, k === "today" && s !== null ? hourStart(points[s][0]) : null) : null;
+  const mixOf = (z: string, h: string | null) => (gen && h ? generationMix(genSnap, z, today, h) : null);
 
   const move = (e: React.KeyboardEvent) => {
     if (!points.length) return;
@@ -156,15 +167,30 @@ export function ZoneDetail({ zone, city, days, onClose }: { zone: string; city: 
               <ul className="s-zd-flows">
                 {rows.map(r => (
                   <li key={r.other}>
-                    <span>{r.mw >= 0 ? "Import från" : "Export till"} <b>{NAME[r.other] ?? r.other}</b></span>
-                    <span className={`s-num ${r.mw >= 0 ? "in" : "out"}`}>{r.mw >= 0 ? "←" : "→"} {fmt(Math.abs(r.mw), 0)} MW</span>
+                    <div className="s-zd-flowrow">
+                      <span>{r.mw >= 0 ? "Import från" : "Export till"} <b>{NAME[r.other] ?? r.other}</b></span>
+                      <span className={`s-num ${r.mw >= 0 ? "in" : "out"}`}>{r.mw >= 0 ? "←" : "→"} {fmt(Math.abs(r.mw), 0)} MW</span>
+                    </div>
+                    {r.mw > 0 && (() => {
+                      const m = mixOf(r.other, hour);
+                      return m && m.hour === hour ? <GenerationBar mix={m} compact title={`Produktionen i ${r.other.replace("_LU", "")} samma timme`} /> : null;
+                    })()}
                   </li>
                 ))}
               </ul>
               <p className="s-note">Netto {net >= 0 ? "import" : "export"} {fmt(Math.abs(net), 0)} MW. Uppmätta fysiska flöden (ENTSO-E), timmedel.</p>
             </>
           ) : <p className="s-note">Inga uppmätta flöden för timmen än.</p>}
-        <p className="s-note s-zd-gen">Produktion per kraftslag (vatten, vind, kärnkraft …) visas här när den datan ingår i datakedjan.</p>
+        <h3 className="s-zd-h3">Så produceras elen i {zone}</h3>
+        {mix ? <GenerationBar mix={mix} title="Uppmätt produktion" />
+          : <p className="s-note">Produktion per kraftslag finns inte för det här dygnet ännu. Den publiceras med någon timmes fördröjning.</p>}
+        {rows.some(r => r.mw > 0) && gen ? (
+          <p className="s-note s-zd-gen">
+            El i ledningen har ingen etikett. Staplarna under importen visar hur elen producerades i grannområdet samma timme,
+            inte vilken sorts el som just korsade gränsen.
+          </p>
+        ) : null}
+        <p className="s-note">Källa: ENTSO-E, faktisk produktion per kraftslag (A75), uppmätta värden.</p>
       </div>
     </dialog>
   );

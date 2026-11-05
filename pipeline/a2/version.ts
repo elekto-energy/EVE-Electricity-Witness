@@ -12,7 +12,8 @@
  */
 
 import { PRICE_SELECTION_RULES_V3, DEFAULT_RULE, HOURLY_METHOD_V3 } from "../../spike/a_local_ingest/lib_v3";
-import { A2_ID, A2_VERSION, FLOW_BORDERS, HISTORY_START, PRICE_ZONES, REVISION_WINDOW_DAYS, VALUES_HASH_METHOD, VALUES_HASH_METHOD_V1_LEGACY } from "./config";
+import { A2_ID, A2_VERSION, FLOW_BORDERS, GENERATION_HISTORY_START, GENERATION_ZONES, HISTORY_START, PRICE_ZONES, REVISION_WINDOW_DAYS, VALUES_HASH_METHOD, VALUES_HASH_METHOD_V1_LEGACY } from "./config";
+import { GENERATION_RULE_REF } from "./generation";
 import { countedRevisions, DayData, RegisterEntry, regKey, REVISION_CLASS_ORIGIN_ONLY, seriesSlug, stableEntry, valuesSha } from "./model";
 import { sha256, stableJson, StorageAdapter } from "./store";
 
@@ -212,10 +213,12 @@ export function buildFiles(state: State): Map<string, Buffer> {
       revisions_reclassified: entries.reduce((s, e) => s + (e.revisions.length - countedRevisions(e.revisions)), 0),
     };
   }
-  put("coverage/summary.json", { history_start: HISTORY_START, series: summary });
+  put("coverage/summary.json", { history_start: HISTORY_START, generation_history_start: GENERATION_HISTORY_START, series: summary });
   put("meta.json", {
     a2_id: A2_ID, a2_version: A2_VERSION, history_start: HISTORY_START, revision_window_days: REVISION_WINDOW_DAYS,
     price_zones: PRICE_ZONES, flow_borders: FLOW_BORDERS, market_tz: "Europe/Stockholm",
+    generation_zones: GENERATION_ZONES, generation_history_start: GENERATION_HISTORY_START,
+    generation_rule: `${GENERATION_RULE_REF}. A75 production series (inBiddingZone) only; per psrType hourly MW = native PT60M or the mean of all four PT15M quarters; data by_type per day; expected types = types reported in the request window; missing hours listed, never filled.`,
     selection_rules: { default: DEFAULT_RULE, prices: PRICE_SELECTION_RULES_V3 },
     hourly_method: HOURLY_METHOD_V3,
     values_hash_method: VALUES_HASH_METHOD,
@@ -225,7 +228,7 @@ export function buildFiles(state: State): Map<string, Buffer> {
       PARTIAL: "some intervals missing at the source; missing_starts_utc lists them; never filled",
       MISSING: "no value for a day that should be published",
       NOT_PUBLISHED_YET: "future day without data",
-      IN_PROGRESS: "flows of the running local day, still being published",
+      IN_PROGRESS: "flows or generation of the running local day, still being published",
       CONFLICT: "duplicate source values disagree beyond the rule; conflicting intervals have no value",
     },
     selection_note: "coverage status and selection verification are separate: selection.verified=false means complete data from a selected series outside its verified period",

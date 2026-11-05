@@ -134,3 +134,29 @@ Basis: docs/plan/ELMONITOR_A2_LOCAL_RUN_v1.md (deviations 1 and 2 of the local r
   delays, never checkpointed as a publication.
 - A register entry without data (MISSING after a fetch error) is merged as the previous state, so new data on such
   a day is `IMPROVED`, not `NEW`.
+
+## a2.2 - dataset "generation" (A75 actual generation per production type)
+
+Producer choices 2026-11-05 under the owner's "do what you think is best", pending owner confirmation:
+- zones: the 13 price zones (SE1-SE4 for the mix, neighbours as import context); `GENERATION_HISTORY_START`
+  2026-10-01 (small first backfill; the site shows today and yesterday). Earlier history = later decision.
+- request: `fetchGenerationPerType` (unchanged client), documentType A75 / processType A16, max 31 days per request.
+  A valid body is a `GL_MarketDocument` (accepted for generation only; prices/flows still require
+  `Publication_MarketDocument`). Raw bodies are kept as evidence exactly like prices/flows.
+- measured on real responses (data\raw\entsoe_generation\..._202602, SE1, SE3, FI, NO1, DE_LU, PL): curveType A03,
+  PT15M, one TimeSeries per psrType and direction, several Periods per series possible; consumption series
+  (outBiddingZone) for B10 (DE_LU, PL) and B25 (FI).
+- rule (pipeline/a2/generation.ts): production series (inBiddingZone) only, consumption series excluded and counted in
+  selection.decision_ref; per psrType lib_v3 expansion (A03 repeat), exact-equality duplicates, coverage per local day;
+  hourly MW = native PT60M or the mean of all four PT15M quarters (A5), never from fewer.
+  Expected types of a day = every psrType with at least one value in the request window. COMPLETE = every expected type
+  has every hour of the local day (23/24/25); some hours missing = IN_PROGRESS (running day) or PARTIAL; nothing =
+  MISSING; a duplicate conflict = CONFLICT. Missing hours are listed in missing_starts_utc, never filled.
+- data: `data/generation/<zone>/<YYYY-MM>.json`, per day `by_type {psrType: [[hour_start_utc, MW], ...]}`,
+  `values`/`hourly` empty. values_sha256 (V2) adds `by_type` only when present, so prices/flows hashes are unchanged.
+- export: `generation` (today and yesterday: status, missing_hours, hourly_by_type, totals_mwh_by_type over the measured
+  hours) and `psr_names` (from the client's PSR_TYPES; codes it does not name, e.g. B25, are left unnamed). Without the
+  dataset in meta.json the export is byte-identical to a2.1.
+- A2_VERSION a2.2: new dataset and new meta.json fields; existing rules and hashes unchanged.
+- tests: pipeline/a2/test/test_generation.ts (mock A75 with PT15M/PT60M zones, a gap, a consumption series, DST).
+

@@ -58,6 +58,63 @@ export interface Snapshot {
   prices: Record<string, { coverage: Coverage | null; days: PriceDay[] }>;
   flows: Record<string, { from: string; to: string; coverage: Record<string, Coverage | null>; days: FlowDay[] }>;
   fx: { source: string; unit: string; raw_sha256: string; rule: string; rates: Record<string, number> } | null;
+  /** A75 actual generation per production type, today and yesterday (absent in snapshots before a2.2). */
+  generation?: Record<string, { coverage: Coverage | null; days: GenerationDay[] }>;
+  /** psrType code -> ENTSO-E English name, for the codes present in `generation` */
+  psr_names?: Record<string, string>;
+}
+
+export interface GenerationDay {
+  day: string;
+  status: DayStatus | string;
+  resolution?: string | null;
+  missing_hours?: string[];
+  hourly_by_type?: Record<string, [string, number][]>; // hour start UTC, MW
+  totals_mwh_by_type?: Record<string, number>;         // sum over the measured hours only
+}
+
+/** UI groups of ENTSO-E production types; everything not listed is "other". */
+export const GEN_GROUPS = { hydro: ["B10", "B11", "B12"], wind: ["B18", "B19"], nuclear: ["B14"], solar: ["B16"] } as const;
+export type GenGroup = keyof typeof GEN_GROUPS | "other";
+export const GEN_GROUP_ORDER: GenGroup[] = ["hydro", "wind", "nuclear", "solar", "other"];
+
+export interface GenerationMix {
+  zone: string;
+  day: string;
+  status: string;
+  hour: string;                     // hour actually used (UTC start)
+  requested_hour_measured: boolean; // false: the requested hour was not measured for every type, latest measured hour used
+  groups: Record<GenGroup, number>; // MW
+  total: number;                    // MW
+  by_type: Record<string, number>;  // MW per psrType
+}
+
+/**
+ * Generation mix of one zone and day for one hour. Only an hour measured for every type reported that day counts as
+ * measured. Uses the requested hour when measured, else the latest measured hour of that day; null without data.
+ */
+export function generationMix(snapshot: Snapshot, zone: string, day: string, hourIso: string | null): GenerationMix | null {
+  const d = snapshot.generation?.[zone]?.days.find(x => x.day === day);
+  const byType = d?.hourly_by_type;
+  if (!d || !byType) return null;
+  const types = Object.keys(byType).filter(t => byType[t].length > 0);
+  if (types.length === 0) return null;
+  const maps = types.map(t => new Map(byType[t]));
+  const full = [...new Set(types.flatMap(t => byType[t].map(h => h[0])))].filter(h => maps.every(m => m.has(h))).sort();
+  if (full.length === 0) return null;
+  const measured = hourIso !== null && full.includes(hourIso);
+  const hour = measured ? hourIso! : full[full.length - 1];
+  const groups: Record<GenGroup, number> = { hydro: 0, wind: 0, nuclear: 0, solar: 0, other: 0 };
+  const per: Record<string, number> = {};
+  types.forEach((t, i) => {
+    const mw = maps[i].get(hour)!;
+    per[t] = mw;
+    const g = (Object.keys(GEN_GROUPS) as (keyof typeof GEN_GROUPS)[]).find(k => (GEN_GROUPS[k] as readonly string[]).includes(t)) ?? "other";
+    groups[g] += mw;
+  });
+  for (const k of GEN_GROUP_ORDER) groups[k] = Math.round(groups[k] * 10) / 10;
+  const total = Math.round(types.reduce((s, t) => s + per[t], 0) * 10) / 10;
+  return { zone, day, status: String(d.status), hour, requested_hour_measured: measured, groups, total, by_type: per };
 }
 
 /** Structural check of a parsed snapshot; throws on anything that is not ELMONITOR_PREVIEW_SNAPSHOT_v1. */

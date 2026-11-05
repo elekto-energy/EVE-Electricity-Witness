@@ -8,6 +8,7 @@ import { type DayView } from "@/components/site/ZoneStrip";
 import { PowerMap, type MapDay } from "@/components/site/PowerMap";
 import { PriceCards } from "@/components/site/PriceCards";
 import { Bottlenecks, type BottleneckDay, type LinkHour } from "@/components/site/Bottlenecks";
+import { GenerationOverview } from "@/components/site/GenerationOverview";
 import { HourlyChart } from "@/components/preview/HourlyChart";
 
 export const metadata = { title: "Elpriset idag" };
@@ -70,14 +71,6 @@ function bottleneckDay(snapshot: Snapshot, key: BottleneckDay["key"], label: str
   };
 }
 
-const GEN = [
-  { label: "Vattenkraft", color: "#2f6fb3" },
-  { label: "Vindkraft", color: "#2bb3a8" },
-  { label: "Kärnkraft", color: "#7a4fb5" },
-  { label: "Solkraft", color: "#e2b416" },
-  { label: "Övrigt", color: "#9aa5ad" },
-];
-
 export default async function HomePage() {
   const { snapshot } = await loadSnapshot();
   const today = snapshot.today;
@@ -96,7 +89,7 @@ export default async function HomePage() {
           <DataFreshness publishedAtUtc={snapshot.source.published_at_utc} snapshotToday={today} />
         </div>
         <p className="s-lede">Dygnsmedel per elområde {weekdayLabel(today)}, före skatt, moms och nätavgift.</p>
-        <PriceCards tomorrowLabel="Imorgon" days={mapDays} zones={vToday.zones.map((z, i) => ({
+        <PriceCards tomorrowLabel="Imorgon" days={mapDays} gen={snapshot.generation} today={today} zones={vToday.zones.map((z, i) => ({
           zone: z.zone, city: z.city,
           today: { status: z.status, mean: z.mean, hourly: z.hourly, selectionVerified: z.selectionVerified, missing: z.missing },
           tomorrow: { status: vTomorrow.zones[i].status, mean: vTomorrow.zones[i].mean, hourly: vTomorrow.zones[i].hourly, selectionVerified: vTomorrow.zones[i].selectionVerified, missing: vTomorrow.zones[i].missing },
@@ -109,7 +102,7 @@ export default async function HomePage() {
           Mycket el produceras i norr men används i söder. När ledningarna däremellan inte räcker till blir priset högre söderut.
           Dra i tidslinjen för att se priset kvart för kvart och hur elen flödar mellan områdena.
         </p>
-        <PowerMap days={mapDays} snapshotToday={today} />
+        <PowerMap days={mapDays} snapshotToday={today} gen={snapshot.generation} />
       </section>
 
       <section className="s-section" id="flaskhalsar">
@@ -139,14 +132,9 @@ export default async function HomePage() {
         ))}
       </section>
 
-      <section className="s-section">
-        <h2 className="s-h2">Elproduktion per kraftslag</h2>
-        <div className="s-gen-legend" aria-label="Färger för kraftslag">
-          {GEN.map(g => <span key={g.label}><i style={{ background: g.color }} />{g.label}</span>)}
-        </div>
-        <p className="s-note" style={{ marginTop: 10 }}>
-          Saknas i den här versionen. Produktionsdata per kraftslag hämtas från ENTSO-E i nästa datakörning och visas här med samma färger.
-        </p>
+      <section className="s-section" id="produktion">
+        <h2 className="s-h2">Så produceras elen</h2>
+        <GenerationOverview snapshot={snapshot} today={today} yesterday={addDays(today, -1)} yesterdayLabel="igår" />
       </section>
 
       <section className="s-section s-plain">

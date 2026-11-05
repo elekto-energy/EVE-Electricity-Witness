@@ -9,7 +9,7 @@
 import { useState } from "react";
 import { StatusBadge } from "@/components/preview/Badges";
 import type { MapDay } from "@/components/site/PowerMap";
-import { ZoneDetail } from "@/components/site/ZoneDetail";
+import { ZoneDetail, type GenerationData } from "@/components/site/ZoneDetail";
 
 export interface CardDay { status: string; mean: number | null; hourly: [string, number][]; selectionVerified: boolean | null; missing: number | null }
 export interface CardZone { zone: string; city: string; today: CardDay; tomorrow: CardDay }
@@ -32,11 +32,13 @@ function Spark({ points, color }: { points: [string, number][]; color: string })
   );
 }
 
-export function PriceCards({ zones, tomorrowLabel, days }: { zones: CardZone[]; tomorrowLabel: string; days: MapDay[] }) {
+export function PriceCards({ zones, tomorrowLabel, days, gen, today }: {
+  zones: CardZone[]; tomorrowLabel: string; days: MapDay[]; gen?: GenerationData; today: string;
+}) {
   const [open, setOpen] = useState<CardZone | null>(null);
   return (
     <>
-    {open && <ZoneDetail zone={open.zone} city={open.city} days={days} onClose={() => setOpen(null)} />}
+    {open && <ZoneDetail zone={open.zone} city={open.city} days={days} gen={gen} today={today} onClose={() => setOpen(null)} />}
     <div className="s-cards">
       {zones.map(z => {
         const color = `var(--s-${z.zone.toLowerCase()})`;

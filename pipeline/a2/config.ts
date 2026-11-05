@@ -6,7 +6,8 @@
  */
 
 export const A2_ID = "ELMONITOR_A2_DATA_CHAIN";
-export const A2_VERSION = "a2.1";
+/** a2.2: dataset "generation" (A75) added; prices/flows rules and their values hashes unchanged. */
+export const A2_VERSION = "a2.2";
 
 /**
  * Semantic values hash (OWNER-DECISION 2026-11-03, A2 option 1).
@@ -40,7 +41,17 @@ export const FLOW_BORDERS = [
   "SE3-NO1", "SE3-DK1", "SE4-DK2", "SE4-DE_LU", "SE4-PL", "SE4-LT",
 ] as const;
 
-export type Dataset = "prices" | "flows";
+/** A75 actual generation per production type: the same 13 zones as prices (SE1-SE4 mix + neighbours for import context). */
+export const GENERATION_ZONES = PRICE_ZONES;
+
+/**
+ * First local day of the generation dataset. Producer choice 2026-11-05 (pending owner confirmation): keeps the first
+ * backfill small (13 zones x about 2 request groups); the site shows generation for today and yesterday only.
+ * Moving it earlier is a later decision; the dataset then backfills on its own.
+ */
+export const GENERATION_HISTORY_START = "2026-10-01";
+
+export type Dataset = "prices" | "flows" | "generation";
 
 export interface SeriesSpec { dataset: Dataset; label: string; zone?: string; out_zone?: string; in_zone?: string }
 
@@ -51,5 +62,6 @@ export function allSeries(): SeriesSpec[] {
     out.push({ dataset: "flows", label: `${a}>${c}`, out_zone: a, in_zone: c });
     out.push({ dataset: "flows", label: `${c}>${a}`, out_zone: c, in_zone: a });
   }
+  for (const z of GENERATION_ZONES) out.push({ dataset: "generation", label: z, zone: z });
   return out;
 }

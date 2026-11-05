@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { COUNTRY_PATHS, MAP_W, MAP_H, project } from "@/lib/map/geo";
+import { generationMix, type Snapshot } from "@/lib/preview/snapshot";
+import { GenerationBar } from "@/components/site/GenerationBar";
 
 export interface MapZone {
   zone: string;
@@ -47,7 +49,7 @@ function stockholmDateNow(): string {
   return `${g("year")}-${g("month")}-${g("day")}`;
 }
 
-export function PowerMap({ days, snapshotToday }: { days: MapDay[]; snapshotToday: string }) {
+export function PowerMap({ days, snapshotToday, gen }: { days: MapDay[]; snapshotToday: string; gen?: Snapshot["generation"] }) {
   const [k, setK] = useState<MapDay["key"]>("today");
   const day = days.find(d => d.key === k) ?? days[0];
   const times = useMemo(() => {
@@ -196,6 +198,11 @@ export function PowerMap({ days, snapshotToday }: { days: MapDay[]; snapshotToda
               {hz.zone.replace("_LU", "")}: {fmt(((priceAt(hz) as number) * 10) / day.fx.rate)} EUR/MWh på börsen
             </div>
           )}
+          {hz && gen && (() => {
+            const m = generationMix({ generation: gen } as unknown as Snapshot, hz.zone, snapshotToday, k === "today" ? hourKey : null);
+            return m ? <GenerationBar mix={m} compact title={`Produktion i ${hz.zone.replace("_LU", "")}`} />
+              : <p className="s-tip-meta">Produktion per kraftslag saknas för {hz.zone.replace("_LU", "")} just nu.</p>;
+          })()}
           {topFlow && (
             <div className="s-pflow">
               Störst flöde just då: <b className="s-num">{Math.round(Math.abs(topFlow.mw as number)).toLocaleString("sv-SE")} MW</b>{" "}

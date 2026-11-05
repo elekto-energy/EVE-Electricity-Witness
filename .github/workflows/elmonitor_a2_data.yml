@@ -34,3 +34,4 @@ jobs:
         run: |
           npx --yes tsx@4.23.12 pipeline/a2/test/test_a2.ts
           npx --yes tsx@4.23.12 pipeline/a2/test/test_blob_store.ts
+          npx --yes tsx@4.23.12 pipeline/a2/test/test_generation.ts
