@@ -232,7 +232,8 @@ function entries(files: Map<string, Buffer>, dataset: string, series: string): R
     check("W4 no store and no data run (tests only)", !/--store|run_a2\.ts|export_preview\.ts|publish_site\.ts|BLOB_|ENTSOE_TOKEN/.test(code) && /test_a2\.ts/.test(code) && /test_blob_store\.ts/.test(code));
     const vj = JSON.parse(readFileSync(resolve(__dirname, "..", "..", "..", "apps", "web", "vercel.json"), "utf-8"));
     const route = readFileSync(resolve(__dirname, "..", "..", "..", "apps", "web", "app", "api", "cron", "a2", "route.ts"), "utf-8");
-    check("W5 Vercel cron: exactly 13:17, 21:17, 23:17 UTC on /api/cron/a2", JSON.stringify(vj.crons) === JSON.stringify(["17 13 * * *", "17 21 * * *", "17 23 * * *"].map(c => ({ path: "/api/cron/a2", schedule: c }))));
+    const CRONS = ["17 6 * * *", "17 9 * * *", "17 12 * * *", "17 13 * * *", "17 16 * * *", "17 19 * * *", "7 22 * * *", "7 23 * * *"];
+    check("W5 Vercel cron: the 8 UTC times of the schedule on /api/cron/a2", JSON.stringify(vj.crons) === JSON.stringify(CRONS.map(c => ({ path: "/api/cron/a2", schedule: c }))));
     check("W6 cron route fails closed without CRON_SECRET and uses only the elmonitor/a2 and elmonitor/site prefixes", /if \(!secret\) return false;/.test(route) && /timingSafeEqual/.test(route) && [...route.matchAll(/new BlobAdapter\("([^"]+)"/g)].map(m => m[1]).join() === "elmonitor/a2,elmonitor/site");
   }
 

@@ -33,8 +33,13 @@ function authorized(req: Request): boolean {
 }
 
 export async function GET(req: Request) {
-  if (!authorized(req)) return new Response("Unauthorized", { status: 401 });
+  if (!authorized(req)) {
+    // Logged so a refused call is visible in Runtime Logs; nothing from the request headers is written.
+    console.warn(`[elmonitor-a2] refused: ${process.env.CRON_SECRET ? "authorization header does not match CRON_SECRET" : "CRON_SECRET is not set"}`);
+    return new Response("Unauthorized", { status: 401 });
+  }
   const started = Date.now();
+  console.log(`[elmonitor-a2] start ${new Date(started).toISOString()}`);
   const token = (process.env.ENTSOE_TOKEN ?? "").trim();
   const access = process.env.ELMONITOR_BLOB_ACCESS ?? "";
   if (!token) return Response.json({ ok: false, stage: "SETUP", error: "ENTSOE_TOKEN is not set" }, { status: 500 });

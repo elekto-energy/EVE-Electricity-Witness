@@ -95,7 +95,13 @@ verifies sha256 and size, and falls back to the bundled snapshot on any failure.
 
 ## Scheduled update on Vercel (owner choice 2026-11-05: no keys on GitHub)
 
-`apps/web/vercel.json` runs `GET /api/cron/a2` at 13:17, 21:17 and 23:17 UTC. The route
+`apps/web/vercel.json` runs `GET /api/cron/a2` at these UTC times (Vercel cron is UTC only; Sweden is UTC+1 in
+winter, UTC+2 in summer):
+- 12:17 and 13:17: tomorrow's day-ahead prices (published around 13:00 Swedish time = 12 UTC winter / 11 UTC summer);
+  the second run catches a late publication.
+- 06:17, 09:17, 16:17, 19:17: physical flows during the day.
+- 22:07 and 23:07: just after local midnight in summer (22:07) and in winter (23:07), so the site switches to the new day.
+The route
 (`apps/web/app/api/cron/a2/route.ts`, region arn1, maxDuration 800 s) calls `pipeline/a2/job.ts`:
 A2 into `blob:elmonitor/a2` newest days first with a 540 s acquisition budget (groups not started are deferred to the
 next run and listed as `plan.deferred_groups/deferred_days`), ECB raw response, export with "today" = export date,
