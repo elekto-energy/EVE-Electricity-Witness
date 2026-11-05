@@ -114,8 +114,11 @@ export const POINTER_LOG = "_log";
 export class BlobAdapter implements StorageAdapter {
   readonly kind = "blob";
   private lastStamp = "";
-  /** Keys under objects/ and raw/ seen in one listing per run (+ keys written since). Only ever says "exists" for a
-   *  key the store listed or this adapter wrote; a key not listed is confirmed with a direct read. */
+  /** Keys under objects/ and raw/ seen in one listing per run (+ keys written since). exists() for these prefixes
+   *  answers from the listing alone and never reads the key: on a public store a read of a missing key goes through
+   *  the CDN, which can keep the 404 and then serve it to the read-back right after the upload (seen in production
+   *  2026-11-05: "raw ... failed read-back"). A key the listing missed is still safe: put() is refused by the store
+   *  (allowOverwrite=false), the existing bytes are then compared, and identical bytes count as written. */
   private listed = new Map<string, Set<string>>();
   constructor(readonly prefix: string, readonly access: BlobAccess, private readonly sdk: () => Promise<BlobSdk>, private readonly clock: () => Date = () => new Date()) {
     if (!/^[A-Za-z0-9_\-]+(\/[A-Za-z0-9_\-]+)*$/.test(prefix)) throw new Error(`invalid blob prefix: ${prefix}`);
@@ -191,7 +194,7 @@ export class BlobAdapter implements StorageAdapter {
         s = new Set((await this.listPaths(`${base}${top}/`)).map(b => b.pathname.slice(base.length)));
         this.listed.set(top, s);
       }
-      if (s.has(key)) return true;
+      return s.has(key);
     }
     return (await this.get(key)) !== null;
   }

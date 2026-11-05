@@ -23,7 +23,9 @@ const tmp = (p: string) => mkdtempSync(join(tmpdir(), `a2b-${p}-`));
 class FakeBlob implements BlobSdk {
   readonly blobs = new Map<string, Buffer>();
   puts: string[] = [];
-  constructor(readonly storeAccess: BlobAccess, readonly pageSize = 1000, readonly suffix = false) {}
+  /** cdnMissCache: like a public store read through the CDN, a 404 for a pathname is kept and served again. */
+  readonly missCache = new Set<string>();
+  constructor(readonly storeAccess: BlobAccess, readonly pageSize = 1000, readonly suffix = false, readonly cdnMissCache = false) {}
   private url(p: string) { return `https://fakestore.${this.storeAccess}.blob.vercel-storage.com/${p}`; }
   async put(pathname: string, body: Buffer, opts: Parameters<BlobSdk["put"]>[2]) {
     if (opts.allowOverwrite !== false || opts.addRandomSuffix !== false) throw new Error("fake: adapter must write with allowOverwrite=false, addRandomSuffix=false");
@@ -35,8 +37,9 @@ class FakeBlob implements BlobSdk {
   }
   async get(pathname: string, opts: { access: BlobAccess }) {
     if (opts.access !== this.storeAccess) throw new Error("fake: access mismatch");
+    if (this.cdnMissCache && this.missCache.has(pathname)) return null;
     const b = this.blobs.get(pathname);
-    if (!b) return null;
+    if (!b) { if (this.cdnMissCache) this.missCache.add(pathname); return null; }
     return { statusCode: 200, stream: new Blob([b]).stream() as ReadableStream<Uint8Array> };
   }
   async list(opts: { prefix: string; cursor?: string; limit?: number }) {
@@ -201,7 +204,11 @@ const run = (store: StorageAdapter, work: string, now = NOW) =>
     const e1 = await s2.exists("objects/a.json"), e2 = await s2.exists("objects/b.json"), e3 = await s2.exists("objects/a.json");
     await s2.put("objects/b.json", Buffer.from("B"), { immutable: true });
     const e4 = await s2.exists("objects/b.json");
-    check("B11 exists answers from one listing, confirms unlisted keys, sees own writes", e1 && !e2 && e3 && e4 && lists === 1, `${e1} ${e2} ${e3} ${e4} lists=${lists}`);
+    check("B11 exists answers from one listing (no read of the key), sees own writes", e1 && !e2 && e3 && e4 && lists === 1, `${e1} ${e2} ${e3} ${e4} lists=${lists}`);
+    let misses = 0; const realGet = f.get.bind(f); f.get = async (p: string, o: any) => { const r = await realGet(p, o); if (!r) misses++; return r; };
+    const s3 = adapter(f);
+    await s3.exists("objects/c.json"); await s3.exists("raw/d.xml");
+    check("B11b exists() never reads a missing objects/ or raw/ key", misses === 0, `misses=${misses}`);
   }
 
   // ---------------- B12 the scheduled job end to end (A2 -> ECB -> export -> site) ----------------
@@ -229,6 +236,18 @@ const run = (store: StorageAdapter, work: string, now = NOW) =>
     const j2 = await runJob({ a2, site, token: "TEST-TOKEN-NOT-A-SECRET", workDir: tmp("job2"), acquireDeadlineMs: Number.MAX_SAFE_INTEGER,
       now: () => NOW, fetchImpl: failing, a2Extra: { today: TODAY, now: () => new Date(NOW.getTime() + 60000), acquire: { sleep: noSleep, now: () => NOW } } });
     check("B12d ECB down: job fails at ECB, previous site pointer stays", !j2.ok && j2.stage === "ECB" && (await readSitePointer(site))?.sha256 === ptr?.sha256);
+  }
+
+  // ---------------- B13 public store with a CDN that keeps 404s (production failure 2026-11-05) ----------------
+  {
+    freshMock();
+    const f = new FakeBlob("public", 1000, false, true);
+    const bs = adapter(f, "public");
+    const r = await run(bs, tmp("cdn"));
+    check("B13 full A2 run publishes on a store whose CDN caches misses", r.report.status === "PUBLISHED" && !!(await resolveVerified(bs)), `${r.report.status} ${JSON.stringify(r.report.publish)}`);
+    const site = adapter(f, "public", "elmonitor/site");
+    const body = Buffer.from(JSON.stringify({ schema: "ELMONITOR_PREVIEW_SNAPSHOT_v1", today: "2026-11-05", source: { version_id: "v1", manifest_sha256: "m".repeat(64) } }) + "\n");
+    check("B13b site publish on the same store", (await publishSite(site, body, () => new Date("2026-11-05T13:20:00.000Z"))).status === "PUBLISHED");
   }
 
   // ---------------- B9 site publisher ----------------

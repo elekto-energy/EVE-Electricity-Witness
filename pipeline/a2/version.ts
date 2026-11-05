@@ -255,11 +255,11 @@ export async function publish(
     await stage("VERIFY_OBJECTS");
     await mapLimit(list, IO_CONCURRENCY, async f => {
       const b = await store.get(objectKey(f.sha256));
-      if (!b || sha256(b) !== f.sha256) throw new PublishError("VERIFY_OBJECTS", `object for ${f.path} failed read-back`);
+      if (!b || sha256(b) !== f.sha256) throw new PublishError("VERIFY_OBJECTS", `object for ${f.path} failed read-back (${b ? `sha256 ${sha256(b)}, ${b.length} bytes` : "missing"})`);
     });
     await mapLimit([...raw.keys()], IO_CONCURRENCY, async sha => {
       const b = await store.get(`raw/${sha}.xml`);
-      if (!b || sha256(b) !== sha) throw new PublishError("VERIFY_OBJECTS", `raw ${sha} failed read-back`);
+      if (!b || sha256(b) !== sha) throw new PublishError("VERIFY_OBJECTS", `raw ${sha} failed read-back (${b ? `sha256 ${sha256(b)}, ${b.length} bytes` : "missing"})`);
     });
     await stage("UPLOAD_MANIFEST");
     const manifest: Manifest = {
