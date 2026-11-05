@@ -11,6 +11,7 @@ import { runA2 } from "../run_a2";
 import { BlobAccess, BlobAdapter, BlobSdk, LocalDirAdapter, openStore, POINTER_LOG, sha256, StorageAdapter } from "../store";
 import { resolveVerified } from "../version";
 import { publishSite, readSitePointer, SITE_POINTER_KEY } from "../publish_site";
+import { runJob } from "../job";
 import { MockEntsoe } from "./mock_entsoe";
 
 let passed = 0, failed = 0;
@@ -155,6 +156,79 @@ const run = (store: StorageAdapter, work: string, now = NOW) =>
     const rb2 = await run(bs, tmp("wb2"), new Date(NOW.getTime() + 60000));
     check("B8d second run on unchanged source: NO_CHANGE, pointer log unchanged", rb2.report.status === "NO_CHANGE" && [...f.blobs.keys()].filter(k => k.includes(`/${POINTER_LOG}/`)).length === 1, rb2.report.status);
     check("B8e no blob was ever written twice", new Set(f.puts).size === f.puts.length);
+  }
+
+  // ---------------- B10 time budget: newest first, rest deferred, next run completes ----------------
+  {
+    const f = new FakeBlob("private");
+    const bs = adapter(f);
+    freshMock();
+    let tick = NOW.getTime();
+    const clock = () => new Date(tick += 1000);              // one second per clock read
+    const budget = await runA2({ store: bs, workDir: tmp("wd1"), token: "TEST-TOKEN-NOT-A-SECRET", today: TODAY, now: () => NOW,
+      acquire: { sleep: noSleep, now: clock }, deadlineMs: NOW.getTime() + 40000, recentFirst: true });
+    const fetched = budget.report.groups;
+    const dg = budget.report.plan.deferred_groups ?? 0;
+    check("B10 time-limited run publishes what it fetched and defers the rest", budget.report.status === "PUBLISHED" && fetched.length > 0 && dg > 0 && fetched.length + dg === budget.report.plan.groups && (budget.report.plan.deferred_days ?? 0) > 0,
+      `${budget.report.status} fetched=${fetched.length} deferred=${dg} of ${budget.report.plan.groups}`);
+    check("B10b fetched in newest-first order and today's groups among them", fetched.every((g, i) => i === 0 || fetched[i - 1].last >= g.last) && fetched.some(g => g.last >= TODAY));
+    const v1 = await resolveVerified(bs);
+    const deferredSeen = budget.report.groups.length;
+    check("B10c deferred groups are not marked as errors", budget.report.source_errors.length === 0 && !budget.report.merge.FETCH_ERROR && deferredSeen === fetched.length && !!v1);
+    freshMock();
+    const rest = await runA2({ store: bs, workDir: tmp("wd2"), token: "TEST-TOKEN-NOT-A-SECRET", today: TODAY, now: () => NOW,
+      acquire: { sleep: noSleep, now: () => NOW }, recentFirst: true });
+    freshMock();
+    const full = new FakeBlob("private");
+    const fs2 = adapter(full);
+    await run(fs2, tmp("wfull"));
+    const split = (await resolveVerified(bs))!.files, whole = (await resolveVerified(fs2))!.files;
+    const dataEq = (a: Map<string, Buffer>, b: Map<string, Buffer>) => {
+      const ka = [...a.keys()].filter(k => k.startsWith("data/")).sort(), kb = [...b.keys()].filter(k => k.startsWith("data/")).sort();
+      return ka.length > 0 && ka.join() === kb.join() && ka.every(k => sha256(a.get(k)!) === sha256(b.get(k)!));
+    };
+    check("B10d after the follow-up run, all data files equal a single full run", (rest.report.status === "PUBLISHED") && dataEq(split, whole), rest.report.status);
+    check("B10e follow-up run has nothing deferred", !rest.report.plan.deferred_groups);
+  }
+
+  // ---------------- B11 exists() via one listing ----------------
+  {
+    const f = new FakeBlob("private");
+    const s = adapter(f);
+    await s.put("objects/a.json", Buffer.from("A"), { immutable: true });
+    const s2 = adapter(f);                                                    // fresh adapter: lists once
+    let lists = 0; const realList = f.list.bind(f); f.list = async (o: any) => { lists++; return realList(o); };
+    const e1 = await s2.exists("objects/a.json"), e2 = await s2.exists("objects/b.json"), e3 = await s2.exists("objects/a.json");
+    await s2.put("objects/b.json", Buffer.from("B"), { immutable: true });
+    const e4 = await s2.exists("objects/b.json");
+    check("B11 exists answers from one listing, confirms unlisted keys, sees own writes", e1 && !e2 && e3 && e4 && lists === 1, `${e1} ${e2} ${e3} ${e4} lists=${lists}`);
+  }
+
+  // ---------------- B12 the scheduled job end to end (A2 -> ECB -> export -> site) ----------------
+  {
+    freshMock();
+    const fa = new FakeBlob("private"), fsite = new FakeBlob("private");
+    const a2 = adapter(fa), site = adapter(fsite, "private", "elmonitor/site");
+    // Minimal ECB SDW jsondata shape as read by export_preview (one series, observation index -> date).
+    const ecb = Buffer.from(JSON.stringify({ dataSets: [{ series: { "0:0:0:0:0": { observations: { "0": [10.95], "1": [10.97] } } } }],
+      structure: { dimensions: { observation: [{ values: [{ id: "2026-03-30" }, { id: "2026-03-31" }] }] } } }));
+    const fakeFetch = (async (url: string) => {
+      if (!String(url).startsWith("https://data-api.ecb.europa.eu/service/data/EXR/D.SEK.EUR.SP00.A?format=jsondata&startPeriod=")) throw new Error(`unexpected url ${url}`);
+      return new Response(new Uint8Array(ecb), { status: 200 });
+    }) as unknown as typeof fetch;
+    const j = await runJob({ a2, site, token: "TEST-TOKEN-NOT-A-SECRET", workDir: tmp("job"), acquireDeadlineMs: Number.MAX_SAFE_INTEGER,
+      now: () => NOW, fetchImpl: fakeFetch, instrument: { "pipeline/a2/run_a2.ts": "x".repeat(64) },
+      a2Extra: { today: TODAY, now: () => NOW, acquire: { sleep: noSleep, now: () => NOW } } });
+    const ptr = await readSitePointer(site);
+    const snap = ptr ? JSON.parse((await site.get(ptr.snapshot_key))!.toString("utf-8")) : null;
+    check("B12 job: A2 published, site snapshot published and verifiable", j.ok && j.stage === "DONE" && j.a2?.status === "PUBLISHED" && !!ptr && ptr.sha256 === j.site?.sha256, JSON.stringify(j).slice(0, 300));
+    check("B12b snapshot carries the ECB rate and its raw hash; raw kept as evidence", snap?.fx?.rates?.["2026-03-31"] === 10.97 && snap.fx.raw_sha256 === sha256(ecb) && (await site.get(`evidence/ecb/${sha256(ecb)}.json`)) !== null);
+    check("B12c run report records the injected instrument hashes", JSON.parse((await a2.get(`runs/${j.a2!.run_id}.json`))!.toString("utf-8")).instrument["pipeline/a2/run_a2.ts"] === "x".repeat(64));
+    const failing = (async () => new Response("down", { status: 503 })) as unknown as typeof fetch;
+    freshMock();
+    const j2 = await runJob({ a2, site, token: "TEST-TOKEN-NOT-A-SECRET", workDir: tmp("job2"), acquireDeadlineMs: Number.MAX_SAFE_INTEGER,
+      now: () => NOW, fetchImpl: failing, a2Extra: { today: TODAY, now: () => new Date(NOW.getTime() + 60000), acquire: { sleep: noSleep, now: () => NOW } } });
+    check("B12d ECB down: job fails at ECB, previous site pointer stays", !j2.ok && j2.stage === "ECB" && (await readSitePointer(site))?.sha256 === ptr?.sha256);
   }
 
   // ---------------- B9 site publisher ----------------

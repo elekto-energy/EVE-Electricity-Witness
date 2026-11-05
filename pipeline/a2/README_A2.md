@@ -5,9 +5,9 @@ Not approved: push, cloud resources, secrets, paid external runs, production or 
 v1/v2/v3 spike files are not modified; A2 imports spike/a_local_ingest/lib_v3.ts (verified in Spike A v3) and the
 unchanged ENTSO-E clients in packages/evidence/src/.
 
-Owner decision 2026-11-05: OWNER-GO option 1 "automatic updates" - GitHub Actions + the owner's Vercel Blob store
-(Stockholm), secrets ENTSOE_TOKEN and BLOB_READ_WRITE_TOKEN set by the owner. DNS, ei-backend-01 and deploy.yml
-stay untouched.
+Owner decision 2026-11-05: OWNER-GO option 1 "automatic updates" with the owner's Vercel Blob store (Stockholm);
+same day, owner choice 1: run the update on Vercel (Cron + route), no keys on GitHub. DNS, ei-backend-01 and
+deploy.yml stay untouched.
 
 ## What one run does
 
@@ -93,13 +93,22 @@ the local date of the version's published_at_utc). `publish_site.ts --store blob
 appends the pointer `ELMONITOR_SITE_POINTER_v1`. The site (apps/web/lib/preview/load.ts) reads the newest pointer,
 verifies sha256 and size, and falls back to the bundled snapshot on any failure.
 
-## GitHub Actions
+## Scheduled update on Vercel (owner choice 2026-11-05: no keys on GitHub)
 
-`.github/workflows/elmonitor_a2_data.yml`: schedule 13:17, 21:17 and 23:17 UTC + manual dispatch, default branch
-`master`, `contents: read`, one run at a time. Steps: `npm ci`, both offline test suites, A2 into
-`blob:elmonitor/a2` (exit 0 or 3 continues), ECB raw response, export with `--as-of now`, publish to
-`blob:elmonitor/site`. Needs secrets `ENTSOE_TOKEN`, `BLOB_READ_WRITE_TOKEN` and variable `ELMONITOR_BLOB_ACCESS`.
-It does not push, deploy, use SSH or call other workflows; `deploy.yml` triggers on push to `main` only.
+`apps/web/vercel.json` runs `GET /api/cron/a2` at 13:17, 21:17 and 23:17 UTC. The route
+(`apps/web/app/api/cron/a2/route.ts`, region arn1, maxDuration 800 s) calls `pipeline/a2/job.ts`:
+A2 into `blob:elmonitor/a2` newest days first with a 540 s acquisition budget (groups not started are deferred to the
+next run and listed as `plan.deferred_groups/deferred_days`), ECB raw response, export with "today" = export date,
+publish to `blob:elmonitor/site`, then revalidate `/`, `/omraden`, `/data`.
+Vercel project variables: `CRON_SECRET` (fail closed: 401 without it), `ENTSOE_TOKEN`, `ELMONITOR_BLOB_ACCESS`;
+Blob credentials come from the connected store (OIDC + BLOB_STORE_ID or BLOB_READ_WRITE_TOKEN, resolved by the SDK).
+Instrument hashes are measured at build time by `apps/web/next.config.js` (sources are not in the function bundle).
+Store I/O runs 16 calls in flight (`version.ts` IO_CONCURRENCY); BlobAdapter answers `exists` from one listing.
+
+Measured on D: (2026-11-03): full backfill 369 groups in about 36.5 min, an ordinary run 81 groups in about 5 min,
+so the first backfill completes over several scheduled runs; today's data comes first.
+
+`.github/workflows/elmonitor_a2_data.yml` is manual offline tests only: no secrets, no store, no data run.
 
 ## a2.1 - values hash method and source-body check (OWNER-DECISION 2026-11-03, option 1)
 

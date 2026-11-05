@@ -1,0 +1,13 @@
+[
+  "pipeline/a2/config.ts",
+  "pipeline/a2/store.ts",
+  "pipeline/a2/model.ts",
+  "pipeline/a2/acquire.ts",
+  "pipeline/a2/version.ts",
+  "pipeline/a2/run_a2.ts",
+  "spike/a_local_ingest/lib_v3.ts",
+  "spike/a_local_ingest/lib_v2.ts",
+  "packages/evidence/src/entsoe_client.ts",
+  "packages/evidence/src/entsoe_generation_client.ts",
+  "packages/evidence/src/entsoe_zones.ts"
+]

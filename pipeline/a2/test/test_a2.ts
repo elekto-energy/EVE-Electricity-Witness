@@ -224,12 +224,16 @@ function entries(files: Map<string, Buffer>, dataset: string, series: string): R
   // ---------------- 11. Workflow guards (static) ----------------
   {
     const wf = readFileSync(resolve(__dirname, "..", "..", "..", ".github", "workflows", "elmonitor_a2_data.yml"), "utf-8");
-    check("W1 workflow triggers: schedule + workflow_dispatch only (no push / pull_request / workflow_run)", /\n\s+schedule:/.test(wf) && /workflow_dispatch:/.test(wf) && !/\n\s+(push|pull_request|pull_request_target|workflow_run|repository_dispatch):/.test(wf));
-    check("W2 permissions read-only, concurrency group set", /permissions:\s*\n\s+contents:\s*read/.test(wf) && /concurrency:/.test(wf));
-    // Contract after OWNER-GO 2026-11-05 option 1 (Actions + Vercel Blob); before it the workflow was dry-run only.
+    // Contract after the owner's choice 2026-11-05 (data update on Vercel, no keys on GitHub): manual offline tests only.
     const code = wf.replace(/#.*$/gm, "");
-    check("W3 no deploy, no ssh, no git push; secrets exactly ENTSOE_TOKEN and BLOB_READ_WRITE_TOKEN", !/ssh|deploy|VPS_SSH_KEY|docker|git push|contents:\s*write/i.test(code) && [...code.matchAll(/secrets\.([A-Z0-9_]+)/g)].every(m => m[1] === "ENTSOE_TOKEN" || m[1] === "BLOB_READ_WRITE_TOKEN"));
-    check("W4 stores are exactly blob:elmonitor/a2 and blob:elmonitor/site; access from a repository variable", [...code.matchAll(/--store\s+(\S+)/g)].every(m => m[1] === "blob:elmonitor/a2" || m[1] === "blob:elmonitor/site") && /--store blob:elmonitor\/site/.test(code) && /ELMONITOR_BLOB_ACCESS:\s*\$\{\{\s*vars\.ELMONITOR_BLOB_ACCESS\s*\}\}/.test(code) && !/--dry-run/.test(code));
+    check("W1 workflow trigger: workflow_dispatch only (no schedule, push, pull_request, workflow_run)", /workflow_dispatch:/.test(code) && !/\n\s+(schedule|push|pull_request|pull_request_target|workflow_run|repository_dispatch):/.test(code));
+    check("W2 permissions read-only, concurrency group set", /permissions:\s*\n\s+contents:\s*read/.test(code) && /concurrency:/.test(code));
+    check("W3 no secrets at all, no deploy, no ssh, no git push", !/secrets\./.test(code) && !/ssh|deploy|VPS_SSH_KEY|docker|git push|contents:\s*write/i.test(code));
+    check("W4 no store and no data run (tests only)", !/--store|run_a2\.ts|export_preview\.ts|publish_site\.ts|BLOB_|ENTSOE_TOKEN/.test(code) && /test_a2\.ts/.test(code) && /test_blob_store\.ts/.test(code));
+    const vj = JSON.parse(readFileSync(resolve(__dirname, "..", "..", "..", "apps", "web", "vercel.json"), "utf-8"));
+    const route = readFileSync(resolve(__dirname, "..", "..", "..", "apps", "web", "app", "api", "cron", "a2", "route.ts"), "utf-8");
+    check("W5 Vercel cron: exactly 13:17, 21:17, 23:17 UTC on /api/cron/a2", JSON.stringify(vj.crons) === JSON.stringify(["17 13 * * *", "17 21 * * *", "17 23 * * *"].map(c => ({ path: "/api/cron/a2", schedule: c }))));
+    check("W6 cron route fails closed without CRON_SECRET and uses only the elmonitor/a2 and elmonitor/site prefixes", /if \(!secret\) return false;/.test(route) && /timingSafeEqual/.test(route) && [...route.matchAll(/new BlobAdapter\("([^"]+)"/g)].map(m => m[1]).join() === "elmonitor/a2,elmonitor/site");
   }
 
   // ---------------- 12. Hash method V2: origin marker excluded (A2 fix after local run 2, OWNER-DECISION option 1) ----------------

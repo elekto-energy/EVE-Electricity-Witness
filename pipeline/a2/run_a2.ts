@@ -26,13 +26,11 @@ import { A2_ID, A2_VERSION, allSeries, HISTORY_START, REVISION_WINDOW_DAYS, VALU
 import { EMPTY_DAY_DATA, markFetchError, mergeDay, MergeOutcome, plan, regKey } from "./model";
 import { openStore, stableJson, StorageAdapter } from "./store";
 import { buildFiles, loadState, MigrationReport, publish, PublishError, PublishHooks, putDay } from "./version";
+import INSTRUMENT_FILE_LIST from "./instrument_files.json";
 
 const REPO_ROOT = resolve(__dirname, "..", "..");
-export const INSTRUMENT_FILES = [
-  "pipeline/a2/config.ts", "pipeline/a2/store.ts", "pipeline/a2/model.ts", "pipeline/a2/acquire.ts",
-  "pipeline/a2/version.ts", "pipeline/a2/run_a2.ts", "spike/a_local_ingest/lib_v3.ts", "spike/a_local_ingest/lib_v2.ts",
-  "packages/evidence/src/entsoe_client.ts", "packages/evidence/src/entsoe_generation_client.ts", "packages/evidence/src/entsoe_zones.ts",
-];
+/** Source files whose sha256 is recorded in every run report and manifest (list shared with the site build). */
+export const INSTRUMENT_FILES: string[] = INSTRUMENT_FILE_LIST;
 
 export function instrumentHashes(): Record<string, string> {
   return Object.fromEntries(INSTRUMENT_FILES.map(rel => {
@@ -51,12 +49,18 @@ export interface RunOptions {
   acquire?: Partial<AcquireOptions>;
   publishHooks?: PublishHooks;
   now?: () => Date;
+  /** Time budget (epoch ms): groups not started by then are deferred to the next run (see acquire.ts). */
+  deadlineMs?: number;
+  /** Fetch the newest days first (plan sorted by last day, descending), so a time-limited run serves today first. */
+  recentFirst?: boolean;
+  /** Instrument hashes measured elsewhere (e.g. at site build time, where the sources are on disk). */
+  instrument?: Record<string, string>;
 }
 
 export interface RunReport {
   a2_id: string; a2_version: string; run_id: string; today: string; started_at_utc: string; finished_at_utc: string;
   status: "PUBLISHED" | "NO_CHANGE" | "DRY_RUN_OK" | "PUBLISHED_WITH_SOURCE_ERRORS" | "NO_CHANGE_WITH_SOURCE_ERRORS" | "PUBLISH_FAILED" | "INTERRUPTED";
-  plan: { groups: number; days: number; by_reason: Record<string, number> };
+  plan: { groups: number; days: number; by_reason: Record<string, number>; deferred_groups?: number; deferred_days?: number };
   groups: GroupResult[];
   source_errors: { series: string; first: string; last: string; code: string; text: string }[];
   merge: Record<string, number>;
@@ -87,6 +91,11 @@ export async function runA2(o: RunOptions): Promise<{ report: RunReport; exitCod
     planned = saved.groups;
   } else {
     planned = plan(allSeries(), state.register, today, HISTORY_START, REVISION_WINDOW_DAYS);
+    if (o.recentFirst) {
+      planned = [...planned].sort((a: any, b: any) =>
+        a.last !== b.last ? (a.last < b.last ? 1 : -1) : a.first !== b.first ? (a.first < b.first ? 1 : -1)
+          : `${a.series.dataset}|${a.series.label}` < `${b.series.dataset}|${b.series.label}` ? -1 : 1);
+    }
     writeFileSync(planPath, JSON.stringify({ today, previous_version_id: previous?.version_id ?? null, groups: planned }, null, 2) + "\n", { flag: "wx" });
   }
   const byReason: Record<string, number> = {};
@@ -96,12 +105,16 @@ export async function runA2(o: RunOptions): Promise<{ report: RunReport; exitCod
     a2_id: A2_ID, a2_version: A2_VERSION, run_id: runId, today, started_at_utc: startedAt, finished_at_utc: "",
     status: "INTERRUPTED", plan: { groups: planned.length, days: planned.reduce((s: number, g: any) => s + g.days.length, 0), by_reason: byReason },
     groups: [], source_errors: [], merge: {}, revisions: [], regressions_refused: [],
-    publish: { status: "NOT_STARTED", previous_version_id: previous?.version_id ?? null }, instrument: instrumentHashes(),
+    publish: { status: "NOT_STARTED", previous_version_id: previous?.version_id ?? null }, instrument: o.instrument ?? instrumentHashes(),
     values_hash_method: VALUES_HASH_METHOD, migration,
   };
 
-  const acq = await acquire(planned, { token: o.token, workRunDir, ...o.acquire });
+  const acq = await acquire(planned, { token: o.token, workRunDir, deadlineMs: o.deadlineMs, ...o.acquire });
   report.groups = acq.results;
+  if (acq.deferred > 0) {
+    report.plan.deferred_groups = acq.deferred;
+    report.plan.deferred_days = planned.slice(acq.results.length).reduce((s: number, g: any) => s + g.days.length, 0);
+  }
   if (acq.interrupted) {
     report.finished_at_utc = now().toISOString();
     writeFileSync(join(workRunDir, "RUN_REPORT.json"), stableJson(report));
@@ -112,7 +125,7 @@ export async function runA2(o: RunOptions): Promise<{ report: RunReport; exitCod
   const nowIso = now().toISOString();
   const rawUsed = new Map<string, Buffer>();
   const count = (k: MergeOutcome | "FETCH_ERROR") => { report.merge[k] = (report.merge[k] ?? 0) + 1; };
-  for (let i = 0; i < planned.length; i++) {
+  for (let i = 0; i < acq.results.length; i++) {  // deferred groups (time budget) are left untouched
     const g = planned[i], r = acq.results[i];
     const raw = r.outcome === "PUBLICATION" ? loadRaw(workRunDir, r.raw_sha256!) : null;
     const err = r.outcome === "ERROR" ? r.error : null;

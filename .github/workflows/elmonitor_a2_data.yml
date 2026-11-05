@@ -1,47 +1,25 @@
-# ELMONITOR A2 - automated ENTSO-E data chain into Vercel Blob (OWNER-GO 2026-11-05, option 1).
+# ELMONITOR A2 - offline tests only (manual).
 #
-# Needs, set by the owner in GitHub (Settings -> Secrets and variables -> Actions):
-#   secret   ENTSOE_TOKEN            ENTSO-E Transparency Platform token
-#   secret   BLOB_READ_WRITE_TOKEN   read-write token of the Elmonitor Vercel Blob store
-#   variable ELMONITOR_BLOB_ACCESS   "public" or "private", exactly as the store was created (no default)
-#
-# Guarantees by construction:
-#   - triggers: schedule + manual dispatch only; schedules run on the default branch (master)
-#   - read-only repository token; no push, no deploy, no SSH, no call of other workflows
-#     (.github/workflows/deploy.yml triggers on push to "main", which this job never does)
-#   - Blob writes are append-only (allowOverwrite=false everywhere, pointers are a log; see pipeline/a2/store.ts)
-#   - one run at a time (concurrency group), so pointer updates cannot race another run
-#   - a failed step leaves the previous A2 version and the previous site snapshot live
-#
-# Store prefixes: elmonitor/a2 (A2 versions, raw ENTSO-E evidence, run reports), elmonitor/site (site snapshots,
-# raw ECB evidence). The site (apps/web/lib/preview/load.ts) reads elmonitor/site and verifies sha256 and size.
+# The scheduled data update runs on Vercel (apps/web/app/api/cron/a2/route.ts + apps/web/vercel.json), by owner
+# choice 2026-11-05: no keys on GitHub. This workflow uses no secrets, reaches no store and starts no data run.
+# It does not push, deploy, use SSH or call other workflows; deploy.yml triggers on push to "main" only.
 
-name: Elmonitor A2 data
+name: Elmonitor A2 tests
 
 on:
-  schedule:
-    # Times in UTC, off the full hour (GitHub delays scheduled runs at the top of the hour).
-    # 13:17 UTC: after the day-ahead result for tomorrow (published around 12:45 CET).
-    # 21:17 UTC: late publications and the day's physical flows.
-    # 23:17 UTC: just after local midnight (00:17 CET / 01:17 CEST), so the site shows the new day.
-    - cron: "17 13 * * *"
-    - cron: "17 21 * * *"
-    - cron: "17 23 * * *"
   workflow_dispatch: {}
 
 permissions:
   contents: read
 
 concurrency:
-  group: elmonitor-a2-data
+  group: elmonitor-a2-tests
   cancel-in-progress: false
 
 jobs:
-  a2:
+  tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
-    env:
-      ELMONITOR_BLOB_ACCESS: ${{ vars.ELMONITOR_BLOB_ACCESS }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -56,44 +34,3 @@ jobs:
         run: |
           npx --yes tsx@4.23.12 pipeline/a2/test/test_a2.ts
           npx --yes tsx@4.23.12 pipeline/a2/test/test_blob_store.ts
-
-      - name: A2 data chain into Blob
-        env:
-          ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
-          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
-        run: |
-          set +e
-          npx --yes tsx@4.23.12 pipeline/a2/run_a2.ts --store blob:elmonitor/a2 --work "$RUNNER_TEMP/a2_work"
-          code=$?
-          set -e
-          echo "a2 exit code: $code"
-          # 0 PUBLISHED / NO_CHANGE, 3 PUBLISHED_WITH_SOURCE_ERRORS (errors visible in register and run report).
-          if [ "$code" = "3" ]; then echo "::warning::A2 published with source errors (exit 3); see runs/ in the A2 store"; fi
-          if [ "$code" != "0" ] && [ "$code" != "3" ]; then exit "$code"; fi
-
-      - name: ECB EUR/SEK reference rates (raw response, kept as evidence)
-        run: |
-          start=$(date -u -d '45 days ago' +%Y-%m-%d)
-          curl -sSf --retry 3 --retry-delay 10 \
-            "https://data-api.ecb.europa.eu/service/data/EXR/D.SEK.EUR.SP00.A?format=jsondata&startPeriod=${start}" \
-            -o "$RUNNER_TEMP/ecb_eur_sek.json"
-          sha256sum "$RUNNER_TEMP/ecb_eur_sek.json"
-
-      - name: Export site snapshot from the verified A2 version
-        env:
-          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
-        run: >
-          npx --yes tsx@4.23.12 pipeline/a2/export_preview.ts
-          --store blob:elmonitor/a2
-          --out "$RUNNER_TEMP/elmonitor_snapshot.json"
-          --as-of now
-          --eur-sek "$RUNNER_TEMP/ecb_eur_sek.json"
-
-      - name: Publish site snapshot
-        env:
-          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
-        run: >
-          npx --yes tsx@4.23.12 pipeline/a2/publish_site.ts
-          --store blob:elmonitor/site
-          --snapshot "$RUNNER_TEMP/elmonitor_snapshot.json"
-          --fx-raw "$RUNNER_TEMP/ecb_eur_sek.json"

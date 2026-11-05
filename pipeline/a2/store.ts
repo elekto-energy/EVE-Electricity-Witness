@@ -114,6 +114,9 @@ export const POINTER_LOG = "_log";
 export class BlobAdapter implements StorageAdapter {
   readonly kind = "blob";
   private lastStamp = "";
+  /** Keys under objects/ and raw/ seen in one listing per run (+ keys written since). Only ever says "exists" for a
+   *  key the store listed or this adapter wrote; a key not listed is confirmed with a direct read. */
+  private listed = new Map<string, Set<string>>();
   constructor(readonly prefix: string, readonly access: BlobAccess, private readonly sdk: () => Promise<BlobSdk>, private readonly clock: () => Date = () => new Date()) {
     if (!/^[A-Za-z0-9_\-]+(\/[A-Za-z0-9_\-]+)*$/.test(prefix)) throw new Error(`invalid blob prefix: ${prefix}`);
     if (access !== "public" && access !== "private") throw new Error(`blob access must be "public" or "private", got "${access}"`);
@@ -178,7 +181,20 @@ export class BlobAdapter implements StorageAdapter {
     if (key === CURRENT_POINTER_KEY) { const p = await this.newestLogEntry(key); return p ? this.read(p) : null; }
     return this.read(this.path(key));
   }
-  async exists(key: string) { return (await this.get(key)) !== null; }
+  async exists(key: string) {
+    checkKey(key);
+    const top = key.split("/")[0];
+    if (top === "objects" || top === "raw") {
+      let s = this.listed.get(top);
+      if (!s) {
+        const base = `${this.prefix}/`;
+        s = new Set((await this.listPaths(`${base}${top}/`)).map(b => b.pathname.slice(base.length)));
+        this.listed.set(top, s);
+      }
+      if (s.has(key)) return true;
+    }
+    return (await this.get(key)) !== null;
+  }
   async put(key: string, body: Buffer, opts: { immutable: boolean }) {
     checkKey(key);
     if (!opts.immutable) {
@@ -190,12 +206,16 @@ export class BlobAdapter implements StorageAdapter {
       return;
     }
     if (key.startsWith(`${POINTER_LOG}/`)) throw new Error(`blob store: ${POINTER_LOG}/ is reserved`);
-    const existing = await this.read(this.path(key));
-    if (existing) {
-      if (sha256(existing) === sha256(body)) return; // idempotent re-put of identical bytes
-      throw new Error(`immutable key exists with different content: ${key}`);
+    try {
+      await this.write(this.path(key), body, key); // allowOverwrite=false: the store refuses an existing pathname
+    } catch (e) {
+      const existing = await this.read(this.path(key));
+      if (!existing) throw e;                                     // a real failure, not "already exists"
+      if (sha256(existing) !== sha256(body)) throw new Error(`immutable key exists with different content: ${key}`);
+      // idempotent re-put of identical bytes
     }
-    await this.write(this.path(key), body, key);
+    const top = key.split("/")[0];
+    this.listed.get(top)?.add(key);
   }
   async list(prefix: string) {
     const base = `${this.prefix}/`;
@@ -211,10 +231,15 @@ export class BlobAdapter implements StorageAdapter {
 /** The single mutable key of the A2 layout (see version.ts CURRENT_KEY). */
 export const CURRENT_POINTER_KEY = "current.json";
 
-/** Loads @vercel/blob lazily; the token comes from BLOB_READ_WRITE_TOKEN (read by the SDK, never logged here). */
+/**
+ * Loads @vercel/blob lazily. Credentials are resolved by the SDK itself (2.8.2: Vercel OIDC + BLOB_STORE_ID inside
+ * Vercel, else BLOB_READ_WRITE_TOKEN); nothing is read or logged here.
+ */
 export const loadVercelBlobSdk = async (): Promise<BlobSdk> => {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) throw new Error("BLOB_READ_WRITE_TOKEN is not set");
-  return (await import("@vercel/blob")) as unknown as BlobSdk;
+  // Resolved at run time from the CLI's node_modules (repo root). The site route passes its own SDK instead, so the
+  // specifier is kept out of the site's type check and bundle (apps/web has no access to the root node_modules).
+  const specifier = "@vercel/blob";
+  return (await import(/* webpackIgnore: true */ specifier)) as unknown as BlobSdk;
 };
 
 /**

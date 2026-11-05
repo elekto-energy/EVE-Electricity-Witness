@@ -9,7 +9,8 @@
  *      anything in (1) fails. The page then shows the bundled data with its own date; DataFreshness marks it.
  *
  * The store's access type is read from the URL host the list API returns (measured, not configured).
- * BLOB_READ_WRITE_TOKEN comes from connecting the store to the Vercel project; it is never logged.
+ * Credentials come from connecting the store to the Vercel project (OIDC + BLOB_STORE_ID, or BLOB_READ_WRITE_TOKEN),
+ * resolved by @vercel/blob itself; nothing is logged.
  */
 
 import { createHash } from "crypto";
@@ -68,7 +69,7 @@ async function fromBlob(): Promise<{ snapshot: Snapshot; sha256: string }> {
 
 export async function loadSnapshot(): Promise<LoadedSnapshot> {
   const bundled = (reason: string): LoadedSnapshot => ({ snapshot: asSnapshot(bundledRaw), origin: "bundled", sha256: null, fallbackReason: reason });
-  if (!process.env.BLOB_READ_WRITE_TOKEN) return bundled("store not configured");
+  if (!process.env.BLOB_STORE_ID && !process.env.BLOB_READ_WRITE_TOKEN) return bundled("store not configured");
   try {
     const r = await fromBlob();
     return { snapshot: r.snapshot, origin: "blob", sha256: r.sha256, fallbackReason: null };

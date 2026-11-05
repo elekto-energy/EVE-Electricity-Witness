@@ -17,7 +17,7 @@
 import { createHash } from "crypto";
 import { readFileSync, writeFileSync, mkdirSync } from "fs";
 import { dirname } from "path";
-import { openStore } from "./store";
+import { openStore, StorageAdapter } from "./store";
 
 const SCHEMA = "ELMONITOR_PREVIEW_SNAPSHOT_v1";
 const TZ = "Europe/Stockholm";
@@ -55,12 +55,19 @@ function addDays(day: string, n: number): string {
 const round = (x: number, n = 2) => Math.round(x * 10 ** n) / 10 ** n;
 const slug = (s: string) => s.replace(">", "_to_");
 
-async function main() {
-  const storeArg = arg("--store");
-  const store = openStore(storeArg);
-  const out = arg("--out");
-  const nDays = Number(arg("--days", "14"));
-  const only = arg("--only", ""); // optional comma list of zones/borders (testing subsets)
+export interface ExportOptions {
+  days?: number;           // window length ending today (default 14)
+  only?: string;           // optional comma list of zones/borders (testing subsets)
+  asOf?: string;           // "" (version date), "now", or YYYY-MM-DD
+  fxRaw?: Buffer | null;   // raw ECB SDW jsondata response for EXR/D.SEK.EUR.SP00.A
+  clock?: () => Date;      // for asOf "now"
+}
+
+/** Build the snapshot bytes from the verified current version of `store`. Never writes to the store. */
+export async function exportSnapshot(store: StorageAdapter, opt: ExportOptions = {}):
+  Promise<{ body: Buffer; version_id: string; today: string; first: string; last: string }> {
+  const nDays = opt.days ?? 14;
+  const only = opt.only ?? "";
   const keep = (x: string) => !only || only.split(",").includes(x);
 
   const readVerified = async (key: string, expected: string): Promise<Json> => {
@@ -79,9 +86,9 @@ async function main() {
   const files = new Map<string, { sha256: string; bytes: number }>();
   for (const f of manifest.files) files.set(f.path, f);
 
-  const asOf = arg("--as-of", "");
+  const asOf = opt.asOf ?? "";
   if (asOf && asOf !== "now" && !/^\d{4}-\d{2}-\d{2}$/.test(asOf)) throw new Error("--as-of must be now or YYYY-MM-DD");
-  const today = asOf === "now" ? localDate(new Date().toISOString()) : asOf || localDate(current.published_at_utc);
+  const today = asOf === "now" ? localDate((opt.clock ?? (() => new Date()))().toISOString()) : asOf || localDate(current.published_at_utc);
   const first = addDays(today, -(nDays - 1));
   const last = addDays(today, 1);
   const days: string[] = [];
@@ -169,9 +176,8 @@ async function main() {
 
   // Optional EUR/SEK reference rates (ECB), read from a saved raw response; never fetched here.
   let fx: Json = null;
-  const fxFile = arg("--eur-sek", "");
-  if (fxFile) {
-    const rawFx = readFileSync(fxFile);
+  if (opt.fxRaw) {
+    const rawFx = opt.fxRaw;
     const j = JSON.parse(rawFx.toString("utf-8"));
     const obs = (Object.values(j.dataSets[0].series)[0] as Json).observations as Record<string, [number]>;
     const dates = j.structure.dimensions.observation[0].values as { id: string }[];
@@ -200,9 +206,22 @@ async function main() {
     prices, flows, fx,
   };
   const body = Buffer.from(stableJson(snapshot) + "\n", "utf-8");
-  mkdirSync(dirname(out), { recursive: true });
-  writeFileSync(out, body);
-  console.log(`[export_preview] version=${current.version_id} today=${today} window=${first}..${last} bytes=${body.length} sha256=${sha256(body)} out=${out}`);
+  return { body, version_id: current.version_id, today, first, last };
 }
 
-main().catch(e => { console.error(`[export_preview] ERROR: ${String(e?.message ?? e)}`); process.exit(1); });
+async function main() {
+  const store = openStore(arg("--store"));
+  const out = arg("--out");
+  const fxFile = arg("--eur-sek", "");
+  const r = await exportSnapshot(store, {
+    days: Number(arg("--days", "14")), only: arg("--only", ""), asOf: arg("--as-of", ""),
+    fxRaw: fxFile ? readFileSync(fxFile) : null,
+  });
+  mkdirSync(dirname(out), { recursive: true });
+  writeFileSync(out, r.body);
+  console.log(`[export_preview] version=${r.version_id} today=${r.today} window=${r.first}..${r.last} bytes=${r.body.length} sha256=${sha256(r.body)} out=${out}`);
+}
+
+if (require.main === module) {
+  main().catch(e => { console.error(`[export_preview] ERROR: ${String(e?.message ?? e)}`); process.exit(1); });
+}

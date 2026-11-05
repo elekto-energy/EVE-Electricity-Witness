@@ -48,12 +48,15 @@ export interface AcquireOptions {
   token: string;
   workRunDir: string;
   maxGroups?: number;          // test hook: stop after N newly fetched groups (simulated interruption)
+  /** Time budget: no new group is started at or after this epoch ms (measured with now()). The groups not started
+   *  are returned as deferred; they are not fetched, not merged and not marked as errors. */
+  deadlineMs?: number;
   sleep?: (ms: number) => Promise<void>;
   now?: () => Date;
 }
 
 /** Fetch (or load from checkpoint) every planned group. Returns results in plan order and whether the run was cut short. */
-export async function acquire(groups: PlanGroup[], o: AcquireOptions): Promise<{ results: GroupResult[]; interrupted: boolean }> {
+export async function acquire(groups: PlanGroup[], o: AcquireOptions): Promise<{ results: GroupResult[]; interrupted: boolean; deferred: number }> {
   const dir = join(o.workRunDir, "acquired");
   mkdirSync(dir, { recursive: true });
   const sleep = o.sleep ?? ((ms: number) => new Promise(r => setTimeout(r, ms)));
@@ -64,7 +67,8 @@ export async function acquire(groups: PlanGroup[], o: AcquireOptions): Promise<{
     const key = groupKey(g);
     const metaPath = join(dir, `${key}.json`);
     if (existsSync(metaPath)) { results.push(JSON.parse(readFileSync(metaPath, "utf-8"))); continue; }
-    if (o.maxGroups !== undefined && fetched >= o.maxGroups) return { results, interrupted: true };
+    if (o.maxGroups !== undefined && fetched >= o.maxGroups) return { results, interrupted: true, deferred: 0 };
+    if (o.deadlineMs !== undefined && now().getTime() >= o.deadlineMs) return { results, interrupted: false, deferred: groups.length - results.length };
     const periodStart = new Date(localDayStartUtc(g.first));
     const periodEnd = new Date(localDayStartUtc(addDays(g.last, 1)));
     const attempts: GroupResult["attempts"] = [];
@@ -109,7 +113,7 @@ export async function acquire(groups: PlanGroup[], o: AcquireOptions): Promise<{
     fetched++;
     await sleep(REQUEST_GAP_MS);
   }
-  return { results, interrupted: false };
+  return { results, interrupted: false, deferred: 0 };
 }
 
 export function loadRaw(workRunDir: string, rawSha: string): Buffer {

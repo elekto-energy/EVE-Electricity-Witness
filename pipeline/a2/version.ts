@@ -51,6 +51,24 @@ export class PublishError extends Error {
 
 const objectKey = (sha: string) => `objects/${sha}.json`;
 
+/** Store calls run with this many in flight (a remote store answers each call over the network). */
+export const IO_CONCURRENCY = 16;
+
+/** Map with at most `limit` calls in flight; results keep input order; the first failure rejects. */
+export async function mapLimit<T, R>(items: T[], limit: number, fn: (x: T, i: number) => Promise<R>): Promise<R[]> {
+  const out = new Array<R>(items.length);
+  let next = 0, failed: unknown = null;
+  const worker = async () => {
+    while (failed === null && next < items.length) {
+      const i = next++;
+      try { out[i] = await fn(items[i], i); } catch (e) { if (failed === null) failed = e; }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  if (failed !== null) throw failed;
+  return out;
+}
+
 /** Read current.json -> manifest -> every object, verifying every sha256. Returns null when nothing is published yet. */
 export async function resolveVerified(store: StorageAdapter): Promise<{ pointer: Pointer; manifest: Manifest; files: Map<string, Buffer> } | null> {
   const pb = await store.get(CURRENT_KEY);
@@ -62,11 +80,12 @@ export async function resolveVerified(store: StorageAdapter): Promise<{ pointer:
   const manifest: Manifest = JSON.parse(mb.toString("utf-8"));
   if (manifest.content_sha256 !== pointer.content_sha256 || contentSha(manifest.files) !== manifest.content_sha256) throw new Error("content hash mismatch");
   const files = new Map<string, Buffer>();
-  for (const f of manifest.files) {
+  const bodies = await mapLimit(manifest.files, IO_CONCURRENCY, async f => {
     const b = await store.get(objectKey(f.sha256));
     if (!b || sha256(b) !== f.sha256 || b.length !== f.bytes) throw new Error(`object for ${f.path} missing or hash mismatch`);
-    files.set(f.path, b);
-  }
+    return b;
+  });
+  manifest.files.forEach((f, i) => files.set(f.path, bodies[i]));
   return { pointer, manifest, files };
 }
 
@@ -81,12 +100,13 @@ export async function resolveVersionVerified(store: StorageAdapter, versionId: s
   const manifest: Manifest = JSON.parse(mb.toString("utf-8"));
   if (manifest.version_id !== versionId || contentSha(manifest.files) !== manifest.content_sha256) throw new Error(`manifest of ${versionId} inconsistent`);
   const files = new Map<string, Buffer>();
-  for (const f of manifest.files) {
-    if (!f.path.startsWith("data/")) continue;      // only data files are needed for revision checks
+  const data = manifest.files.filter(f => f.path.startsWith("data/")); // only data files are needed for revision checks
+  const bodies = await mapLimit(data, IO_CONCURRENCY, async f => {
     const b = await store.get(objectKey(f.sha256));
     if (!b || sha256(b) !== f.sha256 || b.length !== f.bytes) throw new Error(`object for ${f.path} of ${versionId} missing or hash mismatch`);
-    files.set(f.path, b);
-  }
+    return b;
+  });
+  data.forEach((f, i) => files.set(f.path, bodies[i]));
   return { manifest, files };
 }
 
@@ -226,17 +246,21 @@ export async function publish(
   const versionId = `v${meta.built_at_utc.replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z")}_${content.slice(0, 12)}`;
   try {
     await stage("UPLOAD_OBJECTS");
-    for (const f of list) if (!(await store.exists(objectKey(f.sha256)))) await store.put(objectKey(f.sha256), files.get(f.path)!, { immutable: true });
-    for (const [sha, b] of raw) if (!(await store.exists(`raw/${sha}.xml`))) await store.put(`raw/${sha}.xml`, b, { immutable: true });
+    await mapLimit(list, IO_CONCURRENCY, async f => {
+      if (!(await store.exists(objectKey(f.sha256)))) await store.put(objectKey(f.sha256), files.get(f.path)!, { immutable: true });
+    });
+    await mapLimit([...raw.entries()], IO_CONCURRENCY, async ([sha, b]) => {
+      if (!(await store.exists(`raw/${sha}.xml`))) await store.put(`raw/${sha}.xml`, b, { immutable: true });
+    });
     await stage("VERIFY_OBJECTS");
-    for (const f of list) {
+    await mapLimit(list, IO_CONCURRENCY, async f => {
       const b = await store.get(objectKey(f.sha256));
       if (!b || sha256(b) !== f.sha256) throw new PublishError("VERIFY_OBJECTS", `object for ${f.path} failed read-back`);
-    }
-    for (const sha of raw.keys()) {
+    });
+    await mapLimit([...raw.keys()], IO_CONCURRENCY, async sha => {
       const b = await store.get(`raw/${sha}.xml`);
       if (!b || sha256(b) !== sha) throw new PublishError("VERIFY_OBJECTS", `raw ${sha} failed read-back`);
-    }
+    });
     await stage("UPLOAD_MANIFEST");
     const manifest: Manifest = {
       schema: MANIFEST_SCHEMA, a2_id: A2_ID, a2_version: A2_VERSION, version_id: versionId, content_sha256: content,
