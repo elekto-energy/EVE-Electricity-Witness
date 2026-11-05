@@ -94,6 +94,17 @@ body.s-body {
 @media (max-width: 900px) { .s-hero { grid-template-columns: 1fr; gap: 28px; } }
 
 .s-section { margin-top: 56px; }
+/* Collapsible section (<details>): the heading row is the toggle. */
+.s-expand > summary { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; padding: 10px 0; border-top: 1px solid var(--s-line); border-bottom: 1px solid var(--s-line); }
+.s-expand > summary::-webkit-details-marker { display: none; }
+.s-expand > summary .s-h2 { margin-bottom: 0; }
+.s-expand > summary:focus-visible { outline: 2px solid var(--s-ink); outline-offset: 4px; }
+.s-expand-cue { flex-shrink: 0; font-size: 0.85rem; font-weight: 600; white-space: nowrap; }
+.s-expand-cue::after { content: "▾"; display: inline-block; margin-left: 6px; transition: transform 0.2s; }
+.s-expand[open] .s-expand-cue::after { transform: rotate(180deg); }
+.s-expand .s-expand-hide, .s-expand[open] .s-expand-show { display: none; }
+.s-expand[open] .s-expand-hide { display: inline; }
+@media (prefers-reduced-motion: reduce) { .s-expand-cue::after { transition: none; } }
 .s-section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; margin-bottom: 14px; }
 
 /* Day toggle */
@@ -177,6 +188,7 @@ body.s-body {
 .s-flow-dash { fill: none; stroke: var(--s-ink); stroke-linecap: round; stroke-dasharray: 2 14; animation: s-flow 1.4s linear infinite; }
 @keyframes s-flow { to { stroke-dashoffset: -16; } }
 @media (prefers-reduced-motion: reduce) { .s-flow-dash { animation: none; stroke-dasharray: none; opacity: 0.55; } }
+.s-flow-head { fill: var(--s-ink); stroke: var(--s-surface); stroke-width: 1; stroke-linejoin: round; }
 .s-flow-pill { fill: var(--s-surface); stroke: var(--s-line); }
 .s-flow-text { fill: var(--s-ink); font-family: var(--s-font); font-size: 10.5px; font-weight: 700; }
 .s-map-tip {

@@ -105,15 +105,6 @@ export default async function HomePage() {
         <PowerMap days={mapDays} snapshotToday={today} gen={snapshot.generation} />
       </section>
 
-      <section className="s-section" id="flaskhalsar">
-        <h2 className="s-h2">Flaskhalsar: därför skiljer sig priset</h2>
-        <p className="s-note" style={{ marginBottom: 10 }}>
-          Elen går från norr till söder genom tre snitt. När överföringen inte räcker till kan priset inte jämnas ut, och södra Sverige
-          får betala mer. Staplarna visar prisskillnaden mellan områdena timme för timme. Håll över en stapel för detaljer.
-        </p>
-        <Bottlenecks days={[bottleneckDay(snapshot, "yesterday", "Igår", addDays(today, -1)), bottleneckDay(snapshot, "today", "Idag", today)]} />
-      </section>
-
       <section className="s-section">
         <div className="s-section-head">
           <h2 className="s-h2">Timme för timme</h2>
@@ -148,6 +139,19 @@ export default async function HomePage() {
           Vill du se mer? <Link href="/omraden">Grannländer och flöden</Link>, <Link href="/data">datakvaliteten</Link> eller <Link href="/methodology">metoden</Link>.
         </p>
       </section>
+
+      {/* Last on the page and collapsed by default; the heading stays visible and expands it. */}
+      <details className="s-section s-expand" id="flaskhalsar">
+        <summary>
+          <h2 className="s-h2">Flaskhalsar: därför skiljer sig priset</h2>
+          <span className="s-expand-cue" aria-hidden="true"><span className="s-expand-show">Visa</span><span className="s-expand-hide">Dölj</span></span>
+        </summary>
+        <p className="s-note" style={{ margin: "10px 0" }}>
+          Elen går från norr till söder genom tre snitt. När överföringen inte räcker till kan priset inte jämnas ut, och södra Sverige
+          får betala mer. Staplarna visar prisskillnaden mellan områdena timme för timme. Håll över en stapel för detaljer.
+        </p>
+        <Bottlenecks days={[bottleneckDay(snapshot, "yesterday", "Igår", addDays(today, -1)), bottleneckDay(snapshot, "today", "Idag", today)]} />
+      </details>
 
       <footer className="s-footer">
         Källa: ENTSO-E (dagen-före-priser och fysiska flöden), ECB (valutakurs). Karta: Natural Earth (public domain). Detta är en förhandsversion.

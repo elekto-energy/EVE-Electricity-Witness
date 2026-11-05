@@ -22,6 +22,25 @@ const POS: Record<string, [number, number]> = {
   DK1: [9.2, 56.2], DK2: [12.0, 55.45], DE_LU: [10.3, 53.75], PL: [18.4, 53.9], LT: [23.4, 55.4],
 };
 const SE = new Set(["SE1", "SE2", "SE3", "SE4"]);
+const markerRadius = (zone: string) => (SE.has(zone) ? 25 : 17);
+
+/**
+ * Static arrowhead for a flow curve (quadratic a -> c -> b), placed just outside the destination marker so the
+ * direction is visible without the dash animation (which is off under prefers-reduced-motion).
+ */
+function arrowHead(ax: number, ay: number, cx: number, cy: number, bx: number, by: number, destR: number, size: number) {
+  const at = (t: number) => [
+    (1 - t) * (1 - t) * ax + 2 * (1 - t) * t * cx + t * t * bx,
+    (1 - t) * (1 - t) * ay + 2 * (1 - t) * t * cy + t * t * by,
+  ];
+  // Walk back from the destination until the tip clears the marker (and the zone code drawn above it).
+  let t = 1;
+  while (t > 0.5 && Math.hypot(at(t)[0] - bx, at(t)[1] - by) < destR + 12) t -= 0.01;
+  const [px, py] = at(t);
+  const tx = 2 * (1 - t) * (cx - ax) + 2 * t * (bx - cx), ty = 2 * (1 - t) * (cy - ay) + 2 * t * (by - cy);
+  const angle = (Math.atan2(ty, tx) * 180) / Math.PI;
+  return { x: px, y: py, angle, d: `M0,0 L${-size},${-size * 0.6} L${-size * 0.7},0 L${-size},${size * 0.6} Z` };
+}
 
 const STOPS: [number, [number, number, number]][] = [
   [0, [63, 143, 176]], [50, [118, 160, 120]], [100, [214, 162, 30]], [200, [196, 90, 60]], [300, [176, 40, 92]],
@@ -127,6 +146,7 @@ export function PowerMap({ days, snapshotToday, gen }: { days: MapDay[]; snapsho
             const d = `M${ax},${ay} Q${cx},${cy} ${bx},${by}`;
             const w = 1.5 + Math.min(8, Math.abs(f.mw) / 450);
             const lx = 0.25 * ax + 0.5 * cx + 0.25 * bx, ly = 0.25 * ay + 0.5 * cy + 0.25 * by;
+            const head = arrowHead(ax, ay, cx, cy, bx, by, markerRadius(forward ? f.to : f.from), 10 + w * 0.9);
             return (
               <g key={f.border} className="s-flow">
                 <path d={d} className="s-flow-base" style={{ strokeWidth: w }} />
@@ -135,6 +155,8 @@ export function PowerMap({ days, snapshotToday, gen }: { days: MapDay[]; snapsho
                   <rect x={-24} y={-9} width={48} height={18} rx={9} className="s-flow-pill" />
                   <text textAnchor="middle" y={4} className="s-flow-text">{Math.round(Math.abs(f.mw)).toLocaleString("sv-SE")}</text>
                 </g>
+                {/* after the MW label, so short links don't hide their direction under it */}
+                <path d={head.d} className="s-flow-head" transform={`translate(${head.x},${head.y}) rotate(${head.angle})`} />
               </g>
             );
           })}
