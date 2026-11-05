@@ -62,6 +62,7 @@ export default async function HomePage() {
   const tomorrow = addDays(today, 1);
   const unit = PRICE_UNIT;
   const fxToday = rateFor(snapshot, today);
+  const mapDays = [mapDay(snapshot, "today", "Idag", today), mapDay(snapshot, "tomorrow", "Imorgon", tomorrow)];
   const vToday = view(snapshot, "today", "Idag", today);
   const vTomorrow = view(snapshot, "tomorrow", "Imorgon", tomorrow);
 
@@ -73,7 +74,7 @@ export default async function HomePage() {
           <DataFreshness publishedAtUtc={snapshot.source.published_at_utc} snapshotToday={today} />
         </div>
         <p className="s-lede">Dygnsmedel per elområde {weekdayLabel(today)}, före skatt, moms och nätavgift.</p>
-        <PriceCards tomorrowLabel="Imorgon" zones={vToday.zones.map((z, i) => ({
+        <PriceCards tomorrowLabel="Imorgon" days={mapDays} zones={vToday.zones.map((z, i) => ({
           zone: z.zone, city: z.city,
           today: { status: z.status, mean: z.mean, hourly: z.hourly, selectionVerified: z.selectionVerified, missing: z.missing },
           tomorrow: { status: vTomorrow.zones[i].status, mean: vTomorrow.zones[i].mean, hourly: vTomorrow.zones[i].hourly, selectionVerified: vTomorrow.zones[i].selectionVerified, missing: vTomorrow.zones[i].missing },
@@ -86,7 +87,7 @@ export default async function HomePage() {
           Mycket el produceras i norr men används i söder. När ledningarna däremellan inte räcker till blir priset högre söderut.
           Dra i tidslinjen för att se priset kvart för kvart och hur elen flödar mellan områdena.
         </p>
-        <PowerMap days={[mapDay(snapshot, "today", "Idag", today), mapDay(snapshot, "tomorrow", "Imorgon", tomorrow)]} snapshotToday={today} />
+        <PowerMap days={mapDays} snapshotToday={today} />
       </section>
 
       <section className="s-section">

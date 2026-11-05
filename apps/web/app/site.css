@@ -285,3 +285,49 @@ body.s-body {
 .s-flowarrow b{font-weight:600;font-size:.9rem}
 .s-flowarrow svg line{stroke:var(--s-ink)}
 .s-flowarrow svg path{fill:var(--s-ink)}
+
+/* Price card as button (opens the zone detail) */
+button.s-card { font: inherit; color: var(--s-ink); text-align: left; padding: 0; width: 100%; cursor: pointer; }
+button.s-card:hover { transform: translateY(-1px); }
+
+/* Zone detail dialog */
+.s-zd { border: none; padding: 0; background: transparent; max-width: min(760px, calc(100vw - 24px)); width: 100%; color: var(--s-ink);
+  position: fixed; inset: 0; margin: auto; height: fit-content; max-height: calc(100dvh - 24px); overflow: auto; }
+.s-zd::backdrop { background: rgba(10, 18, 26, 0.55); }
+.s-zd-inner { background: var(--s-surface); border: 1px solid var(--s-line); border-top: 6px solid var(--zc); border-radius: 16px; padding: 18px 20px 16px; }
+.s-zd-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.s-zd-title { font-size: 1.4rem; font-weight: 800; margin: 0 0 2px; }
+.s-zd-code { color: var(--zc); }
+.s-zd-close { font: inherit; font-size: 1.6rem; line-height: 1; background: none; border: 1px solid var(--s-line); border-radius: 10px; width: 40px; height: 40px; cursor: pointer; color: var(--s-ink); }
+.s-zd-tabs { display: flex; gap: 8px; margin: 14px 0 8px; flex-wrap: wrap; }
+.s-zd-tabs button { font: inherit; font-size: 0.9rem; font-weight: 700; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--s-line); background: var(--s-paper); color: var(--s-ink); cursor: pointer; }
+.s-zd-tabs button span { font-weight: 400; color: var(--s-muted); margin-left: 4px; }
+.s-zd-tabs button em { font-style: normal; font-weight: 400; color: var(--s-muted); }
+.s-zd-tabs button[aria-selected="true"] { background: var(--s-ink); color: var(--s-surface); border-color: var(--s-ink); }
+.s-zd-tabs button[aria-selected="true"] span { color: inherit; opacity: .75; }
+.s-zd-tabs button:disabled { cursor: default; opacity: .6; }
+.s-zd-readout { min-height: 2rem; font-size: 0.95rem; color: var(--s-muted); }
+.s-zd-readout b { font-size: 1.5rem; color: var(--s-ink); margin-right: 4px; }
+.s-zd-readout span { margin-left: 6px; }
+.s-zd-chart { width: 100%; height: auto; display: block; touch-action: pan-y; cursor: crosshair; }
+.s-zd-grid { stroke: var(--s-line); stroke-width: 1; }
+.s-zd-zero { stroke: var(--s-muted); stroke-width: 1; }
+.s-zd-tick { fill: var(--s-muted); font-size: 11px; }
+.s-zd-now { stroke: var(--s-muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.s-zd-cross { stroke: var(--s-ink); stroke-width: 1; opacity: .5; }
+.s-zd-dot { stroke: var(--s-surface); stroke-width: 2; }
+.s-zd-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0 4px; }
+.s-zd-stats div { background: var(--s-paper); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; }
+.s-zd-stats span { font-size: 0.8rem; color: var(--s-muted); }
+.s-zd-stats b { font-size: 1.1rem; }
+.s-zd-h3 { font-size: 1rem; font-weight: 800; margin: 16px 0 6px; }
+.s-zd-h3 span { font-weight: 400; color: var(--s-muted); font-size: 0.9rem; margin-left: 6px; }
+.s-zd-flows { list-style: none; margin: 0; padding: 0; }
+.s-zd-flows li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--s-line); font-size: 0.95rem; }
+.s-zd-flows .in { color: var(--s-ok); font-weight: 700; }
+.s-zd-flows .out { color: var(--s-ink); font-weight: 700; }
+.s-zd-gen { margin-top: 12px; }
+@media (max-width: 560px) {
+  .s-zd-inner { padding: 14px 14px 12px; }
+  .s-zd-stats b { font-size: 0.98rem; }
+}

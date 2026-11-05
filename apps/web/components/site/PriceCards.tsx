@@ -1,10 +1,15 @@
+"use client";
+
 /**
  * Start page price cards: one card per Swedish bidding zone with today's and tomorrow's daily mean,
  * the change between them and a small sparkline of today's hours. Values are ore/kWh from the A2
  * snapshot converted with the ECB reference rate; status comes from the coverage record.
  */
 
+import { useState } from "react";
 import { StatusBadge } from "@/components/preview/Badges";
+import type { MapDay } from "@/components/site/PowerMap";
+import { ZoneDetail } from "@/components/site/ZoneDetail";
 
 export interface CardDay { status: string; mean: number | null; hourly: [string, number][]; selectionVerified: boolean | null; missing: number | null }
 export interface CardZone { zone: string; city: string; today: CardDay; tomorrow: CardDay }
@@ -27,15 +32,19 @@ function Spark({ points, color }: { points: [string, number][]; color: string })
   );
 }
 
-export function PriceCards({ zones, tomorrowLabel }: { zones: CardZone[]; tomorrowLabel: string }) {
+export function PriceCards({ zones, tomorrowLabel, days }: { zones: CardZone[]; tomorrowLabel: string; days: MapDay[] }) {
+  const [open, setOpen] = useState<CardZone | null>(null);
   return (
+    <>
+    {open && <ZoneDetail zone={open.zone} city={open.city} days={days} onClose={() => setOpen(null)} />}
     <div className="s-cards">
       {zones.map(z => {
         const color = `var(--s-${z.zone.toLowerCase()})`;
         const t = z.today, m = z.tomorrow;
         const delta = usable(t) && usable(m) ? (m.mean as number) - (t.mean as number) : null;
         return (
-          <a key={z.zone} href="#karta" className="s-card" style={{ ["--zc" as string]: color }}>
+          <button type="button" key={z.zone} className="s-card" style={{ ["--zc" as string]: color }}
+            onClick={() => setOpen(z)} aria-haspopup="dialog" aria-label={`${z.zone} ${z.city}: visa kvartspriser och flöden`}>
             <div className="s-card-code">{z.zone}</div>
             <div className="s-card-body">
               <div className="s-card-city">{z.city}</div>
@@ -59,9 +68,10 @@ export function PriceCards({ zones, tomorrowLabel }: { zones: CardZone[]; tomorr
                   : null}
               </div>
             </div>
-          </a>
+          </button>
         );
       })}
     </div>
+    </>
   );
 }
