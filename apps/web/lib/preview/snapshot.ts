@@ -1,10 +1,8 @@
 /**
- * Step B preview: typed access to the A2 snapshot (ELMONITOR_PREVIEW_SNAPSHOT_v1).
- * The JSON is produced by pipeline/a2/export_preview.ts from one verified A2 version.
+ * Typed access to the A2 snapshot (ELMONITOR_PREVIEW_SNAPSHOT_v1), produced by pipeline/a2/export_preview.ts from
+ * one verified A2 version. Pure helpers only: loading (Blob or bundled fallback) lives in load.ts.
  * Nothing here fetches data or fills gaps: missing days stay missing.
  */
-
-import raw from "./elmonitor_preview_snapshot.json";
 
 export type DayStatus =
   | "COMPLETE" | "PARTIAL" | "MISSING" | "NOT_PUBLISHED_YET" | "IN_PROGRESS" | "CONFLICT" | "NO_RECORD";
@@ -62,10 +60,12 @@ export interface Snapshot {
   fx: { source: string; unit: string; raw_sha256: string; rule: string; rates: Record<string, number> } | null;
 }
 
-export const snapshot = raw as unknown as Snapshot;
-
-if (snapshot.schema !== "ELMONITOR_PREVIEW_SNAPSHOT_v1") {
-  throw new Error(`unexpected snapshot schema ${String((raw as { schema?: unknown }).schema)}`);
+/** Structural check of a parsed snapshot; throws on anything that is not ELMONITOR_PREVIEW_SNAPSHOT_v1. */
+export function asSnapshot(x: unknown): Snapshot {
+  const s = x as Snapshot;
+  if (!s || s.schema !== "ELMONITOR_PREVIEW_SNAPSHOT_v1") throw new Error(`unexpected snapshot schema ${String((x as { schema?: unknown })?.schema)}`);
+  if (typeof s.today !== "string" || !s.prices || !s.flows || !s.source?.version_id) throw new Error("snapshot lacks today/prices/flows/source");
+  return s;
 }
 
 export const SE_ZONES = ["SE1", "SE2", "SE3", "SE4"] as const;
@@ -83,7 +83,7 @@ export function addDays(day: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function priceDay(zone: string, day: string): PriceDay | null {
+export function priceDay(snapshot: Snapshot, zone: string, day: string): PriceDay | null {
   return snapshot.prices[zone]?.days.find(d => d.day === day) ?? null;
 }
 
@@ -100,7 +100,7 @@ export function weekdayLabel(day: string): string {
 }
 
 /** ECB EUR/SEK reference rate for a price day: that day's rate, or the latest published before it. */
-export function rateFor(day: string): { rate: number; date: string } | null {
+export function rateFor(snapshot: Snapshot, day: string): { rate: number; date: string } | null {
   const r = snapshot.fx?.rates;
   if (!r) return null;
   const d = Object.keys(r).filter(x => x <= day).sort().pop();
@@ -108,8 +108,8 @@ export function rateFor(day: string): { rate: number; date: string } | null {
 }
 
 /** EUR/MWh -> ore/kWh (1 EUR/MWh = rate/10 ore/kWh). Returns null when no rate is available. */
-export function toOre(eurMwh: number | null | undefined, day: string): number | null {
-  const fx = rateFor(day);
+export function toOre(snapshot: Snapshot, eurMwh: number | null | undefined, day: string): number | null {
+  const fx = rateFor(snapshot, day);
   if (eurMwh === null || eurMwh === undefined || !fx) return null;
   return Math.round(((eurMwh * fx.rate) / 10) * 100) / 100;
 }

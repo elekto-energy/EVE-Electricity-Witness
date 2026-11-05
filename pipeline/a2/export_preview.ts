@@ -1,19 +1,23 @@
 /**
  * ELMONITOR A2 - export a small, read-only snapshot of the current A2 version for the Step B preview site.
  *
- * Reads a local A2 store (current.json -> MANIFEST.json -> objects), verifies every object it reads
+ * Reads an A2 store (current.json -> MANIFEST.json -> objects), verifies every object it reads
  * against its content address, and writes one deterministic JSON file. Never writes to the store.
- * No network, no secrets.
+ * A blob: store needs ELMONITOR_BLOB_ACCESS and BLOB_READ_WRITE_TOKEN (see store.ts); local: needs nothing.
  *
  * Usage:
- *   npx tsx pipeline/a2/export_preview.ts --store local:<dir> --out <file> [--days 14] [--only SE3,SE4,SE3-SE4]
+ *   npx tsx pipeline/a2/export_preview.ts --store <local:<dir>|blob:<prefix>> --out <file> [--days 14] [--only SE3,SE4,SE3-SE4]
+ *     [--as-of now|YYYY-MM-DD]  the snapshot's "today" (Europe/Stockholm). Default: the local date of the version's
+ *                          published_at_utc (unchanged behaviour). "now" = the local date when the export runs, so a
+ *                          snapshot exported after midnight shows the new day from data already published.
  *     [--eur-sek <file>]   ECB SDW jsondata response for EXR/D.SEK.EUR.SP00.A (saved raw); adds EUR/SEK reference
  *                          rates so the site can show ore/kWh. Prices themselves stay in EUR/MWh in the snapshot.
  */
 
 import { createHash } from "crypto";
 import { readFileSync, writeFileSync, mkdirSync } from "fs";
-import { dirname, join } from "path";
+import { dirname } from "path";
+import { openStore } from "./store";
 
 const SCHEMA = "ELMONITOR_PREVIEW_SNAPSHOT_v1";
 const TZ = "Europe/Stockholm";
@@ -51,42 +55,52 @@ function addDays(day: string, n: number): string {
 const round = (x: number, n = 2) => Math.round(x * 10 ** n) / 10 ** n;
 const slug = (s: string) => s.replace(">", "_to_");
 
-function main() {
+async function main() {
   const storeArg = arg("--store");
-  if (!storeArg.startsWith("local:")) throw new Error("only --store local:<dir> is supported");
-  const dir = storeArg.slice("local:".length);
+  const store = openStore(storeArg);
   const out = arg("--out");
   const nDays = Number(arg("--days", "14"));
   const only = arg("--only", ""); // optional comma list of zones/borders (testing subsets)
   const keep = (x: string) => !only || only.split(",").includes(x);
 
-  const readVerified = (key: string, expected: string): Json => {
-    const b = readFileSync(join(dir, key));
+  const readVerified = async (key: string, expected: string): Promise<Json> => {
+    const b = await store.get(key);
+    if (!b) throw new Error(`missing in store: ${key}`);
     const h = sha256(b);
     if (h !== expected) throw new Error(`hash mismatch for ${key}: expected ${expected}, got ${h}`);
     return JSON.parse(b.toString("utf-8"));
   };
 
-  const current = JSON.parse(readFileSync(join(dir, "current.json"), "utf-8"));
-  const manifest = readVerified(current.manifest_key, current.manifest_sha256);
+  const cb = await store.get("current.json");
+  if (!cb) throw new Error("store has no current.json");
+  const current = JSON.parse(cb.toString("utf-8"));
+  const manifest = await readVerified(current.manifest_key, current.manifest_sha256);
   if (manifest.version_id !== current.version_id) throw new Error("current.json and manifest disagree on version_id");
   const files = new Map<string, { sha256: string; bytes: number }>();
   for (const f of manifest.files) files.set(f.path, f);
-  const obj = (path: string): Json | null => {
-    const f = files.get(path);
-    return f ? readVerified(`objects/${f.sha256}.json`, f.sha256) : null;
-  };
 
-  const meta = obj("meta.json");
-  const summary = obj("coverage/summary.json");
-  if (!meta || !summary) throw new Error("meta.json or coverage/summary.json missing in manifest");
-
-  const today = localDate(current.published_at_utc);
+  const asOf = arg("--as-of", "");
+  if (asOf && asOf !== "now" && !/^\d{4}-\d{2}-\d{2}$/.test(asOf)) throw new Error("--as-of must be now or YYYY-MM-DD");
+  const today = asOf === "now" ? localDate(new Date().toISOString()) : asOf || localDate(current.published_at_utc);
   const first = addDays(today, -(nDays - 1));
   const last = addDays(today, 1);
   const days: string[] = [];
   for (let d = first; d <= last; d = addDays(d, 1)) days.push(d);
   const months = [...new Set(days.map(d => d.slice(0, 7)))];
+
+  // Every object the export needs is read and verified up front; the rest of the export is synchronous.
+  const loaded = new Map<string, Json>();
+  for (const [path, f] of files) {
+    const m = /^data\/[^/]+\/[^/]+\/(\d{4}-\d{2})\.json$/.exec(path);
+    if (path === "meta.json" || path === "coverage/summary.json" || (m && months.includes(m[1]))) {
+      loaded.set(path, await readVerified(`objects/${f.sha256}.json`, f.sha256));
+    }
+  }
+  const obj = (path: string): Json | null => loaded.get(path) ?? null;
+
+  const meta = obj("meta.json");
+  const summary = obj("coverage/summary.json");
+  if (!meta || !summary) throw new Error("meta.json or coverage/summary.json missing in manifest");
 
   const monthCache = new Map<string, Json | null>();
   const dayData = (dataset: string, series: string, day: string): Json | null => {
@@ -174,7 +188,7 @@ function main() {
   const snapshot = {
     schema: SCHEMA,
     source: {
-      chain: meta.a2_id, a2_version: meta.a2_version, store: "A2 local store (not a production store)",
+      chain: meta.a2_id, a2_version: meta.a2_version, store: store.kind === "blob" ? "A2 Vercel Blob store" : "A2 local store (not a production store)",
       version_id: current.version_id, run_id: current.run_id, published_at_utc: current.published_at_utc,
       manifest_sha256: current.manifest_sha256, content_sha256: current.content_sha256,
       values_hash_method: manifest.values_hash_method ?? meta.values_hash_method ?? "A2_VALUES_SHA256_V1_INCL_ORIGIN (legacy, unlabelled)",
@@ -191,4 +205,4 @@ function main() {
   console.log(`[export_preview] version=${current.version_id} today=${today} window=${first}..${last} bytes=${body.length} sha256=${sha256(body)} out=${out}`);
 }
 
-main();
+main().catch(e => { console.error(`[export_preview] ERROR: ${String(e?.message ?? e)}`); process.exit(1); });

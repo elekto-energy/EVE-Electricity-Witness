@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@types/pdfkit": "^0.17.5",
+    "@vercel/blob": "2.8.2",
     "glpk.js": "^5.0.0",
     "next": "^15.1.0",
     "pdf-parse": "^2.4.5",

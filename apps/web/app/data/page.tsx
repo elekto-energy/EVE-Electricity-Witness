@@ -1,8 +1,10 @@
-import { snapshot, SE_ZONES, NEIGHBOUR_ZONES, ZONE_LABEL, type Coverage } from "@/lib/preview/snapshot";
+import { SE_ZONES, NEIGHBOUR_ZONES, ZONE_LABEL, type Coverage } from "@/lib/preview/snapshot";
+import { loadSnapshot } from "@/lib/preview/load";
 import { StatusBadge, DataFreshness, Pill } from "@/components/preview/Badges";
 import { SourceFooter } from "@/components/preview/SourceFooter";
 
 export const metadata = { title: "Datakvalitet (förhandsversion)" };
+export const revalidate = 300;
 
 const STATUS_ORDER = ["COMPLETE", "PARTIAL", "IN_PROGRESS", "NOT_PUBLISHED_YET", "MISSING", "CONFLICT"];
 const MEANING_SV: Record<string, string> = {
@@ -30,7 +32,9 @@ function Counts({ c }: { c: Coverage | null }) {
   );
 }
 
-export default function DataPage() {
+export default async function DataPage() {
+  const loaded = await loadSnapshot();
+  const { snapshot } = loaded;
   const priceRows = [...SE_ZONES, ...NEIGHBOUR_ZONES].map(z => ({ z, c: snapshot.prices[z]?.coverage ?? null }));
   const flowRows = Object.entries(snapshot.flows).flatMap(([, f]) =>
     Object.entries(f.coverage).map(([series, c]) => ({ series, c })));
@@ -117,7 +121,7 @@ export default function DataPage() {
         )}
       </div>
 
-      <SourceFooter />
+      <SourceFooter snapshot={snapshot} loaded={loaded} />
     </div>
   );
 }

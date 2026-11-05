@@ -1,7 +1,8 @@
 import Link from "next/link";
 import {
-  snapshot, SE_ZONES, NEIGHBOUR_ZONES, ZONE_LABEL, addDays, priceDay, weekdayLabel, toOre, rateFor, PRICE_UNIT,
+  SE_ZONES, NEIGHBOUR_ZONES, ZONE_LABEL, addDays, priceDay, weekdayLabel, toOre, rateFor, PRICE_UNIT, type Snapshot,
 } from "@/lib/preview/snapshot";
+import { loadSnapshot } from "@/lib/preview/load";
 import { DataFreshness } from "@/components/preview/Badges";
 import { type DayView } from "@/components/site/ZoneStrip";
 import { PowerMap, type MapDay } from "@/components/site/PowerMap";
@@ -9,40 +10,41 @@ import { PriceCards } from "@/components/site/PriceCards";
 import { HourlyChart } from "@/components/preview/HourlyChart";
 
 export const metadata = { title: "Elpriset idag" };
+export const revalidate = 300;
 
 const CITY: Record<string, string> = { SE1: "Luleå", SE2: "Sundsvall", SE3: "Stockholm", SE4: "Malmö" };
 
-function view(key: DayView["key"], label: string, day: string): DayView {
+function view(snapshot: Snapshot, key: DayView["key"], label: string, day: string): DayView {
   return {
     key, label, dateLabel: weekdayLabel(day),
     zones: SE_ZONES.map(z => {
-      const d = priceDay(z, day);
+      const d = priceDay(snapshot, z, day);
       return {
         zone: z, city: CITY[z], status: d?.status ?? (key === "tomorrow" ? "NOT_PUBLISHED_YET" : "NO_RECORD"),
         selectionVerified: d?.selection_verified ?? null, missing: d?.missing_intervals ?? null,
-        mean: toOre(d?.mean, day), min: toOre(d?.min, day), max: toOre(d?.max, day),
-        hourly: ((d?.hourly ?? []) as [string, number][]).map(h => [h[0], toOre(h[1], day)]).filter((h): h is [string, number] => h[1] !== null),
+        mean: toOre(snapshot, d?.mean, day), min: toOre(snapshot, d?.min, day), max: toOre(snapshot, d?.max, day),
+        hourly: ((d?.hourly ?? []) as [string, number][]).map(h => [h[0], toOre(snapshot, h[1], day)]).filter((h): h is [string, number] => h[1] !== null),
       };
     }),
   };
 }
 
-function mapDay(key: MapDay["key"], label: string, day: string): MapDay {
+function mapDay(snapshot: Snapshot, key: MapDay["key"], label: string, day: string): MapDay {
   return {
     key, label, dateLabel: weekdayLabel(day),
     zones: [...SE_ZONES, ...NEIGHBOUR_ZONES].map(z => {
-      const d = priceDay(z, day);
+      const d = priceDay(snapshot, z, day);
       return {
         zone: z, name: ZONE_LABEL[z] ?? z, status: d?.status ?? (key === "tomorrow" ? "NOT_PUBLISHED_YET" : "NO_RECORD"),
-        mean: toOre(d?.mean, day),
-        quarters: ((d?.quarters ?? []) as [string, number][]).map(q => [q[0], toOre(q[1], day)]).filter((q): q is [string, number] => q[1] !== null),
+        mean: toOre(snapshot, d?.mean, day),
+        quarters: ((d?.quarters ?? []) as [string, number][]).map(q => [q[0], toOre(snapshot, q[1], day)]).filter((q): q is [string, number] => q[1] !== null),
       };
     }),
     flows: Object.entries(snapshot.flows).map(([border, f]) => ({
       border, from: f.from, to: f.to,
       hourly: (f.days.find(x => x.day === day)?.hourly_net ?? []) as [string, number][],
     })),
-    fx: rateFor(day),
+    fx: rateFor(snapshot, day),
   };
 }
 
@@ -54,13 +56,14 @@ const GEN = [
   { label: "Övrigt", color: "#9aa5ad" },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const { snapshot } = await loadSnapshot();
   const today = snapshot.today;
   const tomorrow = addDays(today, 1);
   const unit = PRICE_UNIT;
-  const fxToday = rateFor(today);
-  const vToday = view("today", "Idag", today);
-  const vTomorrow = view("tomorrow", "Imorgon", tomorrow);
+  const fxToday = rateFor(snapshot, today);
+  const vToday = view(snapshot, "today", "Idag", today);
+  const vTomorrow = view(snapshot, "tomorrow", "Imorgon", tomorrow);
 
   return (
     <>
@@ -83,7 +86,7 @@ export default function HomePage() {
           Mycket el produceras i norr men används i söder. När ledningarna däremellan inte räcker till blir priset högre söderut.
           Dra i tidslinjen för att se priset kvart för kvart och hur elen flödar mellan områdena.
         </p>
-        <PowerMap days={[mapDay("today", "Idag", today), mapDay("tomorrow", "Imorgon", tomorrow)]} snapshotToday={today} />
+        <PowerMap days={[mapDay(snapshot, "today", "Idag", today), mapDay(snapshot, "tomorrow", "Imorgon", tomorrow)]} snapshotToday={today} />
       </section>
 
       <section className="s-section">
