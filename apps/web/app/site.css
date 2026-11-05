@@ -331,3 +331,29 @@ button.s-card:hover { transform: translateY(-1px); }
   .s-zd-inner { padding: 14px 14px 12px; }
   .s-zd-stats b { font-size: 0.98rem; }
 }
+
+/* Bottlenecks */
+.s-bn-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 6px; }
+@media (max-width: 900px) { .s-bn-grid { grid-template-columns: 1fr; } }
+.s-bn-card { background: var(--s-surface); border: 1px solid var(--s-line); border-radius: 14px; padding: 14px 16px; }
+.s-bn-head { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.s-bn-zone { font-weight: 800; font-size: 1.25rem; }
+.s-bn-arrow { color: var(--s-muted); font-weight: 700; }
+.s-bn-cities { color: var(--s-muted); font-size: 0.85rem; margin-left: 4px; }
+.s-bn-big { margin: 6px 0 4px; font-size: 0.95rem; color: var(--s-muted); }
+.s-bn-big b { font-size: 1.5rem; color: var(--s-ink); margin-right: 4px; }
+.s-bn-gap { font-size: 0.82rem; }
+.s-bn-bars { width: 100%; height: auto; display: block; }
+.s-bn-base { stroke: var(--s-line); }
+.s-bn-bar { fill: var(--s-line); }
+.s-bn-bar.pos { fill: var(--s-se4); }
+.s-bn-bar.neg { fill: var(--s-se1); }
+.s-bn-legend { display: flex; gap: 12px; font-size: 0.78rem; color: var(--s-muted); margin-top: 2px; }
+.s-bn-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.s-bn-legend i.pos { background: var(--s-se4); } .s-bn-legend i.neg { background: var(--s-se1); }
+.s-bn-tick { fill: var(--s-muted); font-size: 9px; }
+.s-bn-facts { display: grid; grid-template-columns: 1fr; gap: 2px; margin: 8px 0 0; }
+.s-bn-facts div { display: flex; justify-content: space-between; gap: 8px; font-size: 0.88rem; }
+.s-bn-facts dt { color: var(--s-muted); }
+.s-bn-facts dd { margin: 0; font-weight: 700; }
+.s-bn-total { margin: 12px 0 6px; font-size: 1rem; }

@@ -7,6 +7,7 @@ import { DataFreshness } from "@/components/preview/Badges";
 import { type DayView } from "@/components/site/ZoneStrip";
 import { PowerMap, type MapDay } from "@/components/site/PowerMap";
 import { PriceCards } from "@/components/site/PriceCards";
+import { Bottlenecks, type BottleneckDay, type LinkHour } from "@/components/site/Bottlenecks";
 import { HourlyChart } from "@/components/preview/HourlyChart";
 
 export const metadata = { title: "Elpriset idag" };
@@ -45,6 +46,27 @@ function mapDay(snapshot: Snapshot, key: MapDay["key"], label: string, day: stri
       hourly: (f.days.find(x => x.day === day)?.hourly_net ?? []) as [string, number][],
     })),
     fx: rateFor(snapshot, day),
+  };
+}
+
+/** Internal Swedish links, upstream -> downstream (A11 border keys use this order). */
+const SE_LINKS: [string, string][] = [["SE1", "SE2"], ["SE2", "SE3"], ["SE3", "SE4"]];
+
+function bottleneckDay(snapshot: Snapshot, key: BottleneckDay["key"], label: string, day: string): BottleneckDay {
+  const fx = rateFor(snapshot, day);
+  const hourly = (z: string) => new Map(((priceDay(snapshot, z, day)?.hourly ?? []) as [string, number][]).map(h => [h[0], h[1]]));
+  return {
+    key, label, dateLabel: weekdayLabel(day), fx,
+    links: SE_LINKS.map(([a, b]) => {
+      const pa = hourly(a), pb = hourly(b);
+      const flow = (snapshot.flows[`${a}-${b}`]?.days.find(x => x.day === day)?.hourly_net ?? []) as [string, number][];
+      const hours: LinkHour[] = fx ? flow.filter(([t]) => pa.has(t) && pb.has(t)).map(([t, mw]) => {
+        const diffEur = pb.get(t)! - pa.get(t)!;                 // EUR/MWh, downstream minus upstream
+        return { hour: t, diffOre: (diffEur * fx.rate) / 10, flowMw: mw, incomeSek: diffEur * mw * fx.rate };
+      }) : [];
+      const expectedHours = key === "yesterday" ? Math.max(pa.size, pb.size) : hours.length;
+      return { from: a, to: b, hours, expectedHours };
+    }),
   };
 }
 
@@ -88,6 +110,15 @@ export default async function HomePage() {
           Dra i tidslinjen för att se priset kvart för kvart och hur elen flödar mellan områdena.
         </p>
         <PowerMap days={mapDays} snapshotToday={today} />
+      </section>
+
+      <section className="s-section" id="flaskhalsar">
+        <h2 className="s-h2">Flaskhalsar: därför skiljer sig priset</h2>
+        <p className="s-note" style={{ marginBottom: 10 }}>
+          Elen går från norr till söder genom tre snitt. När överföringen inte räcker till kan priset inte jämnas ut, och södra Sverige
+          får betala mer. Staplarna visar prisskillnaden mellan områdena timme för timme. Håll över en stapel för detaljer.
+        </p>
+        <Bottlenecks days={[bottleneckDay(snapshot, "yesterday", "Igår", addDays(today, -1)), bottleneckDay(snapshot, "today", "Idag", today)]} />
       </section>
 
       <section className="s-section">
