@@ -5,7 +5,7 @@
  * measured hours only; an incomplete day is labelled with its status.
  */
 
-import { GEN_GROUP_ORDER, GEN_GROUPS, generationMix, type GenGroup, type GenerationMix, type Snapshot } from "@/lib/preview/snapshot";
+import { FOSSIL_NOTE, GEN_GROUP_ORDER, GEN_GROUPS, generationMix, type GenGroup, type GenerationMix, type Snapshot } from "@/lib/preview/snapshot";
 import { GenerationBar, GEN_STYLE } from "@/components/site/GenerationBar";
 
 const SE = ["SE1", "SE2", "SE3", "SE4"];
@@ -88,6 +88,7 @@ export function GenerationOverview({ snapshot, today, yesterday, yesterdayLabel 
         vindkraften varierar med vädret och solkraften med dagsljuset. Sverige producerar i regel mer än landet använder och
         exporterar resten. Timmar som inte är uppmätta för alla kraftslag räknas inte med.
       </p>
+      <p className="s-note" style={{ marginTop: 8 }}>{FOSSIL_NOTE}</p>
     </div>
   );
 }

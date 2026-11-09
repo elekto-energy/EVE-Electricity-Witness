@@ -1,6 +1,7 @@
 /**
  * Measured generation mix (ENTSO-E A75) of one zone and hour as one stacked bar with a legend.
- * Colours are the agreed ones: hydro blue, wind turquoise, nuclear purple, solar yellow, other grey.
+ * Colours are the agreed ones: hydro blue, wind turquoise, nuclear purple, solar yellow, other grey; fossil (only the
+ * types ENTSO-E names fossil) dark brown.
  * Identity is never colour alone: every group with output is named with MW and share in the legend.
  */
 
@@ -12,6 +13,7 @@ export const GEN_STYLE: Record<GenGroup, { label: string; color: string }> = {
   wind: { label: "Vindkraft", color: "#2bb3a8" },
   nuclear: { label: "Kärnkraft", color: "#7a4fb5" },
   solar: { label: "Solkraft", color: "#e2b416" },
+  fossil: { label: "Fossilt", color: "#5a4636" },
   other: { label: "Övrigt", color: "#9aa5ad" },
 };
 

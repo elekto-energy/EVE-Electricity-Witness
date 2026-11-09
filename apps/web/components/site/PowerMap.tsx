@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { COUNTRY_PATHS, MAP_W, MAP_H, project } from "@/lib/map/geo";
-import { generationMix, type Snapshot } from "@/lib/preview/snapshot";
+import { fossilShare, generationMix, type Snapshot } from "@/lib/preview/snapshot";
 import { GenerationBar } from "@/components/site/GenerationBar";
 
 export interface MapZone {
@@ -209,6 +209,10 @@ export function PowerMap({ days, snapshotToday, gen }: { days: MapDay[]; snapsho
             const src = mw >= 0 ? f.from : f.to, dst = mw >= 0 ? f.to : f.from;
             return { key: f.border, other: (src === z.zone ? dst : src).replace("_LU", ""), out: src === z.zone, mw: Math.abs(mw), stale: f.stale, at: f.at };
           }).sort((a, b) => b.mw - a.mw);
+          // Production shares for the same hour (or the latest measured hour of today); generation data covers today only.
+          const mix = gen && k === "today" ? generationMix({ generation: gen } as unknown as Snapshot, z.zone, snapshotToday, hourKey) : null;
+          const share = mix ? fossilShare(mix) : null;
+          const pct = (x: number) => (x > 0 && x < 1 ? "under 1" : Math.round(x).toLocaleString("sv-SE"));
           return (
             <div className={`s-zcard s-zcard-${below ? "below" : "above"} s-zcard-${align}`}
               style={{ left: `${left}%`, top: `calc(${top}% ${below ? "+" : "-"} ${r}px)` }}
@@ -230,6 +234,13 @@ export function PowerMap({ days, snapshotToday, gen }: { days: MapDay[]; snapsho
                     </li>
                   ))}
                 </ul>
+              )}
+              {mix && share && (
+                <div className="s-zcard-gen s-num">
+                  Produktion {mix.requested_hour_measured ? "samma timme" : `senast uppmätt ${clock(mix.hour)}`}:{" "}
+                  <b>{share.fossil > 0 ? `${pct(share.fossil)} % fossilt` : "inget rapporterat fossilt"}</b>
+                  {share.other >= 5 ? `, ${pct(share.other)} % övrigt/ospecificerat` : ""}
+                </div>
               )}
               {isSe
                 ? <Link href={`/elpris/${z.zone.toLowerCase()}`} className="s-zcard-link">All info om {code} →</Link>

@@ -73,10 +73,25 @@ export interface GenerationDay {
   totals_mwh_by_type?: Record<string, number>;         // sum over the measured hours only
 }
 
-/** UI groups of ENTSO-E production types; everything not listed is "other". */
-export const GEN_GROUPS = { hydro: ["B10", "B11", "B12"], wind: ["B18", "B19"], nuclear: ["B14"], solar: ["B16"] } as const;
+/**
+ * UI groups of ENTSO-E production types; everything not listed is "other".
+ * "fossil" is exactly the types ENTSO-E's own code list names "Fossil ...": B02 brown coal/lignite, B03 coal-derived
+ * gas, B04 gas, B05 hard coal, B06 oil, B07 oil shale, B08 peat. Nothing is inferred: "other" (e.g. B20 "Other",
+ * which Sweden reports much of its thermal output as) stays unspecified even if part of it may be fossil.
+ */
+export const GEN_GROUPS = {
+  hydro: ["B10", "B11", "B12"], wind: ["B18", "B19"], nuclear: ["B14"], solar: ["B16"],
+  fossil: ["B02", "B03", "B04", "B05", "B06", "B07", "B08"],
+} as const;
 export type GenGroup = keyof typeof GEN_GROUPS | "other";
-export const GEN_GROUP_ORDER: GenGroup[] = ["hydro", "wind", "nuclear", "solar", "other"];
+export const GEN_GROUP_ORDER: GenGroup[] = ["hydro", "wind", "nuclear", "solar", "fossil", "other"];
+
+/** Shares (%) of reported fossil and of "other" in one mix; null when the mix has no output. */
+export function fossilShare(mix: GenerationMix): { fossil: number; other: number } | null {
+  const total = GEN_GROUP_ORDER.reduce((s, g) => s + Math.max(0, mix.groups[g]), 0);
+  if (total <= 0) return null;
+  return { fossil: (Math.max(0, mix.groups.fossil) / total) * 100, other: (Math.max(0, mix.groups.other) / total) * 100 };
+}
 
 export interface GenerationMix {
   zone: string;
@@ -104,7 +119,7 @@ export function generationMix(snapshot: Snapshot, zone: string, day: string, hou
   if (full.length === 0) return null;
   const measured = hourIso !== null && full.includes(hourIso);
   const hour = measured ? hourIso! : full[full.length - 1];
-  const groups: Record<GenGroup, number> = { hydro: 0, wind: 0, nuclear: 0, solar: 0, other: 0 };
+  const groups: Record<GenGroup, number> = { hydro: 0, wind: 0, nuclear: 0, solar: 0, fossil: 0, other: 0 };
   const per: Record<string, number> = {};
   types.forEach((t, i) => {
     const mw = maps[i].get(hour)!;
@@ -172,3 +187,9 @@ export function toOre(snapshot: Snapshot, eurMwh: number | null | undefined, day
 }
 
 export const PRICE_UNIT = "öre/kWh";
+
+/** Shown wherever the fossil/other split appears. */
+export const FOSSIL_NOTE =
+  "Fossilt är de kraftslag som ENTSO-E rapporterar som fossila: gas, stenkol, brunkol, olja, oljeskiffer och torv. " +
+  "Övrigt är bland annat biobränsle, avfall och produktion som källan inte specificerar. Sverige rapporterar en stor del " +
+  "av sin värmekraft som ospecificerad, så för svenska elområden går det inte att säga hur mycket av övrigt som är fossilt.";

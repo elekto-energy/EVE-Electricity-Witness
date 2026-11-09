@@ -198,6 +198,7 @@ body.s-body {
 .s-zcard-meta { color: var(--s-muted); font-size: 0.8rem; }
 .s-zcard-flows { list-style: none; margin: 8px 0 0; padding: 8px 0 0; border-top: 1px solid var(--s-line); display: grid; gap: 2px; }
 .s-zcard-stale { color: var(--s-muted); }
+.s-zcard-gen { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--s-line); }
 .s-zcard-link { display: inline-block; margin-top: 10px; font-weight: 700; color: var(--s-ink); text-decoration: underline; text-underline-offset: 3px; }
 .s-map-water { fill: var(--s-water); }
 .s-map-land { fill: var(--s-land); stroke: color-mix(in srgb, var(--s-muted) 35%, transparent); stroke-width: 0.6; }
