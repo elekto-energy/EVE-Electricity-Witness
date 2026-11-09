@@ -3,7 +3,14 @@ import { loadSnapshot } from "@/lib/preview/load";
 import { StatusBadge, DataFreshness, Pill } from "@/components/preview/Badges";
 import { SourceFooter } from "@/components/preview/SourceFooter";
 
-export const metadata = { title: "Datakvalitet (förhandsversion)" };
+export const metadata = {
+  title: "Datakvalitet – källor, täckning och spårbarhet",
+  description:
+    "Hur komplett datan bakom Elmonitor är: status och täckning per elområde och serie, saknade kvartar, öppna fel och " +
+    "spårbarhet tillbaka till ENTSO-E och ECB.",
+  alternates: { canonical: "/data" },
+  robots: { index: true, follow: true },
+};
 export const revalidate = 300;
 
 const STATUS_ORDER = ["COMPLETE", "PARTIAL", "IN_PROGRESS", "NOT_PUBLISHED_YET", "MISSING", "CONFLICT"];

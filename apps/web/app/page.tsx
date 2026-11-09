@@ -11,7 +11,15 @@ import { Bottlenecks, type BottleneckDay, type LinkHour } from "@/components/sit
 import { GenerationOverview } from "@/components/site/GenerationOverview";
 import { HourlyChart } from "@/components/preview/HourlyChart";
 
-export const metadata = { title: "Elpriset idag" };
+export const metadata = {
+  title: { absolute: "Elpriset idag i SE1–SE4 – spotpris kvart för kvart | Elmonitor" },
+  description:
+    "Dagens elpris i SE1, SE2, SE3 och SE4: spotpris kvart för kvart och timme för timme, priset imorgon, en karta över " +
+    "elflödena mellan elområden och grannländer, elproduktion per kraftslag och flaskhalsarna som gör att priset skiljer sig.",
+  alternates: { canonical: "/" },
+  robots: { index: true, follow: true },
+  openGraph: { url: "/", title: "Elpriset idag i SE1–SE4", type: "website" as const },
+};
 export const revalidate = 300;
 
 const CITY: Record<string, string> = { SE1: "Luleå", SE2: "Sundsvall", SE3: "Stockholm", SE4: "Malmö" };

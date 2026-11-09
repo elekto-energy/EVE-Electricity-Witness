@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { COUNTRY_PATHS, MAP_W, MAP_H, project } from "@/lib/map/geo";
 import { generationMix, type Snapshot } from "@/lib/preview/snapshot";
@@ -87,6 +88,14 @@ export function PowerMap({ days, snapshotToday, gen }: { days: MapDay[]; snapsho
     if (i >= 0) setQi(i);
   }, [k, times, snapshotToday]);
 
+  // Escape closes the info card opened on a marker.
+  useEffect(() => {
+    if (!pinned) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setPinned(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pinned]);
+
   const idx = Math.min(qi, Math.max(0, times.length - 1));
   const t = times[idx] ?? null;
   const tEnd = times[idx + 1] ?? (t ? new Date(Date.parse(t) + 15 * 60000).toISOString() : null);
@@ -127,6 +136,7 @@ export function PowerMap({ days, snapshotToday, gen }: { days: MapDay[]; snapsho
       </div>
 
       <div className="s-map-stage">
+        <div className="s-map-canvas">
         <svg viewBox={`0 0 ${MAP_W} ${MAP_H}`} className="s-map-svg" role="img"
           aria-label={`Karta med elpriser per elområde, ${day.dateLabel}${t ? " klockan " + clock(t) : ""}`}
           onClick={() => { setHover(null); setPinned(null); }}>
@@ -173,7 +183,9 @@ export function PowerMap({ days, snapshotToday, gen }: { days: MapDay[]; snapsho
                 aria-label={`${z.name}: ${v === null ? "pris saknas" : fmt(v) + " öre per kilowattimme"}`}
                 onMouseEnter={() => setHover(z.zone)} onMouseLeave={() => setHover(h => (h === z.zone ? null : h))}
                 onFocus={() => setHover(z.zone)} onBlur={() => setHover(h => (h === z.zone ? null : h))}
-                onClick={e => { e.stopPropagation(); setPinned(z.zone); }}>
+                aria-expanded={pinned === z.zone}
+                onClick={e => { e.stopPropagation(); setPinned(p => (p === z.zone ? null : z.zone)); }}
+                onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPinned(p => (p === z.zone ? null : z.zone)); } }}>
                 <circle r={r + (active ? 4 : 0)} style={{ fill: priceColor(v) }} className={active ? "s-zdot s-zdot-on" : "s-zdot"} />
                 <text y={big ? 5 : 4} textAnchor="middle" className={big ? "s-zval" : "s-zval s-zval-sm"}>{v === null ? "–" : v < 10 ? fmt(v) : Math.round(v)}</text>
                 <text y={-r - 6} textAnchor="middle" className={big ? "s-zcode" : "s-zcode s-zcode-sm"}>{z.zone.replace("_LU", "")}</text>
@@ -181,6 +193,51 @@ export function PowerMap({ days, snapshotToday, gen }: { days: MapDay[]; snapsho
             );
           })}
         </svg>
+        {pinned && zoneBy.get(pinned) && POS[pinned] && (() => {
+          const z = zoneBy.get(pinned)!;
+          const [x, y] = project(...POS[z.zone]);
+          const v = priceAt(z);
+          const isSe = SE.has(z.zone);
+          const code = z.zone.replace("_LU", "");
+          const left = (x / MAP_W) * 100, top = (y / MAP_H) * 100;
+          const r = markerRadius(z.zone) + 6;
+          // Card below the marker in the upper half of the map, above it in the lower half; anchored to the side near the edges.
+          const below = top < 45;
+          const align = left < 30 ? "start" : left > 70 ? "end" : "center";
+          const flows = flowsNow.filter(f => f.mw !== null && (f.from === z.zone || f.to === z.zone)).map(f => {
+            const mw = f.mw as number;
+            const src = mw >= 0 ? f.from : f.to, dst = mw >= 0 ? f.to : f.from;
+            return { key: f.border, other: (src === z.zone ? dst : src).replace("_LU", ""), out: src === z.zone, mw: Math.abs(mw), stale: f.stale, at: f.at };
+          }).sort((a, b) => b.mw - a.mw);
+          return (
+            <div className={`s-zcard s-zcard-${below ? "below" : "above"} s-zcard-${align}`}
+              style={{ left: `${left}%`, top: `calc(${top}% ${below ? "+" : "-"} ${r}px)` }}
+              role="dialog" aria-label={`${z.name}, ${t ? "klockan " + clock(t) : ""}`}
+              onClick={e => e.stopPropagation()}>
+              <button type="button" className="s-zcard-x" aria-label="Stäng" onClick={() => setPinned(null)}>×</button>
+              <div className="s-zcard-name">{z.name}</div>
+              <div className="s-zcard-price s-num">{fmt(v)} <span>öre/kWh</span></div>
+              <div className="s-zcard-meta s-num">
+                {t ? `${clock(t)}–${tEnd ? clock(tEnd) : ""}` : ""}
+                {z.status === "COMPLETE" || z.status === "PARTIAL" ? ` · dygnsmedel ${fmt(z.mean)}` : z.status === "NOT_PUBLISHED_YET" ? " · ej publicerat ännu" : ""}
+              </div>
+              {flows.length > 0 && (
+                <ul className="s-zcard-flows">
+                  {flows.slice(0, 4).map(f => (
+                    <li key={f.key} className="s-num">
+                      {f.out ? "Export till" : "Import från"} <b>{f.other}</b>: {Math.round(f.mw).toLocaleString("sv-SE")} MW
+                      {f.stale && f.at ? <span className="s-zcard-stale"> (uppmätt {clock(f.at)})</span> : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {isSe
+                ? <Link href={`/elpris/${z.zone.toLowerCase()}`} className="s-zcard-link">All info om {code} →</Link>
+                : <Link href="/omraden" className="s-zcard-link">Grannländer och flöden →</Link>}
+            </div>
+          );
+        })()}
+        </div>
 
         <aside className="s-map-panel" aria-live="polite">
           <div className="s-panel-head">
@@ -232,7 +289,7 @@ export function PowerMap({ days, snapshotToday, gen }: { days: MapDay[]; snapsho
               {topFlow.stale && topFlow.at ? ` (uppmätt ${clock(topFlow.at)})` : ""}
             </div>
           )}
-          <p className="s-tip-hint">Peka eller tryck på ett område eller en rad.</p>
+          <p className="s-tip-hint">Peka eller tryck på ett område på kartan för mer information.</p>
         </aside>
       </div>
 

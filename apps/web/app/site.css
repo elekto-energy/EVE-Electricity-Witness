@@ -173,6 +173,32 @@ body.s-body {
   display: grid; grid-template-columns: minmax(0, 640px) minmax(220px, 1fr); align-items: start;
 }
 .s-map-svg { display: block; width: 100%; height: auto; max-height: 78vh; touch-action: manipulation; }
+/* Info card opened from a map marker; positioned in % of the map canvas so it follows the marker at any width. */
+.s-map-canvas { position: relative; }
+.s-zcard {
+  position: absolute; z-index: 5; width: max-content; max-width: min(260px, 78%);
+  padding: 12px 14px; background: var(--s-surface); color: var(--s-ink);
+  border: 1px solid var(--s-line); border-radius: 10px; box-shadow: 0 8px 24px rgba(10, 25, 35, 0.18);
+  font-size: 0.85rem; line-height: 1.4;
+}
+.s-zcard-center { transform: translateX(-50%); }
+.s-zcard-start { transform: translateX(-24px); }
+.s-zcard-end { transform: translateX(calc(-100% + 24px)); }
+.s-zcard-above.s-zcard-center { transform: translate(-50%, -100%); }
+.s-zcard-above.s-zcard-start { transform: translate(-24px, -100%); }
+.s-zcard-above.s-zcard-end { transform: translate(calc(-100% + 24px), -100%); }
+.s-zcard-x {
+  position: absolute; top: 4px; right: 4px; width: 32px; height: 32px; border: 0; border-radius: 6px;
+  background: none; color: var(--s-muted); font-size: 1.3rem; line-height: 1; cursor: pointer;
+}
+.s-zcard-x:hover, .s-zcard-x:focus-visible { color: var(--s-ink); background: color-mix(in srgb, var(--s-line) 45%, transparent); }
+.s-zcard-name { font-weight: 700; padding-right: 28px; }
+.s-zcard-price { font-size: 1.35rem; font-weight: 800; margin-top: 2px; }
+.s-zcard-price span { font-size: 0.8rem; font-weight: 500; color: var(--s-muted); }
+.s-zcard-meta { color: var(--s-muted); font-size: 0.8rem; }
+.s-zcard-flows { list-style: none; margin: 8px 0 0; padding: 8px 0 0; border-top: 1px solid var(--s-line); display: grid; gap: 2px; }
+.s-zcard-stale { color: var(--s-muted); }
+.s-zcard-link { display: inline-block; margin-top: 10px; font-weight: 700; color: var(--s-ink); text-decoration: underline; text-underline-offset: 3px; }
 .s-map-water { fill: var(--s-water); }
 .s-map-land { fill: var(--s-land); stroke: color-mix(in srgb, var(--s-muted) 35%, transparent); stroke-width: 0.6; }
 .s-map-se { fill: var(--s-se-land); stroke: color-mix(in srgb, var(--s-muted) 55%, transparent); stroke-width: 0.8; }
@@ -397,3 +423,18 @@ button.s-card:hover { transform: translateY(-1px); }
 .s-go-fill { display: flex; gap: 2px; height: 16px; border-radius: 6px; overflow: hidden; }
 .s-go-fill span { min-width: 2px; }
 .s-go-val { text-align: right; font-weight: 700; font-size: 0.92rem; }
+
+/* Zone pages (/elpris/se1..se4) */
+.s-crumbs { font-size: 0.85rem; color: var(--s-muted); margin-bottom: 14px; }
+.s-crumbs a { color: var(--s-muted); text-decoration: underline; text-underline-offset: 3px; }
+.s-zone-figs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+@media (max-width: 900px) { .s-zone-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.s-zone-figs .s-panel { padding: 14px 16px; }
+.s-zone-big { font-size: 2.2rem; font-weight: 800; line-height: 1.1; margin-top: 4px; }
+.s-zone-mid { font-size: 1.5rem; font-weight: 800; line-height: 1.15; margin-top: 4px; }
+.s-zone-compare, .s-zone-flows { list-style: none; padding: 0; margin: 10px 0 8px; display: grid; gap: 6px; max-width: 520px; }
+.s-zone-compare li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--s-line); }
+.s-zone-compare a { color: var(--s-ink); text-decoration: underline; text-underline-offset: 3px; }
+.s-faq { margin: 12px 0 0; display: grid; gap: 14px; max-width: 72ch; }
+.s-faq dt { font-weight: 700; }
+.s-faq dd { margin: 4px 0 0; color: var(--s-muted); line-height: 1.5; font-size: 0.92rem; }

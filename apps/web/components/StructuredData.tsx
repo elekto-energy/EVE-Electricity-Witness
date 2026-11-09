@@ -1,57 +1,31 @@
 /**
- * JSON-LD Structured Data for SEO
- * WebSite + Organization schema for Google rich results
+ * Site-wide JSON-LD: WebSite + Organization. Only facts about the site itself; page-specific data
+ * (breadcrumbs, FAQ) is emitted by the pages. No search action and no logo: the site has neither.
  */
+import { SITE_URL } from "@/lib/site";
 
 export function StructuredData() {
-  const website = {
+  const graph = {
     "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: "EVE Electricity Witness",
-    alternateName: ["elmonitor.se", "EVE Elmonitor"],
-    url: "https://elmonitor.se",
-    description:
-      "Spotpris på el i realtid. Elräkning uppdelad: spotpris, nätavgift, elskatt, moms. " +
-      "Flaskhalsintäkter, prisområden, CO₂ och elproduktion. Verifierad öppen data.",
-    inLanguage: "sv",
-    potentialAction: {
-      "@type": "SearchAction",
-      target: "https://elmonitor.se/energy?zone={search_term_string}",
-      "query-input": "required name=search_term_string",
-    },
-  };
-
-  const organization = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "Organiq Sweden AB",
-    url: "https://elmonitor.se",
-    logo: "https://elmonitor.se/logo.png",
-    description:
-      "EVE — Evidence & Verification Engine. " +
-      "Deterministisk AI-plattform för verifierad energidata.",
-    foundingDate: "2024",
-    knowsAbout: [
-      "Spotpris el",
-      "Elpriser Sverige",
-      "Flaskhalsintäkter",
-      "Prisområden el",
-      "Energiskatt",
-      "ENTSO-E",
-      "Nord Pool",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": `${SITE_URL}/#website`,
+        name: "Elmonitor",
+        alternateName: "elmonitor.se",
+        url: `${SITE_URL}/`,
+        inLanguage: "sv-SE",
+        description:
+          "Dagens elpris i Sveriges elområden SE1–SE4: spotpris kvart för kvart, elflöden, elproduktion per kraftslag och flaskhalsar. Öppen data från ENTSO-E.",
+        publisher: { "@id": `${SITE_URL}/#organization` },
+      },
+      {
+        "@type": "Organization",
+        "@id": `${SITE_URL}/#organization`,
+        name: "Organiq Sweden AB",
+        url: `${SITE_URL}/`,
+      },
     ],
   };
-
-  return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(website) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organization) }}
-      />
-    </>
-  );
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(graph) }} />;
 }
