@@ -28,6 +28,15 @@ const nextConfig = {
 
   // The data-update route imports the A2 pipeline from ../../pipeline (outside this app).
   experimental: { externalDir: true },
+
+  // Owner 2026-11-10: the old Ask-EVE report pages cannot generate reports in production (their locked datasets are
+  // not deployed), so visitors arriving from search go to the home page. The API routes are left untouched.
+  async redirects() {
+    return [
+      { source: "/ask-eve", destination: "/", permanent: true },
+      { source: "/ask-eve/verify", destination: "/", permanent: true },
+    ];
+  },
   webpack: (config) => {
     // Files outside apps/web resolve npm packages from apps/web/node_modules (no root install on Vercel).
     config.resolve.modules = [path.join(__dirname, "node_modules"), "node_modules"];
