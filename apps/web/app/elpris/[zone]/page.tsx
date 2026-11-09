@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import {
-  SE_ZONES, ZONE_LABEL, addDays, priceDay, weekdayLabel, toOre, rateFor, generationMix, fmt, PRICE_UNIT, type Snapshot,
+  SE_ZONES, ZONE_LABEL, addDays, priceDay, weekdayLabel, toOre, rateFor, generationMix, fmt, PRICE_UNIT, FOSSIL_NOTE, type Snapshot,
 } from "@/lib/preview/snapshot";
 import { loadSnapshot } from "@/lib/preview/load";
 import { DataFreshness } from "@/components/preview/Badges";
@@ -215,8 +215,10 @@ export default async function ZonePage({ params }: { params: Promise<{ zone: str
 
       <section className="s-section">
         <h2 className="s-h2">Så produceras elen i {z.code}</h2>
-        {mix ? <GenerationBar mix={mix} title={`Produktion i ${z.code}, senast uppmätta timme ${hourSpan(mix.hour)}`} />
-          : <p className="s-note">Produktion per kraftslag saknas för {z.code} just nu.</p>}
+        {mix ? <>
+            <GenerationBar mix={mix} title={`Produktion i ${z.code}, senast uppmätta timme ${hourSpan(mix.hour)}`} />
+            <p className="s-note" style={{ marginTop: 8 }}>{FOSSIL_NOTE}</p>
+          </> : <p className="s-note">Produktion per kraftslag saknas för {z.code} just nu.</p>}
       </section>
 
       <section className="s-section s-plain">
