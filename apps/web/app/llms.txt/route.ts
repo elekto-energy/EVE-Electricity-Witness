@@ -18,7 +18,7 @@ export async function GET() {
   });
   const yday = addDays(day, -1);
   const seU = unspecifiedShare(snapshot, SE_ZONES, yday), deU = unspecifiedShare(snapshot, ["DE_LU"], yday);
-  const p0 = (x: number) => Math.round(x).toLocaleString("sv-SE");
+  const p0 = (x: number) => (x > 0 && x < 0.05 ? "under 0,1" : x.toLocaleString("sv-SE", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
   const unspec = seU
     ? `${weekdayLabel(yday).replace(/^./, c => c.toUpperCase())} rapporterades ${(seU.unspecifiedMwh / 1000).toLocaleString("sv-SE", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} GWh (${p0(seU.pct)} % av Sveriges rapporterade elproduktion) utan kraftslag (ENTSO-E-kategorin "Other").` +
       (deU ? ` I Tyskland var motsvarande andel ${p0(deU.pct)} %.` : "") + (seU.complete ? "" : " Dygnet är inte komplett hos källan.")

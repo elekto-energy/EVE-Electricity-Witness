@@ -15,7 +15,7 @@ export const REPORT_COUNTRIES: { name: string; zones: string[] }[] = [
 ];
 
 const gwh = (mwh: number) => (mwh / 1000).toLocaleString("sv-SE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const pct = (x: number) => (x > 0 && x < 1 ? "under 1 %" : `${Math.round(x).toLocaleString("sv-SE")} %`);
+const pct = (x: number) => (x > 0 && x < 0.05 ? "under 0,1 %" : `${x.toLocaleString("sv-SE", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`);
 
 export function unspecifiedRows(snapshot: Snapshot, day: string) {
   return REPORT_COUNTRIES.map(c => ({ ...c, r: unspecifiedShare(snapshot, c.zones, day) }));
