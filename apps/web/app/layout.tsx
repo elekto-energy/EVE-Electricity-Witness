@@ -4,53 +4,36 @@ import { SiteHeader, SiteMain } from "@/components/site/SiteHeader";
 import { StructuredData } from "@/components/StructuredData";
 
 import type { Metadata } from "next";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "Elmonitor – elpriset idag i SE1–SE4 (förhandsversion)",
+    default: "Elpriset idag i SE1–SE4 – spotpris kvart för kvart | Elmonitor",
     template: "%s | Elmonitor",
   },
+  // Describes what the pages show today: spot price (before tax, VAT, grid fee), measured flows, production per
+  // type and bottlenecks, from ENTSO-E with the ECB rate. No claims about features the site does not have.
   description:
-    "Se dagens spotpris på el i realtid för SE1, SE2, SE3 och SE4. " +
-    "Elpriser per timme, elskatt, nätavgifter, moms — hela elräkningen uppdelad. " +
-    "Flaskhalsintäkter, prisområdesdifferenser, producentresultat och CO₂-intensitet. " +
-    "Verifierad data från ENTSO-E, Nord Pool och Energimarknadsinspektionen.",
-  keywords: [
-    "spotpris el", "elpris idag", "elpris realtid", "elpris per timme",
-    "elpris SE3", "elpris SE1", "elpris SE2", "elpris SE4",
-    "elskatt", "elräkning", "nätavgift", "moms el",
-    "elpriser Sverige", "spotpris idag", "timpris el",
-    "flaskhalsintäkter", "prisområden el", "prisområdesdifferens",
-    "energiskatt", "Svenska kraftnät", "Energimarknadsinspektionen",
-    "CO2 el", "elproduktion Sverige", "kärnkraft Sverige",
-    "vattenkraft", "vindkraft", "elområden Sverige",
-    "Nord Pool", "ENTSO-E", "systempris",
-    "elstöd", "constraint rent", "flaskhalsavgifter",
-  ],
-  authors: [{ name: "EVE — Evidence & Verification Engine", url: "https://elmonitor.se" }],
+    "Dagens elpris i Sveriges fyra elområden SE1–SE4: spotpris kvart för kvart och timme för timme, priset imorgon, " +
+    "elflöden mellan elområden och grannländer, elproduktion per kraftslag och flaskhalsar. Öppen data från ENTSO-E.",
+  applicationName: "Elmonitor",
   creator: "Organiq Sweden AB",
-  publisher: "EVE Electricity Witness",
-  robots: { index: false, follow: false }, // Step B preview: never indexed
+  publisher: "Organiq Sweden AB",
+  // Default for every route: not indexed. Finished pages opt in with their own robots (lib/site.ts INDEXABLE_PATHS);
+  // older routes that only show "Den här vyn uppdateras" stay out of search results.
+  robots: { index: false, follow: false },
   openGraph: {
     type: "website",
     locale: "sv_SE",
-    url: "https://elmonitor.se",
-    siteName: "EVE Electricity Witness",
-    title: "Spotpris el idag — Elpris realtid per timme SE1–SE4",
-    description:
-      "Dagens elpris i realtid. Spotpris, elskatt, nätavgift, moms — hela din elräkning uppdelad. " +
-      "Flaskhalsintäkter, prisområden och CO₂. Verifierad öppen data.",
+    siteName: "Elmonitor",
+    title: "Elpriset idag i SE1–SE4",
+    description: "Spotpris kvart för kvart, elflöden, produktion och flaskhalsar i Sveriges elområden. Öppen data från ENTSO-E.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Spotpris el idag — SE1–SE4 realtid | EVE",
-    description: "Elpris per timme, elskatt, flaskhalsintäkter och CO₂. Verifierad data.",
-  },
-  alternates: {
-    canonical: "https://elmonitor.se",
-  },
-  other: {
-    "google-site-verification": "",  // Fyll i när du verifierar
+    title: "Elpriset idag i SE1–SE4 | Elmonitor",
+    description: "Spotpris kvart för kvart, elflöden, produktion och flaskhalsar i Sveriges elområden.",
   },
 };
 

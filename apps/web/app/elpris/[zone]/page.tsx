@@ -36,7 +36,10 @@ export async function generateMetadata({ params }: { params: Promise<{ zone: str
       `priset imorgon, elflöden till grannområdena och elproduktion per kraftslag. Öre/kWh före skatt, moms och nätavgift.`,
     alternates: { canonical: `/elpris/${zone}` },
     robots: { index: true, follow: true },
-    openGraph: { url: `/elpris/${zone}`, title: `Elpris ${z.code} ${z.city} idag`, type: "website" },
+    openGraph: {
+      url: `/elpris/${zone}`, title: `Elpris ${z.code} ${z.city} idag`, type: "website",
+      images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Elmonitor – elpriset idag i SE1–SE4" }],
+    },
   };
 }
 

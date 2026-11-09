@@ -5,7 +5,14 @@ import { loadSnapshot } from "@/lib/preview/load";
 import { StatusBadge, DataFreshness } from "@/components/preview/Badges";
 import { SourceFooter } from "@/components/preview/SourceFooter";
 
-export const metadata = { title: "Grannländer och flöden" };
+export const metadata = {
+  title: "Elpris i grannländerna och elflöden till och från Sverige",
+  description:
+    "Spotpriset i Norge, Finland, Danmark, Tyskland, Polen och Litauen jämfört med Sverige, och uppmätta elflöden " +
+    "(import och export) över varje gräns. Öppen data från ENTSO-E.",
+  alternates: { canonical: "/omraden" },
+  robots: { index: true, follow: true },
+};
 export const revalidate = 300;
 
 const MONTHS = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
