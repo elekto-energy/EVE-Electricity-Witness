@@ -10,6 +10,7 @@ import { PriceCards } from "@/components/site/PriceCards";
 import { Bottlenecks, type BottleneckDay, type LinkHour } from "@/components/site/Bottlenecks";
 import { GenerationOverview } from "@/components/site/GenerationOverview";
 import { TradeOverview } from "@/components/site/TradeOverview";
+import { UnspecifiedReport } from "@/components/site/UnspecifiedReport";
 import { tradeForDay } from "@/lib/preview/trade";
 import { HourlyChart } from "@/components/preview/HourlyChart";
 
@@ -145,6 +146,7 @@ export default async function HomePage() {
       <section className="s-section" id="produktion">
         <h2 className="s-h2">Så produceras elen</h2>
         <GenerationOverview snapshot={snapshot} today={today} yesterday={addDays(today, -1)} yesterdayLabel="igår" />
+        <UnspecifiedReport snapshot={snapshot} day={addDays(today, -1)} />
       </section>
 
       <section className="s-section s-plain">

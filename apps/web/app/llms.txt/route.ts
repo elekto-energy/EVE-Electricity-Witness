@@ -1,4 +1,4 @@
-import { SE_ZONES, priceDay, toOre, fmt, weekdayLabel } from "@/lib/preview/snapshot";
+import { SE_ZONES, priceDay, toOre, fmt, weekdayLabel, addDays, unspecifiedShare } from "@/lib/preview/snapshot";
 import { loadSnapshot } from "@/lib/preview/load";
 import { SITE_URL } from "@/lib/site";
 
@@ -16,6 +16,13 @@ export async function GET() {
     const v = ok ? toOre(snapshot, d!.mean, day) : null;
     return `- ${z} (${CITY[z]}): ${v === null ? "saknas i datan" : `${fmt(v)} öre/kWh i dygnsmedel`} – ${SITE_URL}/elpris/${z.toLowerCase()}`;
   });
+  const yday = addDays(day, -1);
+  const seU = unspecifiedShare(snapshot, SE_ZONES, yday), deU = unspecifiedShare(snapshot, ["DE_LU"], yday);
+  const p0 = (x: number) => Math.round(x).toLocaleString("sv-SE");
+  const unspec = seU
+    ? `${weekdayLabel(yday).replace(/^./, c => c.toUpperCase())} rapporterades ${(seU.unspecifiedMwh / 1000).toLocaleString("sv-SE", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} GWh (${p0(seU.pct)} % av Sveriges rapporterade elproduktion) utan kraftslag (ENTSO-E-kategorin "Other").` +
+      (deU ? ` I Tyskland var motsvarande andel ${p0(deU.pct)} %.` : "") + (seU.complete ? "" : " Dygnet är inte komplett hos källan.")
+    : "Uppgift om ospecificerad produktion saknas för igår.";
   const body = `# Elmonitor
 
 > Elmonitor visar dagens elpris i Sveriges fyra elområden (SE1–SE4): spotpris kvart för kvart och timme för timme, priset imorgon, uppmätta elflöden mellan elområden och grannländer, elproduktion per kraftslag och flaskhalsar. Svenska. Öppen data från ENTSO-E, omräknad med ECB:s referenskurs.
@@ -26,6 +33,10 @@ Morgondagens priser publiceras runt klockan 13 dagen före.
 ## Dagens elpris (${weekdayLabel(day)}, data publicerad ${snapshot.source.published_at_utc})
 
 ${means.join("\n")}
+
+## Produktion utan kraftslag
+
+${unspec}
 
 ## Sidor
 

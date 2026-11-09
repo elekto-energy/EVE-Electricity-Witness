@@ -4,6 +4,7 @@ import { loadSnapshot } from "@/lib/preview/load";
 import { tradeForDay, fossilPct } from "@/lib/preview/trade";
 import { DataFreshness } from "@/components/preview/Badges";
 import { TradeOverview, TRADE_METHOD_NOTE } from "@/components/site/TradeOverview";
+import { UnspecifiedReport } from "@/components/site/UnspecifiedReport";
 import { SITE_URL } from "@/lib/site";
 
 export const revalidate = 300;
@@ -82,6 +83,10 @@ export default async function ImportExportPage() {
         <TradeOverview trade={tYesterday} label="Igår" />
       </section>
 
+      <section className="s-section">
+        <UnspecifiedReport snapshot={snapshot} day={yesterday} />
+      </section>
+
       {tToday.hours.length > 0 && (
         <section className="s-section">
           <h2 className="s-h2">Timme för timme idag</h2>
@@ -108,8 +113,8 @@ export default async function ImportExportPage() {
         <h2 className="s-h2">Så räknar vi</h2>
         <p className="s-note" style={{ marginTop: 6 }}>{TRADE_METHOD_NOTE}</p>
         <p className="s-note" style={{ marginTop: 8 }}>
-          Sverige rapporterar en stor del av sin värmekraft som ospecificerad. Den räknas inte som fossil, men inte heller som
-          fossilfri; andelen visas som övrigt. Se flödena gräns för gräns på <Link href="/#karta">kartan</Link> och på
+          Sverige rapporterar nästan all värmekraft som ospecificerad. Den räknas inte som fossil, men inte heller som
+          fossilfri; andelen visas som ospecificerat. Se flödena gräns för gräns på <Link href="/#karta">kartan</Link> och på
           {" "}<Link href="/omraden">Grannländer och flöden</Link>.
         </p>
         <h2 className="s-h2" style={{ marginTop: 28 }}>Vanliga frågor</h2>

@@ -239,7 +239,7 @@ export function PowerMap({ days, snapshotToday, gen }: { days: MapDay[]; snapsho
                 <div className="s-zcard-gen s-num">
                   Produktion {mix.requested_hour_measured ? "samma timme" : `senast uppmätt ${clock(mix.hour)}`}:{" "}
                   <b>{share.fossil > 0 ? `${pct(share.fossil)} % fossilt` : "inget rapporterat fossilt"}</b>
-                  {share.other >= 5 ? `, ${pct(share.other)} % övrigt/ospecificerat` : ""}
+                  {share.other >= 5 ? `, ${pct(share.other)} % ospecificerat` : ""}
                 </div>
               )}
               {isSe

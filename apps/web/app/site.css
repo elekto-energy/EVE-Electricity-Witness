@@ -451,3 +451,8 @@ button.s-card:hover { transform: translateY(-1px); }
 .s-trade-table td, .s-trade-table th { white-space: nowrap; }
 
 @media (max-width: 480px) { .s-nav .s-wide-only { display: none; } }
+
+/* Unspecified-production report */
+.s-h3 { font-size: 1.05rem; font-weight: 700; line-height: 1.3; margin: 0; }
+.s-unspec { margin-top: 16px; }
+.s-unspec .s-table-wrap { margin-top: 10px; }

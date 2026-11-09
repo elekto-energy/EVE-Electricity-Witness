@@ -21,7 +21,7 @@ function MixCard({ title, s, unspecifiedNote }: { title: string; s: TradeSide; u
         ? <div className="s-note">{s.mwh > 0 ? "Produktionsmixen i ursprungsområdet saknas i datan för de här timmarna." : ""}</div>
         : <div className="s-trade-fossil s-num"><b>{pct(f)}</b> fossilt i ursprungsmixen</div>}
       {o !== null && o >= 5 && (
-        <div className="s-note s-num">{pct(o)} övrigt{unspecifiedNote ? " (i Sverige mest ospecificerat i källan)" : ""}</div>
+        <div className="s-note s-num">{pct(o)} ospecificerat{unspecifiedNote ? " (svensk värmekraft, bränsle anges inte i källan)" : ""}</div>
       )}
       {f !== null && known < 99.5 && <div className="s-note s-num">Mixen känd för {pct(known)} av volymen</div>}
     </div>
