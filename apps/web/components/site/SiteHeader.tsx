@@ -42,7 +42,7 @@ const LEGACY_WORKING = new Set(["/methodology"]);
  */
 export function SiteMain({ children }: { children: React.ReactNode }) {
   const path = usePathname() ?? "/";
-  if (NEW_ROUTES.has(path)) return <main className="s-main">{children}</main>;
+  if (NEW_ROUTES.has(path) || path.startsWith("/elpris/")) return <main className="s-main">{children}</main>;
   if (LEGACY_WORKING.has(path)) return <main className="s-legacy">{children}</main>;
   return (
     <main className="s-main">
