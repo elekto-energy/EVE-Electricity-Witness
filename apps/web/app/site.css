@@ -439,3 +439,15 @@ button.s-card:hover { transform: translateY(-1px); }
 .s-faq { margin: 12px 0 0; display: grid; gap: 14px; max-width: 72ch; }
 .s-faq dt { font-weight: 700; }
 .s-faq dd { margin: 4px 0 0; color: var(--s-muted); line-height: 1.5; font-size: 0.92rem; }
+
+/* Import/export (components/site/TradeOverview.tsx, /import-export) */
+.s-table-wrap { overflow-x: auto; margin-top: 14px; }
+.s-trade-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 640px) { .s-trade-cards { grid-template-columns: 1fr; } }
+.s-trade-card { padding: 14px 16px; display: grid; gap: 4px; }
+.s-trade-big { font-size: 1.8rem; font-weight: 800; line-height: 1.1; }
+.s-trade-fossil { font-size: 0.95rem; }
+.s-trade-fossil b { font-size: 1.1rem; }
+.s-trade-table td, .s-trade-table th { white-space: nowrap; }
+
+@media (max-width: 480px) { .s-nav .s-wide-only { display: none; } }

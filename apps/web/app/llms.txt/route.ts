@@ -34,6 +34,7 @@ ${means.join("\n")}
 - [Elpris SE2 Sundsvall](${SITE_URL}/elpris/se2)
 - [Elpris SE3 Stockholm](${SITE_URL}/elpris/se3)
 - [Elpris SE4 Malmö](${SITE_URL}/elpris/se4)
+- [Import och export](${SITE_URL}/import-export): Sveriges import och export per land, idag och igår, med fossil andel i ursprungsområdets produktion
 - [Grannländer och flöden](${SITE_URL}/omraden): priser i Norge, Finland, Danmark, Tyskland, Polen och Litauen, import och export per gräns
 - [Datakvalitet](${SITE_URL}/data): status och täckning per serie, saknade kvartar, källor
 

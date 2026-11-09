@@ -9,6 +9,8 @@ import { PowerMap, type MapDay } from "@/components/site/PowerMap";
 import { PriceCards } from "@/components/site/PriceCards";
 import { Bottlenecks, type BottleneckDay, type LinkHour } from "@/components/site/Bottlenecks";
 import { GenerationOverview } from "@/components/site/GenerationOverview";
+import { TradeOverview } from "@/components/site/TradeOverview";
+import { tradeForDay } from "@/lib/preview/trade";
 import { HourlyChart } from "@/components/preview/HourlyChart";
 
 export const metadata = {
@@ -111,6 +113,15 @@ export default async function HomePage() {
           Dra i tidslinjen för att se priset kvart för kvart och hur elen flödar mellan områdena.
         </p>
         <PowerMap days={mapDays} snapshotToday={today} gen={snapshot.generation} />
+      </section>
+
+      <section className="s-section" id="import-export">
+        <h2 className="s-h2">Sveriges import och export idag</h2>
+        <p className="s-note" style={{ marginBottom: 10 }}>
+          Hur mycket el som gått in och ut över gränserna hittills idag, och hur stor del av produktionen där elen kom ifrån som var fossil.
+        </p>
+        <TradeOverview trade={tradeForDay(snapshot, today)} label="Idag" />
+        <p className="s-note" style={{ marginTop: 10 }}><Link href="/import-export">Mer om import och export, igår och timme för timme →</Link></p>
       </section>
 
       <section className="s-section">
