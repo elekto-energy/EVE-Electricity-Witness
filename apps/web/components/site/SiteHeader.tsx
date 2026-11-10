@@ -20,7 +20,7 @@ export function SiteHeader() {
     <header className="s-header">
       <div className="s-header-inner">
         <Link href="/" className="s-wordmark">
-          elmonitor<span className="s-tag" title="Testversion för granskning">förhandsversion</span>
+          elmonitor
         </Link>
         <nav className="s-nav" aria-label="Huvudmeny">
           {NAV.map(n => (
@@ -48,7 +48,7 @@ export function SiteMain({ children }: { children: React.ReactNode }) {
   return (
     <main className="s-main">
       <div className="s-panel" role="status" style={{ maxWidth: 640 }}>
-        <h1 className="s-h2" style={{ marginBottom: 8 }}>Den här vyn uppdateras. Data är ännu inte tillgängliga i förhandsversionen.</h1>
+        <h1 className="s-h2" style={{ marginBottom: 8 }}>Den här vyn uppdateras. Data är ännu inte tillgängliga här.</h1>
         <p className="s-note">
           Dagens elpriser finns på <Link href="/">startsidan</Link>. Täckningen per serie visas under <Link href="/data">Datakvalitet</Link>.
         </p>

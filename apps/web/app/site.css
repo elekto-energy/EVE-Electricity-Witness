@@ -56,10 +56,6 @@ body.s-body {
   font-variation-settings: "wdth" 112; text-decoration: none; white-space: nowrap;
 }
 .s-wordmark:hover { text-decoration: none; }
-.s-tag {
-  font-size: 0.72rem; font-weight: 600; color: var(--s-warn);
-  border: 1px solid currentColor; border-radius: 4px; padding: 1px 6px; margin-left: 8px; vertical-align: 3px;
-}
 .s-nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin-left: auto; }
 .s-nav::-webkit-scrollbar { display: none; }
 .s-nav a {

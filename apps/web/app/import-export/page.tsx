@@ -125,7 +125,6 @@ export default async function ImportExportPage() {
 
       <footer className="s-footer">
         Källa: ENTSO-E (fysiska flöden och produktion per kraftslag). Full spårbarhet finns under <Link href="/data">Datakvalitet</Link>.
-        Detta är en förhandsversion.
       </footer>
     </>
   );

@@ -175,7 +175,7 @@ export default async function HomePage() {
       </details>
 
       <footer className="s-footer">
-        Källa: ENTSO-E (dagen-före-priser och fysiska flöden), ECB (valutakurs). Karta: Natural Earth (public domain). Detta är en förhandsversion.
+        Källa: ENTSO-E (dagen-före-priser och fysiska flöden), ECB (valutakurs). Karta: Natural Earth (public domain).
         Full spårbarhet finns under <Link href="/data">Datakvalitet</Link>.
       </footer>
     </>

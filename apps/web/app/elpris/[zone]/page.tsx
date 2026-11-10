@@ -235,7 +235,7 @@ export default async function ZonePage({ params }: { params: Promise<{ zone: str
 
       <footer className="s-footer">
         Källa: ENTSO-E (dagen-före-priser, fysiska flöden och produktion per kraftslag), ECB (valutakurs{fx ? ` ${fx.rate.toLocaleString("sv-SE", { maximumFractionDigits: 6 })} kr/EUR, ${fx.date}` : ""}).
-        Full spårbarhet finns under <Link href="/data">Datakvalitet</Link>. Detta är en förhandsversion.
+        Full spårbarhet finns under <Link href="/data">Datakvalitet</Link>.
       </footer>
     </>
   );
