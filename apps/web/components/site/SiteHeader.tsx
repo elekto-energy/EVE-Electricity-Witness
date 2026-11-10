@@ -5,12 +5,13 @@ import { usePathname } from "next/navigation";
 
 const NAV = [
   { href: "/", label: "Elpriset" },
+  { href: "/import-export", label: "Import och export", short: "Import" },
   { href: "/omraden", label: "Grannländer och flöden", short: "Grannländer" },
   { href: "/data", label: "Datakvalitet" },
-  { href: "/methodology", label: "Metod" },
+  { href: "/methodology", label: "Metod", wideOnly: true }, // hidden on phones; still linked from the home page
 ];
 
-const NEW_ROUTES = new Set(["/", "/omraden", "/data"]);
+const NEW_ROUTES = new Set(["/", "/import-export", "/omraden", "/data"]);
 
 export function SiteHeader() {
   const path = usePathname() ?? "/";
@@ -23,7 +24,7 @@ export function SiteHeader() {
         </Link>
         <nav className="s-nav" aria-label="Huvudmeny">
           {NAV.map(n => (
-            <Link key={n.href} href={n.href} aria-current={active(n.href) ? "page" : undefined}>
+            <Link key={n.href} href={n.href} aria-current={active(n.href) ? "page" : undefined} className={"wideOnly" in n && n.wideOnly ? "s-wide-only" : undefined}>
               {"short" in n && n.short ? <><span className="s-long">{n.label}</span><span className="s-short">{n.short}</span></> : n.label}
             </Link>
           ))}

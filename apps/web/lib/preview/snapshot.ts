@@ -75,6 +75,7 @@ export interface GenerationDay {
 
 /**
  * UI groups of ENTSO-E production types; everything not listed is "other".
+ * "bio" = B01 biomass and B17 waste.
  * "fossil" is exactly the types ENTSO-E's own code list names "Fossil ...": B02 brown coal/lignite, B03 coal-derived
  * gas, B04 gas, B05 hard coal, B06 oil, B07 oil shale, B08 peat. Nothing is inferred: "other" (e.g. B20 "Other",
  * which Sweden reports much of its thermal output as) stays unspecified even if part of it may be fossil.
@@ -82,9 +83,10 @@ export interface GenerationDay {
 export const GEN_GROUPS = {
   hydro: ["B10", "B11", "B12"], wind: ["B18", "B19"], nuclear: ["B14"], solar: ["B16"],
   fossil: ["B02", "B03", "B04", "B05", "B06", "B07", "B08"],
+  bio: ["B01", "B17"], // biomass, waste
 } as const;
 export type GenGroup = keyof typeof GEN_GROUPS | "other";
-export const GEN_GROUP_ORDER: GenGroup[] = ["hydro", "wind", "nuclear", "solar", "fossil", "other"];
+export const GEN_GROUP_ORDER: GenGroup[] = ["hydro", "wind", "nuclear", "solar", "bio", "fossil", "other"];
 
 /** Shares (%) of reported fossil and of "other" in one mix; null when the mix has no output. */
 export function fossilShare(mix: GenerationMix): { fossil: number; other: number } | null {
@@ -119,7 +121,7 @@ export function generationMix(snapshot: Snapshot, zone: string, day: string, hou
   if (full.length === 0) return null;
   const measured = hourIso !== null && full.includes(hourIso);
   const hour = measured ? hourIso! : full[full.length - 1];
-  const groups: Record<GenGroup, number> = { hydro: 0, wind: 0, nuclear: 0, solar: 0, fossil: 0, other: 0 };
+  const groups: Record<GenGroup, number> = { hydro: 0, wind: 0, nuclear: 0, solar: 0, bio: 0, fossil: 0, other: 0 };
   const per: Record<string, number> = {};
   types.forEach((t, i) => {
     const mw = maps[i].get(hour)!;
@@ -191,5 +193,28 @@ export const PRICE_UNIT = "öre/kWh";
 /** Shown wherever the fossil/other split appears. */
 export const FOSSIL_NOTE =
   "Fossilt är de kraftslag som ENTSO-E rapporterar som fossila: gas, stenkol, brunkol, olja, oljeskiffer och torv. " +
-  "Övrigt är bland annat biobränsle, avfall och produktion som källan inte specificerar. Sverige rapporterar en stor del " +
-  "av sin värmekraft som ospecificerad, så för svenska elområden går det inte att säga hur mycket av övrigt som är fossilt.";
+  "Bio och avfall är biobränsle och avfall. Ospecificerat är framför allt kategorin \"Other\", där källan inte anger bränsle " +
+  "(plus mindre poster som energilager). Sverige rapporterar nästan all värmekraft som ospecificerad (bara en liten mängd " +
+  "fossilgas redovisas separat), så för svenska elområden går det inte att säga hur mycket av den som är fossil.";
+
+/** psrType B20 "Other": production reported without a production type. */
+export const UNSPECIFIED_TYPES = ["B20"];
+
+/**
+ * Share of a day's reported production (sum of totals_mwh_by_type over the given zones) that is B20 "Other".
+ * null when any zone lacks totals for that day. `complete` is false when any zone's day is not COMPLETE.
+ */
+export function unspecifiedShare(snapshot: Snapshot, zones: readonly string[], day: string):
+  { unspecifiedMwh: number; totalMwh: number; pct: number; complete: boolean } | null {
+  let u = 0, t = 0, complete = true;
+  for (const z of zones) {
+    const d = snapshot.generation?.[z]?.days.find(x => x.day === day);
+    if (!d?.totals_mwh_by_type) return null;
+    if (d.status !== "COMPLETE") complete = false;
+    for (const [type, mwh] of Object.entries(d.totals_mwh_by_type)) {
+      t += Math.max(0, mwh);
+      if (UNSPECIFIED_TYPES.includes(type)) u += Math.max(0, mwh);
+    }
+  }
+  return t > 0 ? { unspecifiedMwh: u, totalMwh: t, pct: (u / t) * 100, complete } : null;
+}

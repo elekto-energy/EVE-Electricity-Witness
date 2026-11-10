@@ -13,8 +13,9 @@ export const GEN_STYLE: Record<GenGroup, { label: string; color: string }> = {
   wind: { label: "Vindkraft", color: "#2bb3a8" },
   nuclear: { label: "Kärnkraft", color: "#7a4fb5" },
   solar: { label: "Solkraft", color: "#e2b416" },
+  bio: { label: "Bio och avfall", color: "#7d8f3c" },
   fossil: { label: "Fossilt", color: "#5a4636" },
-  other: { label: "Övrigt", color: "#9aa5ad" },
+  other: { label: "Ospecificerat", color: "#9aa5ad" },
 };
 
 const fmt = (x: number) => Math.round(x).toLocaleString("sv-SE");
