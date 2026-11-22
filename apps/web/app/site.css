@@ -454,7 +454,12 @@ button.s-card:hover { transform: translateY(-1px); }
 .s-unspec .s-table-wrap { margin-top: 10px; }
 
 /* Price incl. tax and VAT */
-.s-card-tax { font-size: 0.82rem; color: var(--s-muted); margin-top: 2px; }
+.s-card-tax { font-size: 0.95rem; color: var(--s-ink); margin-top: 4px; }
+.s-card-tax b { font-weight: 700; }
+.s-zd .s-wallet-inputs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.s-zd .s-wallet-grid { grid-template-columns: 1fr; }
+.s-zone-tax { font-size: 0.95rem; margin-top: 4px; }
+@media (max-width: 640px) { .s-zd .s-wallet-inputs { grid-template-columns: 1fr; } }
 .s-wallet-inputs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .s-wallet-inputs label { display: flex; flex-direction: column; gap: 4px; font-size: 0.88rem; font-weight: 600; }
 .s-wallet-field { display: flex; align-items: center; gap: 6px; font-weight: 400; color: var(--s-muted); font-size: 0.85rem; }
@@ -474,6 +479,8 @@ button.s-card:hover { transform: translateY(-1px); }
 .s-wallet-hours { margin-top: 14px; }
 .s-wallet-day { margin-top: 8px; }
 .s-wallet-day summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+.s-wallet-day .s-note { margin-top: 6px; }
+.s-wallet-more { margin-top: 12px; font-weight: 600; }
 .s-wallet-day tr.cheap td:last-child { color: var(--s-ok); }
 .s-wallet-day tr.dear td:last-child { color: #c0392b; }
 @media (max-width: 640px) { .s-wallet-inputs { grid-template-columns: 1fr; } }

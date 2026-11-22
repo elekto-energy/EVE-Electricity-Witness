@@ -10,6 +10,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { MapDay } from "@/components/site/PowerMap";
 import { generationMix, type Snapshot } from "@/lib/preview/snapshot";
 import { GenerationBar } from "@/components/site/GenerationBar";
+import { WalletPrice } from "@/components/site/WalletPrice";
+import { energyTaxSourceText, type EnergyTax } from "@/lib/consumer";
 
 const fmt = (x: number, d = 2) => x.toLocaleString("sv-SE", { minimumFractionDigits: d, maximumFractionDigits: d });
 const clock = (iso: string) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Stockholm", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
@@ -74,8 +76,10 @@ function Chart({ points, color, sel, setSel, nowIso }: {
 
 export type GenerationData = Snapshot["generation"];
 
-export function ZoneDetail({ zone, city, days, onClose, gen, today }: {
+export function ZoneDetail({ zone, city, days, onClose, gen, today, tax }: {
   zone: string; city: string; days: MapDay[]; onClose: () => void; gen?: GenerationData; today: string;
+  /** Energy tax for today's year; null hides the wallet section. */
+  tax?: EnergyTax | null;
 }) {
   const dlg = useRef<HTMLDialogElement>(null);
   const avail = days.filter(d => (d.zones.find(z => z.zone === zone)?.quarters.length ?? 0) > 0);
@@ -159,6 +163,22 @@ export function ZoneDetail({ zone, city, days, onClose, gen, today }: {
             </div>
           </>
         ) : <p className="s-note">Inga kvartspriser för det här dygnet.</p>}
+
+        {(() => {
+          const t = days.find(d => d.key === "today");
+          const zt = t?.zones.find(x => x.zone === zone);
+          const ok = (st?: string) => st === "COMPLETE" || st === "PARTIAL";
+          if (!tax || !t || !zt) return null;
+          const se1 = t.zones.find(x => x.zone === "SE1");
+          return (
+            <>
+              <h3 className="s-zd-h3">Vad kostar elen i plånboken? <span>idag</span></h3>
+              <WalletPrice zone={zone} color={color} taxDefault={tax.oreExVat} taxSource={energyTaxSourceText(tax)}
+                se1Mean={se1 && ok(se1.status) ? se1.mean : null} moreHref={`/elpris/${zone.toLowerCase()}#planbok`}
+                days={[{ key: "today", label: "Idag", mean: ok(zt.status) ? zt.mean : null, hourly: [], note: ok(zt.status) ? undefined : "Dagens spotpris saknas i datan." }]} />
+            </>
+          );
+        })()}
 
         <h3 className="s-zd-h3">Import och export {hour ? <span>{clock(hour)}–{clock(plus(hour, 3600000))}{wantHour && hour !== wantHour ? ", senaste uppmätta timme" : ""}</span> : null}</h3>
         {k !== "today" ? <p className="s-note">Flöden finns först när de har mätts.</p>

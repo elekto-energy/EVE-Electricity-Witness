@@ -9,7 +9,8 @@
  * transmission limits between the zones add). Measured prices only; shown only when the zone is above SE1.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import Link from "next/link";
 import { consumerPrice, VAT } from "@/lib/consumer";
 
 export interface WalletDay { key: string; label: string; mean: number | null; hourly: [string, number][]; note?: string }
@@ -47,13 +48,17 @@ function Donut({ slices, center, sub }: { slices: Slice[]; center: string; sub: 
   );
 }
 
-export function WalletPrice({ zone, color, days, taxDefault, taxSource, se1Mean }: {
+export function WalletPrice({ zone, color, days, taxDefault, taxSource, se1Mean, moreHref }: {
   zone: string; color: string; days: WalletDay[]; taxDefault: number | null;
   /** Full source line from energyTaxSourceText(). */
   taxSource: string | null;
   /** SE1's daily mean today (öre/kWh excl. VAT), for the bottleneck split; null when missing. */
   se1Mean: number | null;
+  /** When set (compact use, e.g. in the zone dialog), the hourly tables are replaced by a link here. */
+  moreHref?: string;
 }) {
+  const uid = useId();
+  const spotId = `${uid}-spot`, helpId = `${uid}-help`;
   const today = days[0];
   const [grid, setGrid] = useState("");
   const [markup, setMarkup] = useState("");
@@ -120,22 +125,18 @@ export function WalletPrice({ zone, color, days, taxDefault, taxSource, se1Mean 
           <span className="s-wallet-field"><input inputMode="decimal" value={tax} onChange={e => setTax(e.target.value)} /> öre/kWh</span>
         </label>
       </div>
-      <p className="s-note" style={{ marginTop: 6 }}>
-        Nätavgift och påslag anges inklusive moms, som på fakturan. Allt du fyller i sparas bara i din webbläsare.
-        {taxDefault !== null && <> Energiskatt: {taxSource}. I vissa kommuner i norra Sverige är den lägre; ändra då värdet.</>}
-      </p>
 
       {spot !== null && (
         <div className="s-wallet-slider">
-          <label htmlFor="wallet-spot">
+          <label htmlFor={spotId}>
             Spotpris, exkl. moms: <b className="s-num">{f1(spot)} öre/kWh</b>
             {atToday ? <span className="s-note"> (dagens dygnsmedel i {zone})</span> : today.mean !== null && (
               <button type="button" className="s-linkbtn" onClick={() => setSpot(today.mean)}>tillbaka till idag ({f1(today.mean)})</button>
             )}
           </label>
-          <input id="wallet-spot" type="range" min={0} max={sliderMax} step={1} value={Math.min(spot, sliderMax)}
-            onChange={e => setSpot(Number(e.target.value))} aria-describedby="wallet-spot-help" />
-          <div className="s-note" id="wallet-spot-help">Dra för att se hur mycket av priset som är avgifter när spotpriset är lågt eller högt.</div>
+          <input id={spotId} type="range" min={0} max={sliderMax} step={1} value={Math.min(spot, sliderMax)}
+            onChange={e => setSpot(Number(e.target.value))} aria-describedby={helpId} />
+          <div className="s-note" id={helpId}>Dra för att se hur mycket av priset som är avgifter när spotpriset är lågt eller högt.</div>
         </div>
       )}
 
@@ -173,14 +174,13 @@ export function WalletPrice({ zone, color, days, taxDefault, taxSource, se1Mean 
               </ul>
             </div>
           </div>
-          <p className="s-note" style={{ marginTop: 8 }}>
-            Öre/kWh exkl. moms per del; momsen ({f0(VAT * 100)} %) visas som en egen del.
-            {slices.some(s => s.k === "bottleneck") && <> Tillägget för flaskhalsar är skillnaden mellan dygnsmedlet i {zone} och i SE1 idag: det som överföringsbegränsningarna mellan elområdena lägger på.</>}
-          </p>
         </div>
       )}
 
-      {extras && days.some(d => d.hourly.length > 0) && (
+      {moreHref && (
+        <p className="s-wallet-more"><Link href={moreHref}>Pris per timme med skatt och moms, idag och imorgon →</Link></p>
+      )}
+      {!moreHref && extras && days.some(d => d.hourly.length > 0) && (
         <div className="s-wallet-hours">
           {days.filter(d => d.hourly.length > 0).map(d => {
             const sorted = [...d.hourly].sort((a, b) => a[1] - b[1]);
@@ -208,10 +208,21 @@ export function WalletPrice({ zone, color, days, taxDefault, taxSource, se1Mean 
           })}
         </div>
       )}
-      <p className="s-note" style={{ marginTop: 8 }}>
-        Så räknar vi: (spotpris + energiskatt) × {(1 + VAT).toLocaleString("sv-SE")} + nätavgift + påslag. Fasta månadsavgifter (abonnemang) ingår inte.
-        Har du timpris (eller kvartspris) betalar du priset för respektive timme; har du rörligt månadspris betalar du ett medelpris för hela månaden.
-      </p>
+      <details className="s-wallet-day">
+        <summary>Så räknar vi och källa för energiskatten</summary>
+        <p className="s-note">
+          (spotpris + energiskatt) × {(1 + VAT).toLocaleString("sv-SE")} + nätavgift + påslag. Nätavgift och påslag anges inklusive moms, som på fakturan.
+          Fasta månadsavgifter (abonnemang) ingår inte. Allt du fyller i sparas bara i din webbläsare.
+        </p>
+        {taxDefault !== null && <p className="s-note">Energiskatt: {taxSource}. I vissa kommuner i norra Sverige är den lägre; ändra då värdet.</p>}
+        <p className="s-note">
+          Diagrammet visar öre/kWh exkl. moms per del; momsen ({f0(VAT * 100)} %) är en egen del.
+          {slices.some(s => s.k === "bottleneck") && <> Tillägget för flaskhalsar är skillnaden mellan dygnsmedlet i {zone} och i SE1 idag: det som överföringsbegränsningarna mellan elområdena lägger på.</>}
+        </p>
+        <p className="s-note">
+          Har du timpris (eller kvartspris) betalar du priset för respektive timme; har du rörligt månadspris betalar du ett medelpris för hela månaden.
+        </p>
+      </details>
     </div>
   );
 }

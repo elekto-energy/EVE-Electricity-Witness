@@ -166,7 +166,7 @@ export default async function ZonePage({ params }: { params: Promise<{ zone: str
             <div className="s-note">Dygnsmedel idag</div>
             <div className="s-zone-big s-num" style={{ color }}>{td.mean !== null ? fmt(td.mean) : "–"}<span className="s-zone-unit">{PRICE_UNIT}</span></div>
             {td.mean === null && <p className="s-note">{statusText(td.status)}</p>}
-            {tdTax !== null && <div className="s-note s-num"><a href="#planbok">{fmt(tdTax)} öre/kWh med skatt och moms</a></div>}
+            {tdTax !== null && <div className="s-zone-tax s-num"><a href="#planbok"><b>{fmt(tdTax)}</b> öre/kWh med skatt och moms →</a></div>}
           </div>
           <div className="s-panel">
             <div className="s-note">Billigaste timmen</div>
