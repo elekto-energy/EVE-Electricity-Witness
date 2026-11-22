@@ -477,10 +477,10 @@ button.s-card:hover { transform: translateY(-1px); }
 .s-wallet-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
 .s-wallet-legend b { color: var(--s-ink); }
 .s-wallet-hours { margin-top: 14px; }
-.s-wallet-day { margin-top: 12px; min-width: 0; }
-.s-wallet-day .s-table-wrap { margin-top: 8px; }
+.s-wallet-day { margin-top: 8px; }
+.s-wallet-day summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+.s-wallet-day .s-note { margin-top: 6px; }
 .s-wallet-more { margin-top: 12px; font-weight: 600; }
-@media (min-width: 900px) { .s-wallet-hours { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; align-items: start; } }
 .s-wallet-day tr.cheap td:last-child { color: var(--s-ok); }
 .s-wallet-day tr.dear td:last-child { color: #c0392b; }
 @media (max-width: 640px) { .s-wallet-inputs { grid-template-columns: 1fr; } }
