@@ -10,6 +10,7 @@ import { useState } from "react";
 import { StatusBadge } from "@/components/preview/Badges";
 import type { MapDay } from "@/components/site/PowerMap";
 import { ZoneDetail, type GenerationData } from "@/components/site/ZoneDetail";
+import { consumerPrice } from "@/lib/consumer";
 
 export interface CardDay { status: string; mean: number | null; hourly: [string, number][]; selectionVerified: boolean | null; missing: number | null }
 export interface CardZone { zone: string; city: string; today: CardDay; tomorrow: CardDay }
@@ -32,8 +33,10 @@ function Spark({ points, color }: { points: [string, number][]; color: string })
   );
 }
 
-export function PriceCards({ zones, tomorrowLabel, days, gen, today }: {
+export function PriceCards({ zones, tomorrowLabel, days, gen, today, taxExVat }: {
   zones: CardZone[]; tomorrowLabel: string; days: MapDay[]; gen?: GenerationData; today: string;
+  /** Energy tax for today's year (öre/kWh excl. VAT); null hides the "med skatt och moms" line. */
+  taxExVat: number | null;
 }) {
   const [open, setOpen] = useState<CardZone | null>(null);
   return (
@@ -53,6 +56,11 @@ export function PriceCards({ zones, tomorrowLabel, days, gen, today }: {
               <div className="s-card-price s-num">
                 {usable(t) ? fmt2(t.mean as number) : "–"}<span> öre/kWh</span>
               </div>
+              {usable(t) && taxExVat !== null && (
+                <div className="s-card-tax s-num">
+                  {fmt2(consumerPrice(t.mean as number, { taxExVat, gridInclVat: 0, markupInclVat: 0 }).total)} med skatt och moms
+                </div>
+              )}
               <div className="s-card-tomorrow s-num">
                 {tomorrowLabel}:{" "}
                 {usable(m) ? (

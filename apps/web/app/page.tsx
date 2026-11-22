@@ -7,6 +7,7 @@ import { DataFreshness } from "@/components/preview/Badges";
 import { type DayView } from "@/components/site/ZoneStrip";
 import { PowerMap, type MapDay } from "@/components/site/PowerMap";
 import { PriceCards } from "@/components/site/PriceCards";
+import { energyTaxFor } from "@/lib/consumer";
 import { Bottlenecks, type BottleneckDay, type LinkHour } from "@/components/site/Bottlenecks";
 import { GenerationOverview } from "@/components/site/GenerationOverview";
 import { TradeOverview } from "@/components/site/TradeOverview";
@@ -99,12 +100,16 @@ export default async function HomePage() {
           <h1 className="s-h1" style={{ marginBottom: 6 }}>Elpriset idag</h1>
           <DataFreshness publishedAtUtc={snapshot.source.published_at_utc} snapshotToday={today} />
         </div>
-        <p className="s-lede">Dygnsmedel per elområde {weekdayLabel(today)}, före skatt, moms och nätavgift.</p>
-        <PriceCards tomorrowLabel="Imorgon" days={mapDays} gen={snapshot.generation} today={today} zones={vToday.zones.map((z, i) => ({
+        <p className="s-lede">Dygnsmedel per elområde {weekdayLabel(today)}. Den stora siffran är spotpriset; under den med energiskatt och moms, före nätavgift och elbolagets påslag.</p>
+        <PriceCards taxExVat={energyTaxFor(today)?.oreExVat ?? null} tomorrowLabel="Imorgon" days={mapDays} gen={snapshot.generation} today={today} zones={vToday.zones.map((z, i) => ({
           zone: z.zone, city: z.city,
           today: { status: z.status, mean: z.mean, hourly: z.hourly, selectionVerified: z.selectionVerified, missing: z.missing },
           tomorrow: { status: vTomorrow.zones[i].status, mean: vTomorrow.zones[i].mean, hourly: vTomorrow.zones[i].hourly, selectionVerified: vTomorrow.zones[i].selectionVerified, missing: vTomorrow.zones[i].missing },
         }))} />
+        <p className="s-note" style={{ marginTop: 10 }}>
+          Räkna med din egen nätavgift och ditt påslag:{" "}
+          {SE_ZONES.map((c, i) => <span key={c}>{i ? " · " : ""}<Link href={`/elpris/${c.toLowerCase()}#planbok`}>{c}</Link></span>)}
+        </p>
       </section>
 
       <section className="s-section" id="karta">
