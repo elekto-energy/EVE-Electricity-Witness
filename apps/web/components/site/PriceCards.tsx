@@ -10,7 +10,7 @@ import { useState } from "react";
 import { StatusBadge } from "@/components/preview/Badges";
 import type { MapDay } from "@/components/site/PowerMap";
 import { ZoneDetail, type GenerationData } from "@/components/site/ZoneDetail";
-import { consumerPrice } from "@/lib/consumer";
+import { consumerPrice, type EnergyTax } from "@/lib/consumer";
 
 export interface CardDay { status: string; mean: number | null; hourly: [string, number][]; selectionVerified: boolean | null; missing: number | null }
 export interface CardZone { zone: string; city: string; today: CardDay; tomorrow: CardDay }
@@ -33,15 +33,15 @@ function Spark({ points, color }: { points: [string, number][]; color: string })
   );
 }
 
-export function PriceCards({ zones, tomorrowLabel, days, gen, today, taxExVat }: {
+export function PriceCards({ zones, tomorrowLabel, days, gen, today, tax }: {
   zones: CardZone[]; tomorrowLabel: string; days: MapDay[]; gen?: GenerationData; today: string;
-  /** Energy tax for today's year (öre/kWh excl. VAT); null hides the "med skatt och moms" line. */
-  taxExVat: number | null;
+  /** Energy tax for today's year; null hides the prices with tax and VAT. */
+  tax: EnergyTax | null;
 }) {
   const [open, setOpen] = useState<CardZone | null>(null);
   return (
     <>
-    {open && <ZoneDetail zone={open.zone} city={open.city} days={days} gen={gen} today={today} onClose={() => setOpen(null)} />}
+    {open && <ZoneDetail zone={open.zone} city={open.city} days={days} gen={gen} today={today} tax={tax} onClose={() => setOpen(null)} />}
     <div className="s-cards">
       {zones.map(z => {
         const color = `var(--s-${z.zone.toLowerCase()})`;
@@ -49,16 +49,16 @@ export function PriceCards({ zones, tomorrowLabel, days, gen, today, taxExVat }:
         const delta = usable(t) && usable(m) ? (m.mean as number) - (t.mean as number) : null;
         return (
           <button type="button" key={z.zone} className="s-card" style={{ ["--zc" as string]: color }}
-            onClick={() => setOpen(z)} aria-haspopup="dialog" aria-label={`${z.zone} ${z.city}: visa kvartspriser och flöden`}>
+            onClick={() => setOpen(z)} aria-haspopup="dialog" aria-label={`${z.zone} ${z.city}: visa kvartspriser, pris med skatt och moms, och flöden`}>
             <div className="s-card-code">{z.zone}</div>
             <div className="s-card-body">
               <div className="s-card-city">{z.city}</div>
               <div className="s-card-price s-num">
                 {usable(t) ? fmt2(t.mean as number) : "–"}<span> öre/kWh</span>
               </div>
-              {usable(t) && taxExVat !== null && (
+              {usable(t) && tax !== null && (
                 <div className="s-card-tax s-num">
-                  {fmt2(consumerPrice(t.mean as number, { taxExVat, gridInclVat: 0, markupInclVat: 0 }).total)} med skatt och moms
+                  <b>{fmt2(consumerPrice(t.mean as number, { taxExVat: tax.oreExVat, gridInclVat: 0, markupInclVat: 0 }).total)}</b> med skatt och moms
                 </div>
               )}
               <div className="s-card-tomorrow s-num">

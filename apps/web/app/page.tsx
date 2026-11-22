@@ -101,7 +101,7 @@ export default async function HomePage() {
           <DataFreshness publishedAtUtc={snapshot.source.published_at_utc} snapshotToday={today} />
         </div>
         <p className="s-lede">Dygnsmedel per elområde {weekdayLabel(today)}. Den stora siffran är spotpriset; under den med energiskatt och moms, före nätavgift och elbolagets påslag.</p>
-        <PriceCards taxExVat={energyTaxFor(today)?.oreExVat ?? null} tomorrowLabel="Imorgon" days={mapDays} gen={snapshot.generation} today={today} zones={vToday.zones.map((z, i) => ({
+        <PriceCards tax={energyTaxFor(today)} tomorrowLabel="Imorgon" days={mapDays} gen={snapshot.generation} today={today} zones={vToday.zones.map((z, i) => ({
           zone: z.zone, city: z.city,
           today: { status: z.status, mean: z.mean, hourly: z.hourly, selectionVerified: z.selectionVerified, missing: z.missing },
           tomorrow: { status: vTomorrow.zones[i].status, mean: vTomorrow.zones[i].mean, hourly: vTomorrow.zones[i].hourly, selectionVerified: vTomorrow.zones[i].selectionVerified, missing: vTomorrow.zones[i].missing },
