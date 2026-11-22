@@ -9,6 +9,8 @@ import { DataFreshness } from "@/components/preview/Badges";
 import { HourlyChart } from "@/components/preview/HourlyChart";
 import { GenerationBar } from "@/components/site/GenerationBar";
 import { SITE_URL } from "@/lib/site";
+import { WalletPrice } from "@/components/site/WalletPrice";
+import { energyTaxFor, energyTaxSourceText, consumerPrice } from "@/lib/consumer";
 
 export const revalidate = 300;
 export const dynamicParams = false;
@@ -99,6 +101,9 @@ export default async function ZonePage({ params }: { params: Promise<{ zone: str
   const others = SE_ZONES.filter(c => c !== z.code);
   const otherMeans = others.map(c => ({ code: c, mean: dayFigures(snapshot, c, today).mean }));
   const color = `var(--s-${zone})`;
+  const tax = energyTaxFor(today);
+  const withTax = (v: number) => (tax ? consumerPrice(v, { taxExVat: tax.oreExVat, gridInclVat: 0, markupInclVat: 0 }).total : null);
+  const tdTax = td.mean !== null ? withTax(td.mean) : null;
 
   const faq = [
     {
@@ -107,6 +112,13 @@ export default async function ZonePage({ params }: { params: Promise<{ zone: str
         ? `Spotpriset i ${z.code} (${z.city}) är i genomsnitt ${fmt(td.mean)} öre/kWh ${weekdayLabel(today)}, före elskatt, moms och nätavgift.` +
           (td.cheapest && td.dearest ? ` Billigast är timmen ${hourSpan(td.cheapest[0])} (${fmt(td.cheapest[1])} öre/kWh) och dyrast ${hourSpan(td.dearest[0])} (${fmt(td.dearest[1])} öre/kWh).` : "")
         : `Dagens pris för ${z.code} finns inte i datan just nu.`,
+    },
+    {
+      q: `Vad kostar elen i ${z.code} med skatt och moms?`,
+      a: tdTax !== null && tax
+        ? `Med energiskatt (${energyTaxSourceText(tax)}) och 25 % moms blir dagens dygnsmedel i ${z.code} ${fmt(tdTax)} öre/kWh. ` +
+          "Till det kommer nätavgiften och elbolagets påslag, som skiljer sig mellan bolag. Fyll i dina egna i räknaren på sidan."
+        : `Priset med skatt och moms går inte att räkna fram för ${z.code} just nu.`,
     },
     {
       q: `När kommer elpriset för imorgon i ${z.code}?`,
@@ -118,7 +130,7 @@ export default async function ZonePage({ params }: { params: Promise<{ zone: str
     },
     {
       q: "Vad ingår i priset som visas?",
-      a: "Det är spotpriset på elbörsen omräknat till öre per kilowattimme med Europeiska centralbankens referenskurs. Elskatt, moms, nätavgift och elbolagets påslag ingår inte.",
+      a: "Siffrorna högst upp är spotpriset på elbörsen omräknat till öre per kilowattimme med Europeiska centralbankens referenskurs, utan elskatt, moms, nätavgift och påslag. Under rubriken Vad kostar elen i plånboken? räknas energiskatt och moms in, och du kan lägga till din nätavgift och ditt påslag.",
     },
   ];
   const jsonLd = [
@@ -154,6 +166,7 @@ export default async function ZonePage({ params }: { params: Promise<{ zone: str
             <div className="s-note">Dygnsmedel idag</div>
             <div className="s-zone-big s-num" style={{ color }}>{td.mean !== null ? fmt(td.mean) : "–"}<span className="s-zone-unit">{PRICE_UNIT}</span></div>
             {td.mean === null && <p className="s-note">{statusText(td.status)}</p>}
+            {tdTax !== null && <div className="s-note s-num"><a href="#planbok">{fmt(tdTax)} öre/kWh med skatt och moms</a></div>}
           </div>
           <div className="s-panel">
             <div className="s-note">Billigaste timmen</div>
@@ -171,6 +184,14 @@ export default async function ZonePage({ params }: { params: Promise<{ zone: str
             {tm.mean === null && <div className="s-note">{statusText(tm.status)}</div>}
           </div>
         </div>
+      </section>
+
+      <section className="s-section" id="planbok">
+        <h2 className="s-h2">Vad kostar elen i plånboken?</h2>
+        <WalletPrice zone={z.code} color={color} se1Mean={dayFigures(snapshot, "SE1", today).mean} taxDefault={tax?.oreExVat ?? null} taxSource={tax ? energyTaxSourceText(tax) : null} days={[
+          { key: "today", label: `Idag, ${weekdayLabel(today)}`, mean: td.mean, hourly: td.hourly, note: td.mean === null ? statusText(td.status) : undefined },
+          { key: "tomorrow", label: `Imorgon, ${weekdayLabel(tomorrow)}`, mean: tm.mean, hourly: tm.hourly },
+        ]} />
       </section>
 
       <section className="s-section">
@@ -235,7 +256,7 @@ export default async function ZonePage({ params }: { params: Promise<{ zone: str
 
       <footer className="s-footer">
         Källa: ENTSO-E (dagen-före-priser, fysiska flöden och produktion per kraftslag), ECB (valutakurs{fx ? ` ${fx.rate.toLocaleString("sv-SE", { maximumFractionDigits: 6 })} kr/EUR, ${fx.date}` : ""}).
-        Full spårbarhet finns under <Link href="/data">Datakvalitet</Link>. Detta är en förhandsversion.
+        Full spårbarhet finns under <Link href="/data">Datakvalitet</Link>.
       </footer>
     </>
   );

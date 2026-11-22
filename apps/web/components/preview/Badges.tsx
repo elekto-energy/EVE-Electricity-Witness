@@ -54,5 +54,5 @@ export function DataFreshness({ publishedAtUtc, snapshotToday }: { publishedAtUt
   if (!now) return <Pill tone="muted">Uppdaterad {published}</Pill>;
   const today = stockholmDate(now);
   if (today === snapshotToday) return <Pill tone="ok" title={`Uppdaterad ${published}`}>Aktuell, uppdaterad {published}</Pill>;
-  return <Pill tone="warn" title="Förhandsversionen uppdateras inte automatiskt ännu">Inaktuell, senast uppdaterad {published}</Pill>;
+  return <Pill tone="warn" title="Senast publicerade data är inte från idag">Inaktuell, senast uppdaterad {published}</Pill>;
 }

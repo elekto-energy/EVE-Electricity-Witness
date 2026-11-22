@@ -12,7 +12,6 @@ export function SourceFooter({ snapshot, loaded }: { snapshot: Snapshot; loaded?
       {loaded ? (loaded.origin === "blob"
         ? <> Sidans data lästes från datalagret och kontrollerades mot sha256 <code>{loaded.sha256}</code>.</>
         : <> Sidans data är den inbyggda versionen, eftersom datalagret inte kunde användas.</>) : null}
-      {" "}Detta är en förhandsversion.
     </footer>
   );
 }
