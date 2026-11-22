@@ -48,7 +48,9 @@ function Donut({ slices, center, sub }: { slices: Slice[]; center: string; sub: 
 }
 
 export function WalletPrice({ zone, color, days, taxDefault, taxSource, se1Mean }: {
-  zone: string; color: string; days: WalletDay[]; taxDefault: number | null; taxSource: string | null;
+  zone: string; color: string; days: WalletDay[]; taxDefault: number | null;
+  /** Full source line from energyTaxSourceText(). */
+  taxSource: string | null;
   /** SE1's daily mean today (öre/kWh excl. VAT), for the bottleneck split; null when missing. */
   se1Mean: number | null;
 }) {
@@ -120,7 +122,7 @@ export function WalletPrice({ zone, color, days, taxDefault, taxSource, se1Mean 
       </div>
       <p className="s-note" style={{ marginTop: 6 }}>
         Nätavgift och påslag anges inklusive moms, som på fakturan. Allt du fyller i sparas bara i din webbläsare.
-        {taxDefault !== null && <> Energiskatten är {f1(taxDefault)} öre/kWh exkl. moms ({taxSource}); i vissa kommuner i norra Sverige är den lägre, ändra då värdet.</>}
+        {taxDefault !== null && <> Energiskatt: {taxSource}. I vissa kommuner i norra Sverige är den lägre; ändra då värdet.</>}
       </p>
 
       {spot !== null && (

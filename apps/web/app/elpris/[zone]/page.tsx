@@ -10,7 +10,7 @@ import { HourlyChart } from "@/components/preview/HourlyChart";
 import { GenerationBar } from "@/components/site/GenerationBar";
 import { SITE_URL } from "@/lib/site";
 import { WalletPrice } from "@/components/site/WalletPrice";
-import { energyTaxFor, consumerPrice } from "@/lib/consumer";
+import { energyTaxFor, energyTaxSourceText, consumerPrice } from "@/lib/consumer";
 
 export const revalidate = 300;
 export const dynamicParams = false;
@@ -116,7 +116,7 @@ export default async function ZonePage({ params }: { params: Promise<{ zone: str
     {
       q: `Vad kostar elen i ${z.code} med skatt och moms?`,
       a: tdTax !== null && tax
-        ? `Med energiskatt (${fmt(tax.oreExVat)} öre/kWh exkl. moms) och 25 % moms blir dagens dygnsmedel i ${z.code} ${fmt(tdTax)} öre/kWh. ` +
+        ? `Med energiskatt (${energyTaxSourceText(tax)}) och 25 % moms blir dagens dygnsmedel i ${z.code} ${fmt(tdTax)} öre/kWh. ` +
           "Till det kommer nätavgiften och elbolagets påslag, som skiljer sig mellan bolag. Fyll i dina egna i räknaren på sidan."
         : `Priset med skatt och moms går inte att räkna fram för ${z.code} just nu.`,
     },
@@ -188,7 +188,7 @@ export default async function ZonePage({ params }: { params: Promise<{ zone: str
 
       <section className="s-section" id="planbok">
         <h2 className="s-h2">Vad kostar elen i plånboken?</h2>
-        <WalletPrice zone={z.code} color={color} se1Mean={dayFigures(snapshot, "SE1", today).mean} taxDefault={tax?.oreExVat ?? null} taxSource={tax?.source ?? null} days={[
+        <WalletPrice zone={z.code} color={color} se1Mean={dayFigures(snapshot, "SE1", today).mean} taxDefault={tax?.oreExVat ?? null} taxSource={tax ? energyTaxSourceText(tax) : null} days={[
           { key: "today", label: `Idag, ${weekdayLabel(today)}`, mean: td.mean, hourly: td.hourly, note: td.mean === null ? statusText(td.status) : undefined },
           { key: "tomorrow", label: `Imorgon, ${weekdayLabel(tomorrow)}`, mean: tm.mean, hourly: tm.hourly },
         ]} />

@@ -7,7 +7,7 @@ import { DataFreshness } from "@/components/preview/Badges";
 import { type DayView } from "@/components/site/ZoneStrip";
 import { PowerMap, type MapDay } from "@/components/site/PowerMap";
 import { PriceCards } from "@/components/site/PriceCards";
-import { energyTaxFor } from "@/lib/consumer";
+import { energyTaxFor, energyTaxSourceText } from "@/lib/consumer";
 import { Bottlenecks, type BottleneckDay, type LinkHour } from "@/components/site/Bottlenecks";
 import { GenerationOverview } from "@/components/site/GenerationOverview";
 import { TradeOverview } from "@/components/site/TradeOverview";
@@ -107,6 +107,7 @@ export default async function HomePage() {
           tomorrow: { status: vTomorrow.zones[i].status, mean: vTomorrow.zones[i].mean, hourly: vTomorrow.zones[i].hourly, selectionVerified: vTomorrow.zones[i].selectionVerified, missing: vTomorrow.zones[i].missing },
         }))} />
         <p className="s-note" style={{ marginTop: 10 }}>
+          {energyTaxFor(today) && <>Energiskatt: {energyTaxSourceText(energyTaxFor(today)!)}. Moms 25 %. </>}
           Räkna med din egen nätavgift och ditt påslag:{" "}
           {SE_ZONES.map((c, i) => <span key={c}>{i ? " · " : ""}<Link href={`/elpris/${c.toLowerCase()}#planbok`}>{c}</Link></span>)}
         </p>
