@@ -251,32 +251,7 @@ export function PowerMap({ days, snapshotToday, gen }: { days: MapDay[]; snapsho
         </div>
 
         <aside className="s-map-panel" aria-live="polite">
-          <div className="s-panel-head">
-            <span>Spotpris</span>
-            <b className="s-num">{t ? `${clock(t)}–${tEnd ? clock(tEnd) : ""}` : "–"}</b>
-          </div>
-          <ul className="s-plist">
-            {day.zones.filter(z => SE.has(z.zone)).map(z => {
-              const v = priceAt(z);
-              const on = sel === z.zone;
-              return (
-                <li key={z.zone}>
-                  <button type="button" className={on ? "s-prow on" : "s-prow"} aria-pressed={on}
-                    onClick={() => setPinned(p => (p === z.zone ? null : z.zone))}
-                    onMouseEnter={() => setHover(z.zone)} onMouseLeave={() => setHover(h => (h === z.zone ? null : h))}>
-                    <span className="s-pdot" style={{ background: priceColor(v) }} />
-                    <span className="s-pname"><b>{z.zone}</b> {z.name.replace(/^SE\d\s*/, "")}</span>
-                    <span className="s-pval s-num">{fmt(v)}<small> öre/kWh</small></span>
-                    <span className="s-pmean s-num">
-                      {z.status === "COMPLETE" || z.status === "PARTIAL" ? `dygnsmedel ${fmt(z.mean)}` : z.status === "NOT_PUBLISHED_YET" ? "ej publicerat ännu" : "saknas"}
-                      {z.status === "PARTIAL" ? ", delvis" : ""}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          {hz && !SE.has(hz.zone) && (
+          {hz && (
             <div className="s-pextra">
               <div className="s-tip-name">{hz.name}</div>
               <div className="s-tip-price s-num">{fmt(priceAt(hz))} <span>öre/kWh</span></div>
